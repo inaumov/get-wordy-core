@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<server host="host:7777">
+    <admin>
+        <user>usr</user>
+        <password>pwd</password>
+    </admin>
+    <database name="test_db">
+        <parameter>param1</parameter>
+        <parameter>param2</parameter>
+    </database>
+</server>
