@@ -15,7 +15,7 @@ public class WordDao extends BaseDao implements IWordDao {
     public static final String INSERT_SQL = "INSERT INTO word (value, transcription) VALUES (?, ?)";
     public static final String DELETE_SQL = "DELETE FROM word WHERE word.id = ?";
     public static final String UPDATE_SQL = "UPDATE word SET value = ?, transcription = ? WHERE id = ?";
-    public static final String SELECT_ALL_SQL = "SELECT * FROM word ORDER BY value";
+    public static final String SELECT_ALL_SQL = "SELECT * FROM word ORDER BY id";
 
     WordDao(IConnectionFactory connectionFactory) {
         super(connectionFactory);
