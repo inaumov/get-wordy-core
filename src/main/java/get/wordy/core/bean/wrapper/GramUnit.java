@@ -5,14 +5,14 @@ import java.util.List;
 
 public enum GramUnit {
 
-    NOUN(1),
+    NOUN(0),
+    ADJECTIVE(1),
     VERB(2),
-    ADJECTIVE(3),
-    ADVERB(4),
-    PHRASAL_VERB(5),
-    PHRASE(6),
-    IDIOM(7),
-    OTHER(0);
+    ADVERB(3),
+    PHRASAL_VERB(4),
+    PHRASE(5),
+    IDIOM(6),
+    OTHER(7);
 
     public static final GramUnit DEFAULT_UNIT = GramUnit.NOUN;
 
