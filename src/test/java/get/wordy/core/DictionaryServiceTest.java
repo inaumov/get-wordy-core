@@ -304,13 +304,23 @@ public class DictionaryServiceTest extends TestCase {
         connection.open();
         expectLastCall().once();
 
+        expect(dictionaryListMock.iterator()).andReturn(dictionaryIteratorMock).once();
+        replay(dictionaryMock, dictionaryListMock, dictionaryIteratorMock);
+
         CardItem cardItemMock = createNiceMock(CardItem.class);
         expect(cardItemsCacheMock.put("word", cardItemMock)).andStubReturn(cardItemMock);
         replay(cardItemsCacheMock);
 
         Card cardMock = createNiceMock(Card.class);
+        expect(cardMock.getId()).andReturn(1);
+
         Word wordMock = createNiceMock(Word.class);
         expect(wordMock.getValue()).andReturn("word");
+        expect(wordMock.getId()).andReturn(1).times(2);
+        cardMock.setId(anyInt());
+        expectLastCall();
+        cardMock.setDictionaryId(anyInt());
+        expectLastCall();
 
         expect(cardItemMock.getCard()).andStubReturn(cardMock);
         expect(cardItemMock.getWord()).andStubReturn(wordMock);
@@ -328,12 +338,7 @@ public class DictionaryServiceTest extends TestCase {
         expectLastCall().once();
         replay(connection);
 
-        resetToNice(cardMock, wordMock);
-        expect(wordMock.getId()).andReturn(1);
-        expect(cardMock.getId()).andReturn(1);
-        replay(wordMock, cardMock);
-
-        boolean done = dictionaryService.saveOrUpdateCard(cardItemMock);
+        boolean done = dictionaryService.saveOrUpdateCard(cardItemMock, DICTIONARY_NAME);
         assertTrue(done);
         verify(cardItemMock, cardMock, wordMock);
         verify(wordDaoMock, cardDaoMock);
@@ -344,6 +349,9 @@ public class DictionaryServiceTest extends TestCase {
     public void testUpdateCard() throws DaoException {
         connection.open();
         expectLastCall().once();
+
+        expect(dictionaryListMock.iterator()).andReturn(dictionaryIteratorMock).once();
+        replay(dictionaryMock, dictionaryListMock, dictionaryIteratorMock);
 
         CardItem oldCardItemMock = createNiceMock(CardItem.class);
         Card oldCardMock = createNiceMock(Card.class);
@@ -382,7 +390,7 @@ public class DictionaryServiceTest extends TestCase {
         expectLastCall().once();
         replay(connection);
 
-        boolean done = dictionaryService.saveOrUpdateCard(cardItemMock);
+        boolean done = dictionaryService.saveOrUpdateCard(cardItemMock, DICTIONARY_NAME);
 
         assertTrue(done);
         verify(cardItemMock, cardMock, wordMock);

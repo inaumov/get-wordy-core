@@ -21,7 +21,7 @@ public interface IDictionaryService {
 
     Map<String, CardItem> getCardsForExercise(String dictionaryName, final int amount);
 
-    boolean saveOrUpdateCard(CardItem cardItem);
+    boolean saveOrUpdateCard(CardItem cardItem, String dictionaryName);
 
     boolean removeCard(final String word);
 

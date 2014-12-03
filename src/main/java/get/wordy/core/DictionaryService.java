@@ -203,17 +203,22 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean saveOrUpdateCard(CardItem cardItem) {
-        return cardItem.getId() > 0 ? updateCard(cardItem) : saveCard(cardItem);
+    public boolean saveOrUpdateCard(CardItem cardItem, String dictionaryName) {
+        return cardItem.getId() > 0 ? updateCard(cardItem, dictionaryName) : saveCard(cardItem, dictionaryName);
     }
 
-    private boolean saveCard(CardItem cardItem) {
+    private boolean saveCard(CardItem cardItem, String dictionaryName) {
         Word word = cardItem.getWord();
         Card card = cardItem.getCard();
         try {
             connection.open();
+
             wordDao.insert(word);
+
+            card.setId(word.getId());
+            card.setDictionaryId(findDictionary(dictionaryName).getId());
             cardDao.insert(card);
+
             connection.commit();
             cardItemsCache.put(word.getValue(), cardItem);
         } catch (DaoException e) {
@@ -226,16 +231,19 @@ public class DictionaryService implements IDictionaryService {
         return word.getId() != 0 && card.getId() != 0;
     }
 
-    private boolean updateCard(CardItem cardItem) {
+    private boolean updateCard(CardItem cardItem, String dictionaryName) {
         CardItem oldCardItem = findCardItemById(cardItem.getId());
 
         Word word = cardItem.getWord();
         Card card = cardItem.getCard();
         try {
             connection.open();
+
             if (!word.equals(oldCardItem.getWord())) {
                 wordDao.update(word);
             }
+
+            card.setDictionaryId(findDictionary(dictionaryName).getId());
             if (!card.equals(oldCardItem.getCard())) {
                 cardDao.update(card);
             }
