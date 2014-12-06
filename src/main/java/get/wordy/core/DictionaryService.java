@@ -2,14 +2,17 @@ package get.wordy.core;
 
 import get.wordy.core.api.IDictionaryService;
 import get.wordy.core.api.IScore;
-import get.wordy.core.api.dao.*;
-import get.wordy.core.bean.*;
+import get.wordy.core.api.dao.DaoException;
+import get.wordy.core.api.dao.ICardDao;
+import get.wordy.core.api.dao.IDictionaryDao;
+import get.wordy.core.api.dao.IWordDao;
+import get.wordy.core.bean.Definition;
 import get.wordy.core.bean.Dictionary;
+import get.wordy.core.bean.Word;
 import get.wordy.core.bean.wrapper.CardStatus;
 import get.wordy.core.dao.ADaoFactory;
 import get.wordy.core.db.ConnectionFactory;
-import get.wordy.core.wrapper.CardItem;
-import get.wordy.core.wrapper.DefinitionPair;
+import get.wordy.core.bean.Card;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -29,7 +32,7 @@ public class DictionaryService implements IDictionaryService {
     private ICardDao cardDao;
 
     private List<Dictionary> dictionaryList = new ArrayList<Dictionary>();
-    private Map<String, CardItem> cardItemsCache = new HashMap<String, CardItem>();
+    private Map<String, Card> cardsCache = new HashMap<String, Card>();
 
     public DictionaryService() {
         this(DEFAULT_URI);
@@ -146,8 +149,8 @@ public class DictionaryService implements IDictionaryService {
     // cards section
 
     @Override
-    public Map<String, CardItem> getCards(String dictionaryName) {
-        List<Card> cardList;
+    public Map<String, Card> getCards(String dictionaryName) {
+        List<get.wordy.core.bean.Card> cardList;
         List<Word> wordList;
         try {
             connection.open();
@@ -166,22 +169,22 @@ public class DictionaryService implements IDictionaryService {
             }
         };
 
-        HashMap<String, CardItem> cardItemMap = new HashMap<String, CardItem>();
+        HashMap<String, Card> cardsMap = new HashMap<String, Card>();
 
-        Iterator<Card> cardIterator = cardList.iterator();
+        Iterator<get.wordy.core.bean.Card> cardIterator = cardList.iterator();
         while (cardIterator.hasNext()) {
-            Card card = cardIterator.next();
+            get.wordy.core.bean.Card card = cardIterator.next();
             Word word = findWord(card.getWordId(), wordList, c);
-            CardItem cardItem = new CardItem(card, word);
-            cardItemMap.put(word.getValue(), cardItem);
+            card.setWord(word);
+            cardsMap.put(word.getValue(), card);
         }
-        cardItemsCache.putAll(cardItemMap);
+        cardsCache.putAll(cardsMap);
 
-        return cardItemMap;
+        return cardsMap;
     }
 
     @Override
-    public Map<String, CardItem> getCardsForExercise(String dictionaryName, int limit) {
+    public Map<String, Card> getCardsForExercise(String dictionaryName, int limit) {
         int[] cardIds;
         try {
             connection.open();
@@ -192,24 +195,23 @@ public class DictionaryService implements IDictionaryService {
         } finally {
             connection.close();
         }
-        Map<String, CardItem> exercises = new HashMap<String, CardItem>();
+        Map<String, Card> exercises = new HashMap<String, Card>();
         for (int id : cardIds) {
-            CardItem cardItem = findCardItemById(id);
-            if (cardItem != null) {
-                exercises.put(cardItem.getWord().getValue(), cardItem);
+            Card card = findCardById(id);
+            if (card != null) {
+                exercises.put(card.getWord().getValue(), card);
             }
         }
         return exercises;
     }
 
     @Override
-    public boolean saveOrUpdateCard(CardItem cardItem, String dictionaryName) {
-        return cardItem.getId() > 0 ? updateCard(cardItem, dictionaryName) : saveCard(cardItem, dictionaryName);
+    public boolean saveOrUpdateCard(Card card, String dictionaryName) {
+        return card.getId() > 0 ? updateCard(card, dictionaryName) : saveCard(card, dictionaryName);
     }
 
-    private boolean saveCard(CardItem cardItem, String dictionaryName) {
-        Word word = cardItem.getWord();
-        Card card = cardItem.getCard();
+    private boolean saveCard(Card card, String dictionaryName) {
+        Word word = card.getWord();
         try {
             connection.open();
 
@@ -220,7 +222,7 @@ public class DictionaryService implements IDictionaryService {
             cardDao.insert(card);
 
             connection.commit();
-            cardItemsCache.put(word.getValue(), cardItem);
+            cardsCache.put(word.getValue(), card);
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while saving card", e);
             connection.rollback();
@@ -231,26 +233,25 @@ public class DictionaryService implements IDictionaryService {
         return word.getId() != 0 && card.getId() != 0;
     }
 
-    private boolean updateCard(CardItem cardItem, String dictionaryName) {
-        CardItem oldCardItem = findCardItemById(cardItem.getId());
+    private boolean updateCard(Card card, String dictionaryName) {
+        Card oldCard = findCardById(card.getId());
 
-        Word word = cardItem.getWord();
-        Card card = cardItem.getCard();
+        Word word = card.getWord();
         try {
             connection.open();
 
-            if (!word.equals(oldCardItem.getWord())) {
+            if (!word.equals(oldCard.getWord())) {
                 wordDao.update(word);
             }
 
             card.setDictionaryId(findDictionary(dictionaryName).getId());
-            if (!card.equals(oldCardItem.getCard())) {
+            if (!card.equals(oldCard)) {
                 cardDao.update(card);
             }
 
             connection.commit();
-            cardItemsCache.remove(oldCardItem.getWord().getValue());
-            cardItemsCache.put(word.getValue(), cardItem);
+            cardsCache.remove(oldCard.getWord().getValue());
+            cardsCache.put(word.getValue(), card);
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while updating card", e);
             connection.rollback();
@@ -263,15 +264,15 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public boolean removeCard(String wordToRemove) {
-        CardItem cardItem = findCardItemByWord(wordToRemove);
+        Card card = findCardByWord(wordToRemove);
         try {
             connection.open();
-            cardDao.delete(cardItem.getCard());
-            Word word = cardItem.getWord();
+            cardDao.delete(card);
+            Word word = card.getWord();
             // todo: in the future remove only a word which is NOT from third-party dictionary
             wordDao.delete(word);
             connection.commit();
-            cardItemsCache.remove(word.getValue());
+            cardsCache.remove(word.getValue());
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while removing card", e);
             connection.rollback();
@@ -283,17 +284,12 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public CardItem loadCard(String word) {
-        CardItem cardItem = findCardItemByWord(word);
+    public Card loadCard(String word) {
+        Card card = findCardByWord(word);
         try {
             connection.open();
-            Collection<Definition> definitions = cardDao.getDefinitionsFor(cardItem.getCard());
-            Iterator<Definition> it = definitions.iterator();
-            while (it.hasNext()) {
-                Definition definition = it.next();
-                DefinitionPair pair = new DefinitionPair(definition, definition.getMeanings().toArray());
-                cardItem.addDefinitionPair(definition.getGramUnit(), pair);
-            }
+            List<Definition> definitions = cardDao.getDefinitionsFor(card);
+            card.addAll(definitions);
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while loading card", e);
             return null;
@@ -302,15 +298,14 @@ public class DictionaryService implements IDictionaryService {
         } finally {
             connection.close();
         }
-        return cardItem;
+        return card;
     }
 
     // status section
 
     @Override
     public boolean changeStatus(final String word, CardStatus updatedStatus) {
-        CardItem cardItem = findCardItemByWord(word);
-        Card card = cardItem.getCard();
+        Card card = findCardByWord(word);
         card.setStatus(updatedStatus);
 
         if (updatedStatus == CardStatus.LEARNT) {
@@ -368,9 +363,7 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public boolean increaseScoreUp(final String word, int repetitions) {
-        CardItem cardItem = findCardItemByWord(word);
-
-        Card card = cardItem.getCard();
+        Card card = findCardByWord(word);
 
         int diff = 100 / repetitions;
         int rating = card.getRating();
@@ -413,16 +406,16 @@ public class DictionaryService implements IDictionaryService {
         return wordList.get(index);
     }
 
-    private CardItem findCardItemByWord(String word) {
-        return cardItemsCache.get(word);
+    private Card findCardByWord(String word) {
+        return cardsCache.get(word);
     }
 
-    private CardItem findCardItemById(int cardId) {
-        Iterator<CardItem> it = cardItemsCache.values().iterator();
+    private Card findCardById(int cardId) {
+        Iterator<Card> it = cardsCache.values().iterator();
         while (it.hasNext()) {
-            CardItem cardItem = it.next();
-            if (cardItem.getId() == cardId) {
-                return cardItem;
+            Card card = it.next();
+            if (card.getId() == cardId) {
+                return card;
             }
         }
         return null;

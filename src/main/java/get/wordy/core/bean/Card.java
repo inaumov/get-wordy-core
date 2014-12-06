@@ -17,6 +17,7 @@ public class Card extends ChildrenHolder<Definition> {
     private int rating;
     private Timestamp insertTime;
     private Timestamp updateTime;
+    private Word word;
 
     public int getId() {
         return id;
@@ -74,6 +75,17 @@ public class Card extends ChildrenHolder<Definition> {
         this.updateTime = updateTime;
     }
 
+    public Word getWord() {
+        return word;
+    }
+
+    public void setWord(Word word) {
+        if (word.getId() != wordId) {
+            throw new InconsistentDataException("Card and Word objects are not consistent with their wordId");
+        }
+        this.word = word;
+    }
+
     public List<Definition> getDefinitions() {
         return getChildren();
     }
@@ -102,6 +114,27 @@ public class Card extends ChildrenHolder<Definition> {
         result = 31 * result + wordId;
         result = 31 * result + dictionaryId;
         return result;
+    }
+
+    private class InconsistentDataException extends RuntimeException {
+
+        /**
+         * Constructs a {@code InconsistentDataException} with no detail message.
+         */
+        public InconsistentDataException() {
+            super();
+        }
+
+        /**
+         * Constructs a {@code InconsistentDataException} with the specified
+         * detail message.
+         *
+         * @param s the detail message.
+         */
+        public InconsistentDataException(String s) {
+            super(s);
+        }
+
     }
 
 }
