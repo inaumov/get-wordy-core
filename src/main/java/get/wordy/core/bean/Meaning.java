@@ -1,15 +1,26 @@
 package get.wordy.core.bean;
 
+import javax.xml.bind.annotation.*;
+
 /**
  * @since 1.0
  */
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlType(propOrder = {"translation", "synonym", "antonym", "example"})
 public class Meaning {
 
+    @XmlAttribute
     private int id;
+    @XmlElement
     private String translation;
+    @XmlElement
     private String synonym;
+    @XmlElement
     private String antonym;
+    @XmlElement
     private String example;
+    @XmlAttribute(name = "definition-id")
     private int definitionId;
 
     public int getId() {

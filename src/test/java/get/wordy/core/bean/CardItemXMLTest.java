@@ -1,106 +1,82 @@
 package get.wordy.core.bean;
 
-import get.wordy.core.bean.xml.JaxbXMLHelper;
+import get.wordy.core.bean.wrapper.CardStatus;
+import get.wordy.core.bean.wrapper.GramUnit;
+import get.wordy.core.bean.xml.TimestampAdapter;
+import org.custommonkey.xmlunit.XMLTestCase;
 import org.junit.Test;
 
-public class CardItemXMLTest {
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
-	@Test
-    public void testConvertFromXMLToPojo() throws Exception {
-		 This is the sample xml
-		<?xml version="1.0"?>
-		<User>
-	      <id>1234</id>
-	      <name>Stevens</name>
-	      <phone>555555</phone>
+public class CardItemXMLTest extends XMLTestCase {
 
-	      <addresses>
-	      	<address>
-	      	  <type>home</type>
-	      	  <street>park st</street>
-	      	  <city>Edison</city>
-	      	  <state>NJ</state>
-	      	  <zip>76877</zip>
-	        </address>
+    @Test
+    public void testConvertFromPojoToXML() throws Exception {
+        Card card = new Card();
+        card.setId(1234);
+        card.setDictionaryId(5);
+        card.setRating(0);
+        card.setStatus(CardStatus.DEFAULT_STATUS);
+        String insertStr = "2010-07-15 16:16:39";
+        String updateStr = "2010-07-17 13:33:56";
+        DateFormat format = new SimpleDateFormat(TimestampAdapter.DATETIME_PATTERN, Locale.ENGLISH);
+        card.setInsertTime(new Timestamp(format.parse(insertStr).getTime()));
+        card.setUpdateTime(new Timestamp(format.parse(updateStr).getTime()));
+        card.setWordId(1234);
 
-	      	<address>
-	      	  <type>work</type>
-	      	  <street> 100 th st</street>
-	      	  <city>New York</city>
-	      	  <state>NY</state>
-	      	  <zip>10022</zip>
-	      	</address>
+        Word word = new Word(1234, "Apple");
+        word.setTranscription("apple");
+        card.setWord(word);
 
-	      </addresses>
-	    </User>
+        Definition definition = new Definition();
+        definition.setId(4321);
+        definition.setValue("Kind of sweet fruit");
+        definition.setGramUnit(GramUnit.NOUN);
+        definition.setCardId(1234);
+        Meaning meaning = new Meaning();
+        meaning.setId(9999);
+        meaning.setTranslation("");
+        meaning.setSynonym("");
+        meaning.setAntonym("");
+        meaning.setExample("Bad apple rotten apple - a person with a corrupting influence");
+        meaning.setDefinitionId(4321);
+        definition.add(meaning);
+        card.add(definition);
 
+        String cardXML = card.toXml();
+        assertXMLEqual(getSampleXML(), cardXML);
+        //assertXMLEqual(readFile("src/test/resources/Card.xml", StandardCharsets.UTF_8), cardXML);
+    }
 
+    private String getSampleXML() {
+        String xml = "<?xml version=\"1.0\"?>" +
+                "<card id=\"1234\" dictionary-id=\"5\">" +
+                "<word id=\"1234\"><value>Apple</value><transcription>apple</transcription></word>" +
+                "<status>EDIT</status>" +
+                "<rating>0</rating>" +
+                "<insert-time>2010-07-15 16:16:39</insert-time>" +
+                "<update-time>2010-07-17 13:33:56</update-time>" +
+                "<definitions>" +
+                "<definition id=\"4321\" card-id=\"1234\"><gram-unit>NOUN</gram-unit><value>Kind of sweet fruit</value>" +
+                "<meanings>" +
+                "<meaning id=\"9999\" definition-id=\"4321\"><translation></translation><synonym></synonym><antonym></antonym>" +
+                "<example>Bad apple rotten apple - a person with a corrupting influence</example></meaning>" +
+                "</meanings></definition></definitions></card>";
+        return xml;
+    }
 
-		String xml  = getSampleXML();
+    static String readFile(String path, Charset encoding) throws IOException {
+        byte[] encoded = Files.readAllBytes(Paths.get(path));
+        return new String(encoded, encoding).replaceAll("\\r\\n", "");
+    }
 
-		JaxbXMLHelper jaxbHelper = new JaxbXMLHelper();
-		User user = jaxbHelper.convertFromXMLToPojo(xml, User.class);
-
-		log.debug("user name:"+user.getName());
-
-		log.debug("phone:"+user.getPhone());
-
-		for(Address address:user.getAddresses().getAddress()){
-			log.debug("Address type:"+address.getType());
-			log.debug("Address Street:"+address.getStreet());
-			log.debug("Address City:"+address.getCity());
-			log.debug("Address State:"+address.getState());
-			log.debug("Address Zip:"+address.getZip());
-
-		}
-
-	}
-
-	@Test
-	public void testConvertFromPojoToXML() throws Exception {
-
-		User user = new User();
-		user.setUserid("1234");
-		user.setName("Stevens");
-		user.setPhone("5555555");
-
-		Addresses addresses = new Addresses();
-
-		Address homeAddress = new Address();
-		homeAddress.setType("home");
-		homeAddress.setStreet("Park St");
-		homeAddress.setCity("Edison");
-		homeAddress.setState("NJ");
-		homeAddress.setZip("76877");
-
-		Address officeAddress = new Address();
-		officeAddress.setType("work");
-		officeAddress.setStreet("100 th St");
-		officeAddress.setCity("New York");
-		officeAddress.setState("NY");
-		officeAddress.setZip("10022");
-
-		Address[] addrArray = new Address[2];
-		addrArray[0] = homeAddress;
-		addrArray[1] = officeAddress;
-
-		addresses.setAddress(addrArray);
-
-		user.setAddresses(addresses);
-
-		JaxbXMLHelper jaxbHelper = new JaxbXMLHelper();
-		String userXML = jaxbHelper.convertFromPojoToXML(user, User.class);
-
-		log.debug("user xml:"+userXML);
-
-	}
-
-	private String getSampleXML() {
-		String xml = "<?xml version=\"1.0\"?>"
-				+ "<User><id>1234</id>"
-				+ "<name>Stevens</name><phone>555555</phone><addresses><address><type>home</type><street>park st</street>"
-				+ "<city>Edison</city><state>NJ</state><zip>76877</zip></address><address><type>work</type><street> 100 th st</street>"
-				+ "<city>New York</city><state>NY</state><zip>10022</zip></address></addresses></User>";
-		return xml;
-
-	}
+}

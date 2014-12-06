@@ -8,8 +8,8 @@ public class DictionaryXmlTest extends XMLTestCase {
     @Test
     public void testConvertDictionaryToXML() throws Exception {
         Dictionary dictionary = new Dictionary(1234, "Fruits");
-        String myTestXML = dictionary.toXml();
-        assertXMLEqual("Comparing test xml to control xml", getSampleXML(), myTestXML);
+        String dictionaryXML = dictionary.toXml();
+        assertXMLEqual("Comparing test xml to control xml", getSampleXML(), dictionaryXML);
     }
 
     private String getSampleXML() {

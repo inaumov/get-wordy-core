@@ -1,12 +1,21 @@
 package get.wordy.core.bean;
 
+import javax.xml.bind.annotation.*;
+
 /**
  * @since 1.0
  */
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Word {
 
+    @XmlAttribute
     private int id;
+
+    @XmlElement
     private String value;
+
+    @XmlElement
     private String transcription;
 
     public Word() {

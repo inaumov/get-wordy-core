@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<card id="1234" dictionary-id="5">
+    <word id="1234">
+        <value>Apple</value>
+        <transcription>apple</transcription>
+    </word>
+    <status>EDIT</status>
+    <rating>0</rating>
+    <insert-time>2010-07-15 16:16:39</insert-time>
+    <update-time>2010-07-17 13:33:56</update-time>
+    <definitions>
+        <definition id="4321" card-id="1234">
+            <gram-unit>NOUN</gram-unit>
+            <value>Kind of sweet fruit</value>
+            <meanings>
+                <meaning id="9999" definition-id="4321">
+                    <translation></translation>
+                    <synonym></synonym>
+                    <antonym></antonym>
+                    <example>Bad apple rotten apple - a person with a corrupting influence</example>
+                </meaning>
+            </meanings>
+        </definition>
+    </definitions>
+</card>

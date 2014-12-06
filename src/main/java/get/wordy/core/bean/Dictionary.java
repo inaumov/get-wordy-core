@@ -24,20 +24,20 @@ public class Dictionary {
         this.name = name;
     }
 
+    @XmlAttribute
     public int getId() {
         return id;
     }
 
-    @XmlAttribute
     public void setId(int dictionaryId) {
         this.id = dictionaryId;
     }
 
+    @XmlElement
     public String getName() {
         return name;
     }
 
-    @XmlElement
     public void setName(String dictionary) {
         this.name = dictionary;
     }

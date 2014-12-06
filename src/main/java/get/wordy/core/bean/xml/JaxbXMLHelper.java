@@ -19,7 +19,7 @@ public class JaxbXMLHelper {
             Object obj = unmarshaller.unmarshal(source, type).getValue();
             return type.cast(obj);
         } catch (JAXBException e) {
-            throw new RuntimeException("There was a problem creating a JAXBContext for creating the object from XML.");
+            throw new RuntimeException("There was a problem creating a JAXBContext for creating the object from XML.", e);
         }
     }
 
@@ -31,7 +31,7 @@ public class JaxbXMLHelper {
             marshaller.marshal(o, writer);
             return writer.toString();
         } catch (JAXBException e) {
-            throw new RuntimeException("There was a problem creating a JAXBContext for formatting the object to XML.");
+            throw new RuntimeException("There was a problem creating a JAXBContext for formatting the object to XML.", e);
         }
     }
 

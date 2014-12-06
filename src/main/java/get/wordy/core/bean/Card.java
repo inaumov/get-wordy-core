@@ -1,13 +1,20 @@
 package get.wordy.core.bean;
 
 import get.wordy.core.bean.wrapper.CardStatus;
+import get.wordy.core.bean.xml.JaxbXMLHelper;
+import get.wordy.core.bean.xml.TimestampAdapter;
 
+import javax.xml.bind.annotation.*;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.sql.Timestamp;
 import java.util.List;
 
 /**
  * @since 1.0
  */
+
+@XmlRootElement
+@XmlType(propOrder = {"word", "status", "rating", "insertTime", "updateTime", "definitions"})
 public class Card extends ChildrenHolder<Definition> {
 
     private int id;
@@ -19,6 +26,7 @@ public class Card extends ChildrenHolder<Definition> {
     private Timestamp updateTime;
     private Word word;
 
+    @XmlAttribute
     public int getId() {
         return id;
     }
@@ -27,6 +35,7 @@ public class Card extends ChildrenHolder<Definition> {
         this.id = cardId;
     }
 
+    @XmlAttribute(name = "dictionary-id")
     public int getDictionaryId() {
         return dictionaryId;
     }
@@ -35,6 +44,7 @@ public class Card extends ChildrenHolder<Definition> {
         this.dictionaryId = dictionaryId;
     }
 
+    @XmlTransient
     public int getWordId() {
         return wordId;
     }
@@ -43,6 +53,7 @@ public class Card extends ChildrenHolder<Definition> {
         this.wordId = wordId;
     }
 
+    @XmlElement
     public int getRating() {
         return rating;
     }
@@ -51,6 +62,7 @@ public class Card extends ChildrenHolder<Definition> {
         this.rating = rating;
     }
 
+    @XmlElement
     public CardStatus getStatus() {
         return status;
     }
@@ -59,6 +71,8 @@ public class Card extends ChildrenHolder<Definition> {
         this.status = status;
     }
 
+    @XmlElement(name = "insert-time")
+    @XmlJavaTypeAdapter(value = TimestampAdapter.class, type = Timestamp.class)
     public Timestamp getInsertTime() {
         return insertTime;
     }
@@ -67,6 +81,8 @@ public class Card extends ChildrenHolder<Definition> {
         this.insertTime = insertTime;
     }
 
+    @XmlElement(name = "update-time")
+    @XmlJavaTypeAdapter(value = TimestampAdapter.class, type = Timestamp.class)
     public Timestamp getUpdateTime() {
         return updateTime;
     }
@@ -75,6 +91,7 @@ public class Card extends ChildrenHolder<Definition> {
         this.updateTime = updateTime;
     }
 
+    @XmlElement
     public Word getWord() {
         return word;
     }
@@ -86,6 +103,8 @@ public class Card extends ChildrenHolder<Definition> {
         this.word = word;
     }
 
+    @XmlElement(name = "definition")
+    @XmlElementWrapper
     public List<Definition> getDefinitions() {
         return getChildren();
     }
@@ -114,6 +133,10 @@ public class Card extends ChildrenHolder<Definition> {
         result = 31 * result + wordId;
         result = 31 * result + dictionaryId;
         return result;
+    }
+
+    public String toXml() {
+        return new JaxbXMLHelper().convertFromPojoToXML(this, Card.class);
     }
 
     private class InconsistentDataException extends RuntimeException {

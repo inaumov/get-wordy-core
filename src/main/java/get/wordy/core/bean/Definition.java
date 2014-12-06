@@ -2,11 +2,14 @@ package get.wordy.core.bean;
 
 import get.wordy.core.bean.wrapper.GramUnit;
 
+import javax.xml.bind.annotation.*;
 import java.util.List;
 
 /**
  * @since 1.0
  */
+@XmlRootElement
+@XmlType(propOrder = {"gramUnit", "value", "meanings"})
 public class Definition extends ChildrenHolder<Meaning> {
 
     private int id;
@@ -14,6 +17,7 @@ public class Definition extends ChildrenHolder<Meaning> {
     private String value;
     private int cardId;
 
+    @XmlAttribute
     public int getId() {
         return id;
     }
@@ -22,6 +26,7 @@ public class Definition extends ChildrenHolder<Meaning> {
         this.id = definitionId;
     }
 
+    @XmlElement(name = "gram-unit")
     public GramUnit getGramUnit() {
         return gramUnit;
     }
@@ -30,6 +35,7 @@ public class Definition extends ChildrenHolder<Meaning> {
         this.gramUnit = gramUnit;
     }
 
+    @XmlElement
     public String getValue() {
         return value;
     }
@@ -38,6 +44,7 @@ public class Definition extends ChildrenHolder<Meaning> {
         this.value = value;
     }
 
+    @XmlAttribute(name = "card-id")
     public int getCardId() {
         return cardId;
     }
@@ -46,6 +53,8 @@ public class Definition extends ChildrenHolder<Meaning> {
         this.cardId = cardId;
     }
 
+    @XmlElement(name = "meaning")
+    @XmlElementWrapper
     public List<Meaning> getMeanings() {
         return getChildren();
     }
