@@ -8,16 +8,14 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Locale;
 
-public class CardItemXMLTest extends XMLTestCase {
+public class CardXMLTest extends XMLTestCase {
 
     @Test
     public void testConvertFromPojoToXML() throws Exception {
