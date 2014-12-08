@@ -91,7 +91,7 @@ public class Card extends ChildrenHolder<Definition> {
         this.updateTime = updateTime;
     }
 
-    @XmlElement
+    @XmlElement(required = true)
     public Word getWord() {
         return word;
     }
@@ -103,7 +103,7 @@ public class Card extends ChildrenHolder<Definition> {
         this.word = word;
     }
 
-    @XmlElement(name = "definition")
+    @XmlElement(name = "definition", required = false)
     @XmlElementWrapper
     public List<Definition> getDefinitions() {
         return getChildren();
