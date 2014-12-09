@@ -27,6 +27,7 @@ public class JaxbXMLHelper {
         try {
             JAXBContext jaxbContext = JAXBContext.newInstance(type);
             Marshaller marshaller = jaxbContext.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
             StringWriter writer = new StringWriter();
             marshaller.marshal(o, writer);
             return writer.toString();

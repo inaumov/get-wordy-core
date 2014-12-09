@@ -1,9 +1,11 @@
 package get.wordy.core.bean.xml.wrapper;
 
 import get.wordy.core.bean.Dictionary;
+import get.wordy.core.bean.xml.XmlUtil;
 import org.custommonkey.xmlunit.XMLTestCase;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 public class DictionariesXmlTest extends XMLTestCase {
@@ -21,14 +23,8 @@ public class DictionariesXmlTest extends XMLTestCase {
 
         String dictionariesXML = dictionaries.toXml();
 
-        assertXMLEqual("Comparing test xml to control xml", getSampleXML(), dictionariesXML);
-    }
-
-    private String getSampleXML() {
-        return "<?xml version=\"1.0\"?><dictionaries>" +
-                "<dictionary id=\"1234\"><name>Fruits</name></dictionary>" +
-                "<dictionary id=\"5678\"><name>Jobs</name></dictionary>" +
-                "</dictionaries>";
+        String control = XmlUtil.readFile("src/test/resources/Dictionaries.xml", StandardCharsets.UTF_8);
+        assertXMLEqual("Comparing test xml to control xml", control, dictionariesXML);
     }
 
 }
