@@ -316,7 +316,7 @@ public class DictionaryServiceTest extends TestCase {
         expect(wordMock.getValue()).andReturn("word");
         expect(wordMock.getId()).andReturn(1).times(2);
 
-        cardMock.setId(anyInt());
+        cardMock.setWordId(anyInt());
         expectLastCall();
         cardMock.setDictionaryId(anyInt());
         expectLastCall();

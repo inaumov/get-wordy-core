@@ -217,7 +217,7 @@ public class DictionaryService implements IDictionaryService {
 
             wordDao.insert(word);
 
-            card.setId(word.getId());
+            card.setWordId(word.getId());
             card.setDictionaryId(findDictionary(dictionaryName).getId());
             cardDao.insert(card);
 
