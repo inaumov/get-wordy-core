@@ -83,7 +83,7 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean createDictionary(String dictionaryName) {
+    public Dictionary createDictionary(String dictionaryName) {
         Dictionary dictionary = new Dictionary();
         dictionary.setName(dictionaryName);
         try {
@@ -94,11 +94,11 @@ public class DictionaryService implements IDictionaryService {
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while creating name", e);
             connection.rollback();
-            return false;
+            return null;
         } finally {
             connection.close();
         }
-        return true;
+        return dictionary;
     }
 
     @Override
@@ -150,7 +150,7 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public Map<String, Card> getCards(String dictionaryName) {
-        List<get.wordy.core.bean.Card> cardList;
+        List<Card> cardList;
         List<Word> wordList;
         try {
             connection.open();
@@ -171,14 +171,16 @@ public class DictionaryService implements IDictionaryService {
 
         HashMap<String, Card> cardsMap = new HashMap<String, Card>();
 
-        Iterator<get.wordy.core.bean.Card> cardIterator = cardList.iterator();
+        Iterator<Card> cardIterator = cardList.iterator();
         while (cardIterator.hasNext()) {
-            get.wordy.core.bean.Card card = cardIterator.next();
+            Card card = cardIterator.next();
             Word word = findWord(card.getWordId(), wordList, c);
             card.setWord(word);
             cardsMap.put(word.getValue(), card);
         }
-        cardsCache.putAll(cardsMap);
+
+        cardsCache.clear();
+        cardsCache = cardsMap;
 
         return cardsMap;
     }

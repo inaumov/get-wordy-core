@@ -119,7 +119,7 @@ public class DictionaryServiceTest extends TestCase {
 
         replay(dictionaryDaoMock, dictionaryListMock);
 
-        boolean done = dictionaryService.createDictionary(DICTIONARY_NAME);
+        boolean done = dictionaryService.createDictionary(DICTIONARY_NAME) != null;
         assertTrue(done);
         assertEquals(DICTIONARY_NAME, dictionaryCapture.getValue().getName());
         verify(dictionaryDaoMock, dictionaryListMock);
@@ -142,8 +142,8 @@ public class DictionaryServiceTest extends TestCase {
 
         replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.createDictionary(DICTIONARY_NAME);
-        assertFalse(done);
+        boolean exceptionHappened = dictionaryService.createDictionary(DICTIONARY_NAME) == null;
+        assertTrue(exceptionHappened);
         assertEquals(DICTIONARY_NAME, dictionaryCapture.getValue().getName());
         verify(dictionaryDaoMock);
     }

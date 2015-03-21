@@ -11,7 +11,7 @@ public interface IDictionaryService {
 
     List<Dictionary> getDictionaries();
 
-    boolean createDictionary(final String dictionaryName);
+    Dictionary createDictionary(final String dictionaryName);
 
     boolean removeDictionary(final String dictionaryName);
 

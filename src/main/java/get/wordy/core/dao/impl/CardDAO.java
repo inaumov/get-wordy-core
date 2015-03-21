@@ -16,8 +16,7 @@ import get.wordy.core.db.CloseUtils;
 import get.wordy.core.wrapper.Score;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class CardDao extends BaseDao implements ICardDao, ColumnNames, TableNames {
 
@@ -59,6 +58,7 @@ public class CardDao extends BaseDao implements ICardDao, ColumnNames, TableName
                 int cardId = resultSet.getInt(1);
                 insertDefinitions(cardId, card.getDefinitions());
                 card.setId(cardId);
+                card.setInsertTime(new Timestamp(new java.util.Date().getTime()));
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while inserting card entity", ex);
