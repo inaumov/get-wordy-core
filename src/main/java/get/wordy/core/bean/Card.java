@@ -7,7 +7,7 @@ import get.wordy.core.bean.xml.TimestampAdapter;
 import javax.xml.bind.annotation.*;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.sql.Timestamp;
-import java.util.List;
+import java.util.*;
 
 /**
  * @since 1.0
@@ -114,17 +114,15 @@ public class Card extends ChildrenHolder<Definition> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Card card = (Card) o;
+        Card that = (Card) o;
 
-        if (id != card.id) return false;
-        if (wordId != card.wordId) return false;
-        if (dictionaryId != card.dictionaryId) return false;
-        if (status != card.status) return false;
-        if (rating != card.rating) return false;
-        if (!insertTime.equals(card.insertTime)) return false;
-        if (!updateTime.equals(card.updateTime)) return false;
-
-        return true;
+        return Objects.equals(this.id, that.id)
+                && Objects.equals(this.wordId, that.wordId)
+                && Objects.equals(this.dictionaryId, that.dictionaryId)
+                && Objects.equals(this.status, that.status)
+                && Objects.equals(this.rating, that.rating)
+                && Objects.equals(this.insertTime, that.insertTime)
+                && Objects.equals(this.updateTime, that.updateTime);
     }
 
     @Override
@@ -133,6 +131,24 @@ public class Card extends ChildrenHolder<Definition> {
         result = 31 * result + wordId;
         result = 31 * result + dictionaryId;
         return result;
+    }
+
+    @Override
+    public Card clone() {
+        Card clone;
+        try {
+            clone = (Card) super.clone();
+            clone.setWord(word.clone());
+            Iterator<Definition> iterator = getDefinitions().iterator();
+            List<Definition> definitions = clone.getDefinitions();
+            definitions.clear();
+            while (iterator.hasNext()) {
+                definitions.add(iterator.next().clone());
+            }
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+        return clone;
     }
 
     public String toXml() {

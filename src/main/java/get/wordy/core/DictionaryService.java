@@ -300,7 +300,7 @@ public class DictionaryService implements IDictionaryService {
         } finally {
             connection.close();
         }
-        return card;
+        return card.clone();
     }
 
     // status section

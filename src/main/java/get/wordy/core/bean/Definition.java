@@ -3,7 +3,10 @@ package get.wordy.core.bean;
 import get.wordy.core.bean.wrapper.GramUnit;
 
 import javax.xml.bind.annotation.*;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @since 1.0
@@ -57,6 +60,45 @@ public class Definition extends ChildrenHolder<Meaning> {
     @XmlElementWrapper
     public List<Meaning> getMeanings() {
         return getChildren();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Definition that = (Definition) o;
+
+        return Objects.equals(this.cardId, that.cardId)
+                && Objects.equals(this.id, that.id)
+                && Objects.equals(this.gramUnit, that.gramUnit)
+                && Objects.equals(this.value, that.value);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id;
+        result = 31 * result + Objects.hashCode(gramUnit);
+        result = 31 * result + Objects.hashCode(value);
+        result = 31 * result + cardId;
+        return result;
+    }
+
+    @Override
+    protected Definition clone() {
+        Definition clone;
+        try {
+            clone = (Definition) super.clone();
+            Iterator<Meaning> iterator = getMeanings().iterator();
+            List<Meaning> meanings = clone.getMeanings();
+            meanings.clear();
+            while (iterator.hasNext()) {
+                meanings.add(iterator.next().clone());
+            }
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+        return clone;
     }
 
 }

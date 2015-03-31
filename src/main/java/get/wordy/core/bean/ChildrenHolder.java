@@ -3,9 +3,9 @@ package get.wordy.core.bean;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class ChildrenHolder<T> {
+public abstract class ChildrenHolder<T extends Cloneable> implements Cloneable {
 
-    private List<T> childrenList = new ArrayList<>();
+    private ArrayList<T> childrenList = new ArrayList<>();
 
     public void add(T child) {
         childrenList.add(child);
@@ -18,6 +18,13 @@ public abstract class ChildrenHolder<T> {
 
     public List<T> getChildren() {
         return childrenList;
+    }
+
+    @Override
+    protected ChildrenHolder clone() throws CloneNotSupportedException {
+        ChildrenHolder clone = (ChildrenHolder) super.clone();
+        clone.childrenList = (ArrayList) this.childrenList.clone();
+        return clone;
     }
 
 }

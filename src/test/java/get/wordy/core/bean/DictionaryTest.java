@@ -6,7 +6,7 @@ import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 
-public class DictionaryXmlTest extends XMLTestCase {
+public class DictionaryTest extends XMLTestCase {
 
     @Test
     public void testConvertDictionaryToXML() throws Exception {

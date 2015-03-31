@@ -10,13 +10,56 @@ import org.junit.Test;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Iterator;
 import java.util.Locale;
 
-public class CardXMLTest extends XMLTestCase {
+public class CardTest extends XMLTestCase {
 
     @Test
     public void testConvertFromPojoToXML() throws Exception {
+
+        Card card = prepareCard();
+
+        String cardXML = card.toXml();
+        String control = XmlUtil.readFile("src/test/resources/Card.xml", StandardCharsets.UTF_8);
+        assertXMLEqual("Comparing test xml to control xml", control, cardXML);
+    }
+
+    @Test
+    public void testCloneCard() throws Exception {
+
+        Card card = prepareCard();
+        Card cardClone = card.clone();
+
+        assertNotNull(cardClone);
+
+        assertEquals(card, cardClone);
+        assertNotSame(card, cardClone);
+
+        assertEquals(card.getWord(), cardClone.getWord());
+        assertNotSame(card.getWord(), cardClone.getWord());
+
+        assertEquals(card.getDefinitions(), cardClone.getDefinitions());
+        Iterator<Definition> definitionIterator = cardClone.getDefinitions().iterator();
+        for (Definition definition : card.getDefinitions()) {
+            Definition definitionClone = definitionIterator.next();
+            assertEquals(definition, definitionClone);
+            assertNotSame(definition, definitionClone);
+
+            assertEquals(definition.getMeanings(), definitionClone.getMeanings());
+            Iterator<Meaning> meaningIterator = definitionClone.getMeanings().iterator();
+            for (Meaning meaning : definition.getMeanings()) {
+                Meaning meaningClone = meaningIterator.next();
+                assertEquals(meaning, meaningClone);
+                assertNotSame(meaning, meaningClone);
+            }
+        }
+    }
+
+    private Card prepareCard() throws ParseException {
+
         Card card = new Card();
         card.setId(1234);
         card.setDictionaryId(5);
@@ -48,9 +91,6 @@ public class CardXMLTest extends XMLTestCase {
         definition.add(meaning);
         card.add(definition);
 
-        String cardXML = card.toXml();
-        String control = XmlUtil.readFile("src/test/resources/Card.xml", StandardCharsets.UTF_8);
-        assertXMLEqual("Comparing test xml to control xml", control, cardXML);
+        return card;
     }
-
 }

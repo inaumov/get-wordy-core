@@ -1,6 +1,7 @@
 package get.wordy.core.bean;
 
 import javax.xml.bind.annotation.*;
+import java.util.Objects;
 
 /**
  * @since 1.0
@@ -8,7 +9,7 @@ import javax.xml.bind.annotation.*;
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(propOrder = {"translation", "synonym", "antonym", "example"})
-public class Meaning {
+public class Meaning implements Cloneable {
 
     @XmlAttribute
     private int id;
@@ -69,6 +70,41 @@ public class Meaning {
 
     public void setDefinitionId(int definitionId) {
         this.definitionId = definitionId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Meaning that = (Meaning) o;
+
+        return Objects.equals(this.definitionId, that.definitionId)
+                && Objects.equals(this.id, that.id)
+                && Objects.equals(this.antonym, that.antonym)
+                && Objects.equals(this.example, that.example)
+                && Objects.equals(this.synonym, that.synonym)
+                && Objects.equals(this.translation, that.translation);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id;
+        result = 31 * result + Objects.hashCode(translation);
+        result = 31 * result + Objects.hashCode(synonym);
+        result = 31 * result + Objects.hashCode(antonym);
+        result = 31 * result + Objects.hashCode(example);
+        result = 31 * result + definitionId;
+        return result;
+    }
+
+    @Override
+    protected Meaning clone() {
+        try {
+            return (Meaning) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

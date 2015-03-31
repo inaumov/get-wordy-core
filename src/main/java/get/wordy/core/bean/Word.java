@@ -1,13 +1,14 @@
 package get.wordy.core.bean;
 
 import javax.xml.bind.annotation.*;
+import java.util.Objects;
 
 /**
  * @since 1.0
  */
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
-public class Word {
+public class Word implements Cloneable {
 
     @XmlAttribute
     private int id;
@@ -55,21 +56,28 @@ public class Word {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Word obj = (Word) o;
+        Word that = (Word) o;
 
-        if (id != obj.id) return false;
-        if (!value.equals(obj.value)) return false;
-        if (!transcription.equals(obj.transcription)) return false;
-
-        return true;
+        return Objects.equals(this.id, that.id)
+                && Objects.equals(this.value, that.value)
+                && Objects.equals(this.transcription, that.transcription);
     }
 
     @Override
     public int hashCode() {
         int result = id;
-        result = 31 * result + value.hashCode();
-        result = 31 * result + transcription.hashCode();
+        result = 31 * result + Objects.hashCode(value);
+        result = 31 * result + Objects.hashCode(transcription);
         return result;
+    }
+
+    @Override
+    protected Word clone() {
+        try {
+            return (Word) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }
