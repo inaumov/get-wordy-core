@@ -15,7 +15,7 @@ import java.util.*;
 
 @XmlRootElement
 @XmlType(propOrder = {"word", "status", "rating", "insertTime", "updateTime", "definitions"})
-public class Card extends ChildrenHolder<Definition> {
+public class Card extends Parent<Definition> {
 
     private int id;
     private int dictionaryId;
@@ -109,6 +109,10 @@ public class Card extends ChildrenHolder<Definition> {
         return getChildren();
     }
 
+    public void removeAllDefinitions() {
+        children.clear();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -122,7 +126,8 @@ public class Card extends ChildrenHolder<Definition> {
                 && Objects.equals(this.status, that.status)
                 && Objects.equals(this.rating, that.rating)
                 && Objects.equals(this.insertTime, that.insertTime)
-                && Objects.equals(this.updateTime, that.updateTime);
+                && Objects.equals(this.updateTime, that.updateTime)
+                && Objects.deepEquals(this.getChildren(), that.getChildren());
     }
 
     @Override
@@ -140,7 +145,7 @@ public class Card extends ChildrenHolder<Definition> {
             clone = (Card) super.clone();
             clone.setWord(word.clone());
             Iterator<Definition> iterator = getDefinitions().iterator();
-            clone.childrenList.clear();
+            clone.children.clear();
             while (iterator.hasNext()) {
                 clone.add(iterator.next().clone());
             }

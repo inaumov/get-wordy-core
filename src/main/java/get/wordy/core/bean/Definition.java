@@ -10,7 +10,7 @@ import java.util.*;
  */
 @XmlRootElement
 @XmlType(propOrder = {"gramUnit", "value", "meanings"})
-public class Definition extends ChildrenHolder<Meaning> {
+public class Definition extends Parent<Meaning> {
 
     private int id;
     private GramUnit gramUnit;
@@ -69,7 +69,8 @@ public class Definition extends ChildrenHolder<Meaning> {
         return Objects.equals(this.cardId, that.cardId)
                 && Objects.equals(this.id, that.id)
                 && Objects.equals(this.gramUnit, that.gramUnit)
-                && Objects.equals(this.value, that.value);
+                && Objects.equals(this.value, that.value)
+                && Objects.deepEquals(this.getChildren(), that.getChildren());
     }
 
     @Override
@@ -87,7 +88,7 @@ public class Definition extends ChildrenHolder<Meaning> {
         try {
             clone = (Definition) super.clone();
             Iterator<Meaning> iterator = getMeanings().iterator();
-            clone.childrenList.clear();
+            clone.children.clear();
             while (iterator.hasNext()) {
                 clone.add(iterator.next().clone());
             }
