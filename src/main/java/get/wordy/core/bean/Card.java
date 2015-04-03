@@ -140,10 +140,9 @@ public class Card extends ChildrenHolder<Definition> {
             clone = (Card) super.clone();
             clone.setWord(word.clone());
             Iterator<Definition> iterator = getDefinitions().iterator();
-            List<Definition> definitions = clone.getDefinitions();
-            definitions.clear();
+            clone.childrenList.clear();
             while (iterator.hasNext()) {
-                definitions.add(iterator.next().clone());
+                clone.add(iterator.next().clone());
             }
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);

@@ -3,10 +3,7 @@ package get.wordy.core.bean;
 import get.wordy.core.bean.wrapper.GramUnit;
 
 import javax.xml.bind.annotation.*;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @since 1.0
@@ -90,10 +87,9 @@ public class Definition extends ChildrenHolder<Meaning> {
         try {
             clone = (Definition) super.clone();
             Iterator<Meaning> iterator = getMeanings().iterator();
-            List<Meaning> meanings = clone.getMeanings();
-            meanings.clear();
+            clone.childrenList.clear();
             while (iterator.hasNext()) {
-                meanings.add(iterator.next().clone());
+                clone.add(iterator.next().clone());
             }
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
