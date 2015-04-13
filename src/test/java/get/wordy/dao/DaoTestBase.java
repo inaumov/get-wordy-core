@@ -53,49 +53,46 @@ public class DaoTestBase extends TestCase {
         connect.close();
     }
 
-    public static List<Card> getCards(Predefined predefined, int numberToGenerate) {
-        int size = predefined.getCardsNumber();
-        Card[] cards = new Card[numberToGenerate];
-        for (int i = 0, id = 1; i < numberToGenerate; i++, id++) {
+    public static List<Card> generateCards(Predefined predefined, int numberOf) {
+        Card[] cards = new Card[numberOf];
+        for (int i = 0, id = 1; i < numberOf; i++, id++) {
             Card card = new Card();
-            card.setId(id + size);
+            int nextCardId = predefined.nextCardId();
+            card.setId(nextCardId);
             card.setWordId(id);
             card.setDictionaryId(id);
             card.setRating(10 * i);
             card.setStatus(CardStatus.elementAt(i));
-            for (int definitionIndex = 1; definitionIndex <= GramUnit.count() + 1; definitionIndex++) {
-                card.add(prepareDefinition(i, card.getId(), predefined, definitionIndex));
+            for (int definitionIndex = 0; definitionIndex < GramUnit.count(); definitionIndex++) {
+                card.add(prepareDefinition(predefined, card.getId(), definitionIndex));
             }
             cards[i] = card;
         }
         return Arrays.asList(cards);
     }
 
-    private static Definition prepareDefinition(int i, int cardId, Predefined predefined, int index) {
-        int c = 97 + i;
-        String d = "definition_" + String.valueOf((char) c);
+    private static Definition prepareDefinition(Predefined predefined, int cardId, int definitionIndex) {
         Definition definition = new Definition();
-        definition.setId(predefined.getDefinitionsNumber() + (i * (GramUnit.count() + 1)) + index);
+        int nextDefinitionId = predefined.nextDefinitionId();
+        definition.setId(nextDefinitionId);
+        String d = "definition_" + nextDefinitionId;
         definition.setValue(d);
-        definition.setGramUnit(GramUnit.elementAt(index));
+        definition.setGramUnit(GramUnit.elementAt(definitionIndex));
         definition.setCardId(cardId);
-        for (int meaningIndex = 1; meaningIndex <= GramUnit.count() + 1; meaningIndex++) {
-            definition.add(prepareMeaning(i, definition.getId(), predefined, meaningIndex));
+        for (int meaningIndex = 0; meaningIndex < GramUnit.count(); meaningIndex++) {
+            definition.add(prepareMeaning(predefined, definition.getId()));
         }
         return definition;
     }
 
-    private static Meaning prepareMeaning(int i, int definitionId, Predefined predefined, int index) {
-        int c = 97 + i;
-        String add = "meaning_";
-        String t = add + String.valueOf((char) (c++));
-        String s = add + String.valueOf((char) (c++));
-        String a = add + String.valueOf((char) (c++));
-        String e = add + String.valueOf((char) (c++));
-
+    private static Meaning prepareMeaning(Predefined predefined, int definitionId) {
         Meaning meaning = new Meaning();
-        int v = GramUnit.count() + 1;
-        meaning.setId(predefined.getMeaningNumber() + (i * v) + index * v);
+        int nextMeaningId = predefined.nextMeaningId();
+        meaning.setId(nextMeaningId);
+        String t = "translation_" + nextMeaningId;
+        String s = "synonym_" + nextMeaningId;
+        String a = "antonym_" + nextMeaningId;
+        String e = "example_" + nextMeaningId;
         meaning.setTranslation(t);
         meaning.setSynonym(s);
         meaning.setAntonym(a);
@@ -110,22 +107,32 @@ public class DaoTestBase extends TestCase {
         int definitionsNumber;
         int meaningNumber;
 
+        private int cardTestIndex;
+        private int definitionTestIndex;
+        private int meaningTestIndex;
+
+        Predefined() {
+        }
+
         Predefined(int cardsNumber, int definitionsNumber, int meaningNumber) {
             this.cardsNumber = cardsNumber;
             this.definitionsNumber = definitionsNumber;
             this.meaningNumber = meaningNumber;
         }
 
-        public int getCardsNumber() {
-            return cardsNumber;
+        public int nextCardId() {
+            cardTestIndex++;
+            return cardsNumber + cardTestIndex;
         }
 
-        public int getDefinitionsNumber() {
-            return definitionsNumber;
+        public int nextDefinitionId() {
+            definitionTestIndex++;
+            return definitionsNumber + definitionTestIndex;
         }
 
-        public int getMeaningNumber() {
-            return meaningNumber;
+        public int nextMeaningId() {
+            meaningTestIndex++;
+            return meaningNumber + meaningTestIndex;
         }
     }
 

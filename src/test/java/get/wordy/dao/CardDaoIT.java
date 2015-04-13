@@ -61,13 +61,21 @@ public class CardDaoIT extends DaoTestBase {
                 }
                 newCard.add(newDefinition);
             }
+
             // insert
             cardDao.insert(newCard);
+
             // assert
             List<Card> cards = cardDao.selectCardsForDictionary(getDictionary(expected.getDictionaryId()));
             assertNotNull(cards);
             assertEquals(2, cards.size());
-            assertCard(expected, cards.get(1));
+            Card actual = cards.get(1);
+            assertNotNull(actual);
+            assertEquals(expected.getId(), actual.getId());
+            assertEquals(expected.getWordId(), actual.getWordId());
+            assertEquals(expected.getDictionaryId(), actual.getDictionaryId());
+            assertEquals(expected.getStatus(), actual.getStatus());
+            assertDefinitions(expected.getDefinitions(), cardDao.getDefinitionsFor(actual));
         }
     }
 
@@ -84,7 +92,7 @@ public class CardDaoIT extends DaoTestBase {
             updatedCard.setRating(expected.getRating());
             cardDao.update(updatedCard);
 
-            assertPredefinedCards(cardDao, true);
+            assertPredefinedCards(cardDao, new Predefined(), true);
             List<Card> cards = cardDao.selectCardsForDictionary(getDictionary(expected.getDictionaryId()));
             Card card;
             switch (expected.getDictionaryId()) {
@@ -125,7 +133,7 @@ public class CardDaoIT extends DaoTestBase {
 
     @Test
     public void testSelectAllFor() throws DaoException {
-        assertPredefinedCards(cardDao);
+        assertPredefinedCards(cardDao, new Predefined(), false);
     }
 
     @Test
@@ -222,85 +230,74 @@ public class CardDaoIT extends DaoTestBase {
 
     private Iterator<Card> getTestCardsIterator() {
         Predefined predefined = new Predefined(PREDEFINED_CARDS_CNT, PREDEFINED_DEFINITIONS_CNT, PREDEFINED_MEANINGS_CNT);
-        return getCards(predefined, 5).iterator();
+        return generateCards(predefined, 5).iterator();
     }
 
     private static Dictionary getDictionary(int dictionaryId) {
         return new Dictionary(dictionaryId, "");
     }
 
-    private static void assertPredefinedCards(ICardDao cardDao) throws DaoException {
-        assertPredefinedCards(cardDao, false);
-    }
-
-    private static void assertPredefinedCards(ICardDao cardDao, boolean skipLast) throws DaoException {
+    private static void assertPredefinedCards(ICardDao cardDao, Predefined predefined, boolean skipLast) throws DaoException {
         int cnt = skipLast ? PREDEFINED_CARDS_CNT - 1 : PREDEFINED_CARDS_CNT;
-        for (int id = 1; id <= cnt; id++) {
-            Card card = cardDao.selectCardsForDictionary(getDictionary(id)).iterator().next();
+        for (int i = 0; i < cnt; i++) {
+            int nextCardId = predefined.nextCardId();
+            Card card = cardDao.selectCardsForDictionary(getDictionary(nextCardId)).iterator().next();
             assertNotNull(card);
-            assertEquals(id, card.getId());
-            assertEquals(id, card.getWordId());
-            assertEquals(id, card.getDictionaryId());
+            assertEquals(nextCardId, card.getId());
+            assertEquals(nextCardId, card.getWordId());
+            assertEquals(nextCardId, card.getDictionaryId());
             assertEquals(CardStatus.EDIT, card.getStatus());
-            for (int definitionId = 1; definitionId <= card.getDefinitions().size(); definitionId++) {
-                Definition definition = card.getDefinitions().get(definitionId - 1);
-                assertEquals(definitionId, definition.getId());
-                assertEquals("definition" + definitionId, definition.getValue());
+            List<Definition> definitions = cardDao.getDefinitionsFor(card);
+            for (int defIndex = 0; defIndex < definitions.size(); defIndex++) {
+                Definition definition = definitions.get(defIndex);
+                int nextDefinitionId = predefined.nextDefinitionId();
+                assertEquals(nextDefinitionId, definition.getId());
+                assertEquals("definition" + nextDefinitionId, definition.getValue());
                 assertEquals(GramUnit.NOUN, definition.getGramUnit());
-                assertEquals(id, definition.getCardId());
-                for (int meaningId = 1; meaningId <= definition.getMeanings().size(); meaningId++) {
-                    Meaning meaning = definition.getMeanings().get(meaningId - 1);
-                    assertEquals(meaningId, meaning.getId());
-                    assertEquals("translation" + meaningId, meaning.getTranslation());
-                    assertEquals("synonym" + meaningId, meaning.getSynonym());
-                    assertEquals("antonym" + meaningId, meaning.getAntonym());
-                    assertEquals("example" + meaningId, meaning.getExample());
-                    assertEquals(meaningId, meaning.getDefinitionId());
+                assertEquals(nextCardId, definition.getCardId());
+                for (int meaningIndex = 0; meaningIndex < definition.getMeanings().size(); meaningIndex++) {
+                    Meaning meaning = definition.getMeanings().get(meaningIndex);
+                    int nextMeaningId = predefined.nextMeaningId();
+                    assertEquals(nextMeaningId, meaning.getId());
+                    assertEquals("translation" + nextMeaningId, meaning.getTranslation());
+                    assertEquals("synonym" + nextMeaningId, meaning.getSynonym());
+                    assertEquals("antonym" + nextMeaningId, meaning.getAntonym());
+                    assertEquals("example" + nextMeaningId, meaning.getExample());
+                    assertEquals(nextMeaningId, meaning.getDefinitionId());
                 }
             }
         }
     }
 
-    private static void assertCard(Card expected, Card actual) throws DaoException {
-        assertNotNull(actual);
+    private static void assertDefinitions(List<Definition> expectedDefinitions, List<Definition> actualDefinitions) throws DaoException {
+        assertNotNull(actualDefinitions);
+        assertEquals(GramUnit.count(), actualDefinitions.size());
 
-        assertEquals(expected.getId(), actual.getId());
-        assertEquals(expected.getWordId(), actual.getWordId());
-        assertEquals(expected.getDictionaryId(), actual.getDictionaryId());
-        assertEquals(expected.getStatus(), actual.getStatus());
+        for (int i = 0; i < expectedDefinitions.size(); i++) {
+            Definition expected = expectedDefinitions.get(i);
+            Definition actual = actualDefinitions.get(i);
+            assertEquals(expected.getId(), actual.getId());
+            assertEquals(expected.getValue(), actual.getValue());
+            assertEquals(expected.getGramUnit(), actual.getGramUnit());
+            assertEquals(expected.getCardId(), actual.getCardId());
 
-        assertDefinitions(expected.getDefinitions(), expected.getDefinitions());
-    }
-
-    private static void assertDefinitions(List<Definition> expected, List<Definition> actual) throws DaoException {
-        assertNotNull(actual);
-        assertEquals(GramUnit.count() + 1, actual.size());
-
-        for (int definitionId = 1; definitionId <= expected.size(); definitionId++) {
-            Definition expectedDefinition = expected.get(definitionId - 1);
-            Definition actualDefinition = actual.get(definitionId - 1);
-            assertEquals(expectedDefinition.getId(), actualDefinition.getId());
-            assertEquals(expectedDefinition.getValue(), actualDefinition.getValue());
-            assertEquals(expectedDefinition.getGramUnit(), actualDefinition.getGramUnit());
-            assertEquals(expectedDefinition.getCardId(), actualDefinition.getCardId());
-
-            assertMeanings(expectedDefinition.getMeanings(), actualDefinition.getMeanings());
+            assertMeanings(expected.getMeanings(), actual.getMeanings());
         }
     }
 
-    private static void assertMeanings(List<Meaning> expected, List<Meaning> actual) throws DaoException {
-        assertNotNull(actual);
-        assertEquals(GramUnit.count() + 1, actual.size());
+    private static void assertMeanings(List<Meaning> meaningsExpected, List<Meaning> meaningsActual) throws DaoException {
+        assertNotNull(meaningsActual);
+        assertEquals(GramUnit.count(), meaningsActual.size());
 
-        for (int meaningId = 1; meaningId <= expected.size(); meaningId++) {
-            Meaning expectedMeaning = expected.get(meaningId - 1);
-            Meaning actualMeaning = actual.get(meaningId - 1);
-            assertEquals(expectedMeaning.getId(), actualMeaning.getId());
-            assertEquals(expectedMeaning.getTranslation(), actualMeaning.getTranslation());
-            assertEquals(expectedMeaning.getSynonym(), actualMeaning.getSynonym());
-            assertEquals(expectedMeaning.getAntonym(), actualMeaning.getAntonym());
-            assertEquals(expectedMeaning.getExample(), actualMeaning.getExample());
-            assertEquals(expectedMeaning.getDefinitionId(), actualMeaning.getDefinitionId());
+        for (int i = 0; i < meaningsExpected.size(); i++) {
+            Meaning expected = meaningsExpected.get(i);
+            Meaning actual = meaningsActual.get(i);
+            assertEquals(expected.getId(), actual.getId());
+            assertEquals(expected.getTranslation(), actual.getTranslation());
+            assertEquals(expected.getSynonym(), actual.getSynonym());
+            assertEquals(expected.getAntonym(), actual.getAntonym());
+            assertEquals(expected.getExample(), actual.getExample());
+            assertEquals(expected.getDefinitionId(), actual.getDefinitionId());
         }
     }
 
