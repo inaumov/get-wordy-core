@@ -238,22 +238,26 @@ public class DictionaryService implements IDictionaryService {
     private boolean updateCard(Card card, String dictionaryName) {
         Card oldCard = findCardById(card.getId());
 
-        Word word = card.getWord();
+        if (card.equals(oldCard)) {
+            return false;
+        }
+
         try {
             connection.open();
 
+            Word word = card.getWord();
             if (!word.equals(oldCard.getWord())) {
                 wordDao.update(word);
             }
 
             card.setDictionaryId(findDictionary(dictionaryName).getId());
-            if (!card.equals(oldCard)) {
-                cardDao.update(card);
-            }
+            cardDao.update(card);
 
             connection.commit();
+
             cardsCache.remove(oldCard.getWord().getValue());
             cardsCache.put(word.getValue(), card);
+
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while updating card", e);
             connection.rollback();
@@ -290,8 +294,10 @@ public class DictionaryService implements IDictionaryService {
         Card card = findCardByWord(word);
         try {
             connection.open();
-            List<Definition> definitions = cardDao.getDefinitionsFor(card);
-            card.addAll(definitions);
+            if (card.getDefinitions().isEmpty()) {
+                List<Definition> definitions = cardDao.getDefinitionsFor(card);
+                card.addAll(definitions);
+            }
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while loading card", e);
             return null;
