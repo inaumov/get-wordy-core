@@ -429,4 +429,22 @@ public class DictionaryService implements IDictionaryService {
         return null;
     }
 
+    @Override
+    public boolean generateCards(Set<String> words) {
+        boolean done = false;
+        int defaultId = findDictionary("Default").getId();
+        try {
+            connection.open();
+            Set<Integer> generatedIds = wordDao.generate(words);
+            done = cardDao.generateCardsWithoutDefinitions(generatedIds, defaultId, CardStatus.EDIT);
+            connection.commit();
+        } catch (DaoException e) {
+            LOG.log(Level.WARNING, "Error while generating cards without definitions", e);
+            connection.rollback();
+        } finally {
+            connection.close();
+        }
+        return done;
+    }
+
 }

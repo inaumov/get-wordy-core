@@ -67,6 +67,38 @@ public class CardDao extends BaseDao implements ICardDao, ColumnNames, TableName
         }
     }
 
+    @Override
+    public boolean generateCardsWithoutDefinitions(Set<Integer> wordIds, int dictionaryId, CardStatus status) throws DaoException {
+
+        StringBuilder query = new StringBuilder();
+        query.append("INSERT INTO ");
+        query.append(TBL_CARD);
+        query.append("(");
+        query.append(STATUS);
+        query.append(",");
+        query.append(UPDATE_TIME);
+        query.append(",");
+        query.append(DIC_ID);
+        query.append(",");
+        query.append(WORD_ID);
+        query.append(")VALUES(?,NOW(),?,?)");
+
+        ResultSet resultSet = null;
+        try (PreparedStatement statement = prepareInsert(query.toString())) {
+            for (Integer wordId : wordIds) {
+                statement.setString(1, status != null ? status.name() : null);
+                statement.setInt(2, dictionaryId);
+                statement.setInt(3, wordId);
+                statement.addBatch();
+            }
+            return statement.executeBatch().length == wordIds.size();
+        } catch (SQLException ex) {
+            throw new DaoException("Error while generating card entity", ex);
+        } finally {
+            CloseUtils.closeQuietly(resultSet);
+        }
+    }
+
     private void insertDefinitions(int cardId, List<Definition> definitions) throws DaoException {
         for (Definition definition : definitions) {
             insertDefinition(cardId, definition);

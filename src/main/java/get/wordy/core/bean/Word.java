@@ -27,6 +27,11 @@ public class Word implements Cloneable {
         this.value = value;
     }
 
+    public Word(int id, String value, String transcription) {
+        this(id, value);
+        this.transcription = transcription;
+    }
+
     public int getId() {
         return id;
     }

@@ -12,15 +12,14 @@ import get.wordy.core.bean.wrapper.CardStatus;
 import get.wordy.core.bean.wrapper.GramUnit;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class CardDaoIT extends DaoTestBase {
 
     private static final int PREDEFINED_CARDS_CNT = 5;
     private static final int PREDEFINED_DEFINITIONS_CNT = 5;
     private static final int PREDEFINED_MEANINGS_CNT = 5;
+    private static final int EXPECTED_NEW_ID = 6;
     private static final int DEFAULT_RATING = 50;
 
     private ICardDao cardDao;
@@ -71,7 +70,7 @@ public class CardDaoIT extends DaoTestBase {
             assertEquals(2, cards.size());
             Card actual = cards.get(1);
             assertNotNull(actual);
-            assertEquals(expected.getId(), actual.getId());
+            assertTrue(actual.getId() >= EXPECTED_NEW_ID);
             assertEquals(expected.getWordId(), actual.getWordId());
             assertEquals(expected.getDictionaryId(), actual.getDictionaryId());
             assertEquals(expected.getStatus(), actual.getStatus());
@@ -276,7 +275,8 @@ public class CardDaoIT extends DaoTestBase {
         for (int i = 0; i < expectedDefinitions.size(); i++) {
             Definition expected = expectedDefinitions.get(i);
             Definition actual = actualDefinitions.get(i);
-            assertEquals(expected.getId(), actual.getId());
+            // actual id may be equal or bigger then expected. it depends on test method order execution
+            assertTrue(expected.getId() <= actual.getId());
             assertEquals(expected.getValue(), actual.getValue());
             assertEquals(expected.getGramUnit(), actual.getGramUnit());
             assertEquals(expected.getCardId(), actual.getCardId());
@@ -301,6 +301,19 @@ public class CardDaoIT extends DaoTestBase {
         }
     }
 
+    @Test
+    public void testGenerateCards() throws Exception {
+        Iterator<Card> iterator = getTestCardsIterator();
+        int dictionaryId = iterator.next().getDictionaryId();
+        Set<Integer> wordIds = Collections.singleton(87);
+        boolean done = cardDao.generateCardsWithoutDefinitions(wordIds, dictionaryId, CardStatus.EDIT);
+        // assert
+        assertTrue(done);
+        List<Card> cards = cardDao.selectCardsForDictionary(getDictionary(dictionaryId));
+        assertNotNull(cards);
+        assertEquals(2, cards.size());
+        assertTrue(cards.get(1).getId() >= EXPECTED_NEW_ID);
+    }
 
     private static void assertStatus(List<Card> cards, CardStatus status) {
         for (Card card : cards) {

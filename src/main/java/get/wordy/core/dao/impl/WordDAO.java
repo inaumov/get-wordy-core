@@ -8,7 +8,9 @@ import get.wordy.core.db.CloseUtils;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class WordDao extends BaseDao implements IWordDao {
 
@@ -30,11 +32,31 @@ public class WordDao extends BaseDao implements IWordDao {
             // get last inserted id
             ResultSet keys = statement.getGeneratedKeys();
             if (keys.next()) {
-                int wordId = keys.getInt(1);
-                word.setId(wordId);
+                int id = keys.getInt(1);
+                word.setId(id);
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while inserting word entity", ex);
+        }
+    }
+
+    @Override
+    public Set<Integer> generate(Set<String> words) throws DaoException {
+        try (PreparedStatement statement = prepareInsert("INSERT INTO word (value) VALUES (?)")) {
+            for (String word : words) {
+                statement.setString(1, word);
+                statement.addBatch();
+            }
+            statement.executeBatch();
+            // get last inserted id
+            ResultSet keys = statement.getGeneratedKeys();
+            Set<Integer> ids = new HashSet<>();
+            if (keys.next()) {
+                ids.add(keys.getInt(1));
+            }
+            return ids;
+        } catch (SQLException ex) {
+            throw new DaoException("Error while generating word entity", ex);
         }
     }
 
@@ -71,10 +93,8 @@ public class WordDao extends BaseDao implements IWordDao {
             while (resultSet.next()) {
                 int id = resultSet.getInt(1);
                 String word = resultSet.getString(2);
-                String tran = resultSet.getString(3);
-                Word obj = new Word(id, word);
-                obj.setTranscription(tran);
-                words.add(obj);
+                String transcription = resultSet.getString(3);
+                words.add(new Word(id, word, transcription));
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while retrieving all word entities", ex);

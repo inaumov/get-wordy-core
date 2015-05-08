@@ -616,6 +616,38 @@ public class DictionaryServiceTest extends TestCase {
         verify(connection);
     }
 
+    @Test
+    public void testGenerateCards() throws Exception {
+        connection.open();
+        expectLastCall().once();
+
+        reset(dictionaryMock);
+        expect(dictionaryMock.getName()).andReturn("Default").once();
+        expect(dictionaryMock.getId()).andReturn(0).once();
+
+        expect(dictionaryListMock.iterator()).andReturn(dictionaryIteratorMock).once();
+        replay(dictionaryMock, dictionaryListMock, dictionaryIteratorMock);
+
+        Set<String> words = Collections.singleton("generated");
+        Set<Integer> wordIds = Collections.singleton(87);
+        expect(wordDaoMock.generate(words)).andReturn(wordIds).once();
+        expect(cardDaoMock.generateCardsWithoutDefinitions(anyObject(Set.class), anyInt(), anyObject(CardStatus.class)))
+                .andReturn(true).once();
+
+        replay(wordDaoMock, cardDaoMock);
+
+        connection.commit();
+        expectLastCall().once();
+        connection.close();
+        expectLastCall().once();
+        replay(connection);
+
+        boolean done = dictionaryService.generateCards(words);
+        assertTrue(done);
+        verify(wordDaoMock, cardDaoMock);
+        verify(connection);
+    }
+
     private static Word createWordStub(String word) {
         return new Word(18, word);
     }

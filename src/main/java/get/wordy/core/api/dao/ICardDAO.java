@@ -7,10 +7,13 @@ import get.wordy.core.bean.Dictionary;
 import get.wordy.core.bean.wrapper.CardStatus;
 
 import java.util.List;
+import java.util.Set;
 
 public interface ICardDao {
 
     public void insert(Card card) throws DaoException;
+
+    public boolean generateCardsWithoutDefinitions(Set<Integer> wordIds, int dictionaryId, CardStatus status) throws DaoException;
 
     public void delete(Card card) throws DaoException;
 

@@ -5,8 +5,7 @@ import get.wordy.core.api.dao.IWordDao;
 import get.wordy.core.bean.Word;
 import org.junit.Test;
 
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class WordDaoIT extends DaoTestBase {
 
@@ -29,7 +28,7 @@ public class WordDaoIT extends DaoTestBase {
         word.setTranscription("transcription");
 
         wordDao.insert(word);
-        assertEquals(EXPECTED_NEW_ID, word.getId());
+        assertTrue(word.getId() >= EXPECTED_NEW_ID);
 
         List<Word> words = wordDao.selectAll();
         assertNotNull(words);
@@ -39,7 +38,7 @@ public class WordDaoIT extends DaoTestBase {
         Iterator<Word> iterator = words.iterator();
         while (iterator.hasNext()) {
             Word actual = iterator.next();
-            if (actual.getId() == EXPECTED_NEW_ID) {
+            if (actual.getId() >= EXPECTED_NEW_ID) {
                 assertEquals(word.getValue(), actual.getValue());
                 assertEquals("transcription", actual.getTranscription());
             } else {
@@ -100,6 +99,23 @@ public class WordDaoIT extends DaoTestBase {
         assertNotNull(words);
         assertEquals(PREDEFINED_WORDS_CNT, words.size());
         assertTestData(words, 1);
+    }
+
+    @Test
+    public void testGenerateWords() throws Exception {
+        Set<String> strings = Collections.singleton("generated");
+        Set<Integer> generated = wordDao.generate(strings);
+        assertEquals(1, generated.size());
+
+        List<Word> words = wordDao.selectAll();
+        assertNotNull(words);
+        assertEquals(PREDEFINED_WORDS_CNT + 1, words.size());
+
+        LinkedList<Word> newList = new LinkedList(words);
+        Word last = newList.getLast();
+        assertTrue(last.getId() >= EXPECTED_NEW_ID);
+        assertEquals("generated", last.getValue());
+        assertNull(last.getTranscription());
     }
 
     private static void assertTestData(List<Word> words, int startFromId) {

@@ -1,11 +1,12 @@
 package get.wordy.core.api;
 
+import get.wordy.core.bean.Card;
 import get.wordy.core.bean.Dictionary;
 import get.wordy.core.bean.wrapper.CardStatus;
-import get.wordy.core.bean.Card;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface IDictionaryService {
 
@@ -34,5 +35,7 @@ public interface IDictionaryService {
     boolean resetScore(String dictionaryName);
 
     boolean increaseScoreUp(final String word, int repetitions);
+
+    boolean generateCards(Set<String> words);
 
 }
