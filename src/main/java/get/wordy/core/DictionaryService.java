@@ -14,6 +14,7 @@ import get.wordy.core.dao.ADaoFactory;
 import get.wordy.core.db.ConnectionFactory;
 import get.wordy.core.bean.Card;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,11 +35,14 @@ public class DictionaryService implements IDictionaryService {
     private List<Dictionary> dictionaryList = new ArrayList<Dictionary>();
     private Map<String, Card> cardsCache = new HashMap<String, Card>();
 
-    public DictionaryService() {
+    public DictionaryService() throws IOException {
         this(DEFAULT_URI);
     }
 
-    public DictionaryService(String uri) {
+    public DictionaryService(String uri) throws IOException {
+        if (uri == null || uri.isEmpty()) {
+            uri = DEFAULT_URI;
+        }
         ServerInfoParser serverInfoParser = new ServerInfoParser();
         serverInfoParser.parseDocument(uri);
         ServerInfo serverInfo = serverInfoParser.getServerInfo();

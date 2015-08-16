@@ -19,7 +19,7 @@ public class ServerInfoParser extends DefaultHandler {
         return serverInfo;
     }
 
-    public void parseDocument(String uri) {
+    public void parseDocument(String uri) throws IOException {
         // get a factory
         SAXParserFactory saxFactory = SAXParserFactory.newInstance();
         try {
@@ -35,8 +35,7 @@ public class ServerInfoParser extends DefaultHandler {
             // TODO Auto-generated catch block
             e.printStackTrace();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            throw new IOException("Probably no sql/ServerInfo.xml configuration either was found or parsed", e);
         }
     }
 
