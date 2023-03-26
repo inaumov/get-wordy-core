@@ -2,20 +2,32 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.inaumov</groupId>
-    <artifactId>get.wordy.core</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <groupId>get.wordy</groupId>
+    <artifactId>core</artifactId>
+    <version>2.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>GetWordy-core</name>
-    <url>http://maven.apache.org</url>
+    <name>Get Wordy :: Backend</name>
+
+    <issueManagement>
+        <url>https://github.com/inaumov/get-wordy-core/issues</url>
+    </issueManagement>
+
+    <developers>
+        <developer>
+            <email>naumov@live.com</email>
+            <name>Igor Naumov</name>
+            <url>https://github.com/inaumov</url>
+            <id>inaumov</id>
+        </developer>
+    </developers>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <mysql.connector.version>5.1.21</mysql.connector.version>
-        <junit.version>4.10</junit.version>
-        <easymock.version>3.2</easymock.version>
-        <xmlunit.version>1.5</xmlunit.version>
+        <mysql.connector.version>8.0.32</mysql.connector.version>
+        <junit.version>5.9.2</junit.version>
+        <easymock.version>5.1.0</easymock.version>
+        <flyway.version>9.16.0</flyway.version>
     </properties>
 
     <dependencies>
@@ -24,11 +36,17 @@
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>${mysql.connector.version}</version>
+            <scope>runtime</scope>
         </dependency>
-
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+            <version>${flyway.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
@@ -38,11 +56,6 @@
             <version>${easymock.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>xmlunit</groupId>
-            <artifactId>xmlunit</artifactId>
-            <version>${xmlunit.version}</version>
-        </dependency>
     </dependencies>
 
     <build>
@@ -50,17 +63,17 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.5.1</version>
+                <version>3.11.0</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>17</source>
+                    <target>17</target>
                     <showWarnings>true</showWarnings>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>2.2.1</version>
+                <version>3.2.1</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -80,118 +93,26 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>sql-maven-plugin</artifactId>
-                        <version>1.5</version>
-                        <dependencies>
-                            <dependency>
-                                <groupId>mysql</groupId>
-                                <artifactId>mysql-connector-java</artifactId>
-                                <version>${mysql.connector.version}</version>
-                            </dependency>
-                        </dependencies>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-maven-plugin</artifactId>
+                        <version>9.8.1</version>
                         <configuration>
-                            <driver>${get.wordy.jdbc.driver}</driver>
-                            <url>${get.wordy.jdbc.url}/${get.wordy.jdbc.database}</url>
-                            <settingsKey>sensibleKey</settingsKey>
+                            <driver>com.mysql.cj.jdbc.Driver</driver>
+                            <url>jdbc:mysql://localhost:3306/get_wordy?useUnicode=yes,characterEncoding=utf8,connectionCollation=utf8_general_ci,sql_mode=STRICT_TRANS_TABLES</url>
+                            <user>root</user>
+                            <password>root</password>
+                             <schemas>
+                                 <schema>get_wordy</schema>
+                             </schemas>
+                            <createSchemas>true</createSchemas>
+                            <table>schema_history</table>
+                            <locations>
+                                <location>classpath:sql/schema</location>
+                            </locations>
                             <encoding>UTF-8</encoding>
-                            <keepFormat>true</keepFormat>
-                            <driverProperties>
-                                useUnicode=yes,
-                                characterEncoding=utf8,
-                                connectionCollation=utf8_general_ci,
-                                sql_mode=STRICT_TRANS_TABLES
-                            </driverProperties>
+                            <validateOnMigrate>true</validateOnMigrate>
+                            <cleanDisabled>false</cleanDisabled>
                         </configuration>
-                        <executions>
-                            <execution>
-                                <id>drop-table</id>
-                                <phase>process-test-resources</phase>
-                                <goals>
-                                    <goal>execute</goal>
-                                </goals>
-                                <configuration>
-                                    <autocommit>true</autocommit>
-                                    <sqlCommand>
-                                          DROP TABLE IF EXISTS meaning;
-                                          DROP TABLE IF EXISTS definition;
-                                          DROP TABLE IF EXISTS card;
-                                          DROP TABLE IF EXISTS dictionary;
-                                          DROP TABLE IF EXISTS word;
-                                    </sqlCommand>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>create-schema</id>
-                                <phase>process-test-resources</phase>
-                                <goals>
-                                    <goal>execute</goal>
-                                </goals>
-                                <configuration>
-                                    <autocommit>true</autocommit>
-                                    <srcFiles>
-                                        <srcFile>src/main/resources/sql/schema/schema-mysql-1.0.0.sql</srcFile>
-                                    </srcFiles>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>insert-data</id>
-                                <phase>process-test-resources</phase>
-                                <goals>
-                                    <goal>execute</goal>
-                                </goals>
-                                <configuration>
-                                    <srcFiles>
-                                        <srcFile>src/test/resources/sql/data/dictionary-test-data.sql</srcFile>
-                                        <srcFile>src/test/resources/sql/data/word-test-data.sql</srcFile>
-                                        <srcFile>src/test/resources/sql/data/card-test-data.sql</srcFile>
-                                        <srcFile>src/test/resources/sql/data/definition-test-data.sql</srcFile>
-                                        <srcFile>src/test/resources/sql/data/meaning-test-data.sql</srcFile>
-                                    </srcFiles>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.13</version>
-                        <executions>
-                            <execution>
-                                <id>integration-test</id>
-                                <goals>
-                                    <goal>test</goal>
-                                </goals>
-                                <phase>integration-test</phase>
-                                <configuration>
-                                    <systemProperties>
-                                        <property>
-                                            <name>host</name>
-                                            <value>${get.wordy.jdbc.url}</value>
-                                        </property>
-                                        <property>
-                                            <name>database</name>
-                                            <value>${get.wordy.jdbc.database}</value>
-                                        </property>
-                                        <property>
-                                            <name>user</name>
-                                            <value>${get.wordy.jdbc.username}</value>
-                                        </property>
-                                        <property>
-                                            <name>password</name>
-                                            <value>${get.wordy.jdbc.password}</value>
-                                        </property>
-                                    </systemProperties>
-                                    <skip>false</skip>
-                                    <excludes>
-                                        <exclude>none</exclude>
-                                    </excludes>
-                                    <includes>
-                                        <include>**/*IT.java</include>
-                                    </includes>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
