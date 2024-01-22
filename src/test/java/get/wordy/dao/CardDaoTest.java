@@ -1,6 +1,5 @@
 package get.wordy.dao;
 
-import get.wordy.core.api.db.ColumnNames;
 import get.wordy.core.bean.Card;
 import get.wordy.core.bean.Collocation;
 import get.wordy.core.bean.Context;
@@ -98,7 +97,7 @@ public class CardDaoTest extends BaseDaoTest {
 
     @Test
     public void testSelectAllSortedByInsertTimeNewCardsFirst() throws DaoException {
-        Collection<Card> cards = cardDao.selectAllCardsSortedBy(ColumnNames.CREATE_TIME);
+        Collection<Card> cards = cardDao.selectAllCardsSortedBy("create_time");
         assertNotNull(cards);
         assertFalse(cards.isEmpty());
 

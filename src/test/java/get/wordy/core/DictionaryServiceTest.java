@@ -17,7 +17,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.platform.commons.function.Try;
-import org.junit.platform.commons.support.ReflectionSupport;
 import org.junit.platform.commons.util.ReflectionUtils;
 
 import java.time.Instant;
@@ -445,11 +444,12 @@ public class DictionaryServiceTest {
         Card cardMock = strictMock(Card.class);
         cardMock.setStatus(CardStatus.DEFAULT_STATUS);
         cardMock.setRating(0);
+        expect(cardMock.getRating()).andReturn(0);
         replay(cardMock);
 
         addCardToCache(1, cardMock);
 
-        cardDaoMock.updateStatus(cardMock);
+        cardDaoMock.updateStatus(1, CardStatus.DEFAULT_STATUS, 0);
         expectLastCall().andStubThrow(new DaoException("changeStatus", null));
         replay(cardDaoMock);
 
@@ -466,22 +466,34 @@ public class DictionaryServiceTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"EDIT,0", "TO_LEARN,50", "LEARNT,100", "POSTPONED,20"})
-    public void testChangeStatus(CardStatus cardStatus, int rating) throws Exception {
+    @CsvSource(value = {"EDIT,0", "LEARNT,100"})
+    public void testChangeStatusWhenResetRating(CardStatus cardStatus, int rating) throws Exception {
         Card cardMock = strictMock(Card.class);
         cardMock.setStatus(cardStatus);
         cardMock.setRating(rating);
+        expect(cardMock.getRating()).andReturn(rating);
         replay(cardMock);
         addCardToCache(1, cardMock);
-        doChangeStatusTest(1, cardMock, cardStatus);
+        doChangeStatusTest(1, cardStatus, rating);
     }
 
-    private void doChangeStatusTest(int cardId, Card cardMock, CardStatus status) throws DaoException {
+    @ParameterizedTest
+    @CsvSource(value = {"TO_LEARN,50", "POSTPONED,20"})
+    public void testChangeStatusWhenKeepRating(CardStatus cardStatus, int rating) throws Exception {
+        Card cardMock = strictMock(Card.class);
+        cardMock.setStatus(cardStatus);
+        expect(cardMock.getRating()).andReturn(rating);
+        replay(cardMock);
+        addCardToCache(1, cardMock);
+        doChangeStatusTest(1, cardStatus, rating);
+    }
+
+    private void doChangeStatusTest(int cardId, CardStatus status, int rating) throws DaoException {
         connectionMock.open();
         expectLastCall().once();
 
-        cardDaoMock.updateStatus(cardMock);
-        expectLastCall().andReturn(cardMock);
+        cardDaoMock.updateStatus(cardId, status, rating);
+        expectLastCall().once();
         replay(cardDaoMock);
 
         connectionMock.commit();

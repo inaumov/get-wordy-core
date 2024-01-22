@@ -293,7 +293,7 @@ public class DictionaryService implements IDictionaryService {
 
         try {
             connection.open();
-            cardDao.updateStatus(card);
+            cardDao.updateStatus(cardId, newStatus, card.getRating());
             connection.commit();
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while changing status", e);
