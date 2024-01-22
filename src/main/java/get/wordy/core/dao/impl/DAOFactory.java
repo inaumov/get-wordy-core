@@ -1,23 +1,25 @@
 package get.wordy.core.dao.impl;
 
-import get.wordy.core.api.dao.*;
-import get.wordy.core.dao.ADaoFactory;
+import get.wordy.core.db.ConnectionWrapper;
 
-public class DaoFactory extends ADaoFactory {
+public class DaoFactory {
 
-    @Override
-    public IDictionaryDao getDictionaryDao() {
-        return new DictionaryDao(connectionFactory);
+    protected final ConnectionWrapper connectionWrapper = ConnectionWrapper.getInstance();
+
+    public static DaoFactory getFactory() {
+        return new DaoFactory();
     }
 
-    @Override
-    public IWordDao getWordDao() {
-        return new WordDao(connectionFactory);
+    public DictionaryDao getDictionaryDao() {
+        return new DictionaryDao(connectionWrapper);
     }
 
-    @Override
-    public ICardDao getCardDao() {
-        return new CardDao(connectionFactory);
+    public WordDao getWordDao() {
+        return new WordDao(connectionWrapper);
+    }
+
+    public CardDao getCardDao() {
+        return new CardDao(connectionWrapper);
     }
 
 }

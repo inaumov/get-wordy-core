@@ -5,10 +5,11 @@ package get.wordy.core.api.db;
  */
 public interface TableNames {
 
-    String TBL_DICTIONARY = "DICTIONARY";
-    String TBL_WORD = "WORD";
-    String TBL_CARD = "CARD";
-    String TBL_DEFINITION = "DEFINITION";
-    String TBL_MEANING = "MEANING";
+    String TBL_DICTIONARIES = "dictionaries";
+    String TBL_WORDS = "words";
+    String TBL_CARDS = "cards";
+    String TBL_COLLOCATIONS = "collocations";
+    String TBL_CONTEXT = "context";
+    String TBL_SYNONYMS = "synonyms";
 
 }

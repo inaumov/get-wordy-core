@@ -1,29 +1,28 @@
 package get.wordy.core.dao.impl;
 
-import get.wordy.core.api.dao.DaoException;
-import get.wordy.core.api.dao.IDictionaryDao;
-import get.wordy.core.api.db.IConnectionFactory;
+import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.bean.Dictionary;
 import get.wordy.core.db.CloseUtils;
+import get.wordy.core.db.ConnectionWrapper;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DictionaryDao extends BaseDao implements IDictionaryDao {
+public class DictionaryDao extends BaseDao<Dictionary> {
 
-    public static final String INSERT_SQL = "INSERT INTO dictionary (name) VALUES (?)";
-    public static final String DELETE_SQL = "DELETE FROM dictionary WHERE id = ?";
-    public static final String UPDATE_SQL = "UPDATE dictionary SET name = ? WHERE id = ?";
-    public static final String SELECT_ALL_SQL = "SELECT * FROM dictionary ORDER BY name";
-    public static final String COUNT_SQL = "SELECT COUNT(name) FROM dictionary";
+    public static final String INSERT_SQL = "INSERT INTO dictionaries (name) VALUES (?)";
+    public static final String DELETE_SQL = "DELETE FROM dictionaries WHERE id = ?";
+    public static final String UPDATE_SQL = "UPDATE dictionaries SET name = ? WHERE id = ?";
+    public static final String SELECT_ALL_SQL = "SELECT * FROM dictionaries ORDER BY name";
+    public static final String COUNT_SQL = "SELECT COUNT(name) FROM dictionaries";
 
-    DictionaryDao(IConnectionFactory connectionFactory) {
+    DictionaryDao(ConnectionWrapper connectionFactory) {
         super(connectionFactory);
     }
 
     @Override
-    public void insert(Dictionary dictionary) throws DaoException {
+    public Dictionary insert(Dictionary dictionary) throws DaoException {
         try (PreparedStatement statement = prepareInsert(INSERT_SQL)) {
             statement.setString(1, dictionary.getName());
             statement.execute();
@@ -36,6 +35,7 @@ public class DictionaryDao extends BaseDao implements IDictionaryDao {
         } catch (SQLException ex) {
             throw new DaoException("Error while inserting dictionary entity", ex);
         }
+        return dictionary;
     }
 
     @Override
@@ -49,7 +49,7 @@ public class DictionaryDao extends BaseDao implements IDictionaryDao {
     }
 
     @Override
-    public void update(Dictionary dictionary) throws DaoException {
+    public Dictionary update(Dictionary dictionary) throws DaoException {
         try (PreparedStatement statement = prepareInsert(UPDATE_SQL)) {
             statement.setString(1, dictionary.getName());
             statement.setInt(2, dictionary.getId());
@@ -57,13 +57,13 @@ public class DictionaryDao extends BaseDao implements IDictionaryDao {
         } catch (SQLException ex) {
             throw new DaoException("Error while deleting dictionary entity", ex);
         }
+        return dictionary;
     }
 
-    @Override
     public List<Dictionary> selectAll() throws DaoException {
         Connection connection = getConnection();
         Statement statement = null;
-        ArrayList<Dictionary> dictionaries = new ArrayList<Dictionary>();
+        ArrayList<Dictionary> dictionaries = new ArrayList<>();
         try {
             statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(SELECT_ALL_SQL);
@@ -80,7 +80,6 @@ public class DictionaryDao extends BaseDao implements IDictionaryDao {
         return dictionaries;
     }
 
-    @Override
     public int count() throws DaoException {
         Connection connection = getConnection();
         Statement statement = null;

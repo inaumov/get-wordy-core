@@ -3,6 +3,7 @@ package get.wordy.core.api;
 import get.wordy.core.bean.Card;
 import get.wordy.core.bean.Dictionary;
 import get.wordy.core.bean.wrapper.CardStatus;
+import get.wordy.core.wrapper.Score;
 
 import java.util.List;
 import java.util.Map;
@@ -14,15 +15,15 @@ public interface IDictionaryService {
 
     Dictionary createDictionary(final String dictionaryName);
 
-    boolean removeDictionary(final String dictionaryName);
+    boolean removeDictionary(final int dictionaryId);
 
-    boolean renameDictionary(final String oldDictionaryName, final String newDictionaryName);
+    boolean renameDictionary(final int dictionaryId, final String newDictionaryName);
 
-    Map<String, Card> getCards(String dictionaryName);
+    Map<String, Card> getCards(int dictionaryId);
 
-    Map<String, Card> getCardsForExercise(String dictionaryName, final int amount);
+    List<Card> getCardsForExercise(int dictionaryId, final int amount);
 
-    boolean saveOrUpdateCard(Card card, String dictionaryName);
+    boolean save(Card card);
 
     boolean removeCard(final String word);
 
@@ -30,12 +31,12 @@ public interface IDictionaryService {
 
     boolean changeStatus(final String word, CardStatus updatedStatus);
 
-    IScore getScore(final String dictionaryName);
+    Score getScore(final int dictionaryId);
 
-    boolean resetScore(String dictionaryName);
+    boolean resetScore(int dictionaryId);
 
     boolean increaseScoreUp(final String word, int repetitions);
 
-    boolean generateCards(Set<String> words);
+    boolean generateCards(int dictionaryId, Set<String> words);
 
 }

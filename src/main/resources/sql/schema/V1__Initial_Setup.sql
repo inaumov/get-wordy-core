@@ -1,17 +1,19 @@
-CREATE TABLE dictionary (
+CREATE TABLE dictionaries (
   id   SERIAL,
-  name VARCHAR(32) NOT NULL,
+  name VARCHAR(255) NOT NULL,
   PRIMARY KEY (id)
 );
 
-CREATE TABLE word (
+CREATE TABLE words (
   id            SERIAL,
-  value         VARCHAR(255) NOT NULL UNIQUE,
+  word          VARCHAR(255) NOT NULL,
+  part_of_speech VARCHAR (40),
   transcription VARCHAR(255),
+  meaning       VARCHAR(4000),
   PRIMARY KEY (id)
 );
 
-CREATE TABLE card (
+CREATE TABLE cards (
   id            SERIAL,
   status        ENUM ('EDIT', 'POSTPONED', 'TO_LEARN', 'LEARNT')  NOT NULL DEFAULT 'EDIT',
   rating        SMALLINT DEFAULT '0'                              NOT NULL,
@@ -22,26 +24,22 @@ CREATE TABLE card (
   PRIMARY KEY (id)
 );
 
-CREATE TABLE definition (
+CREATE TABLE context (
   id               SERIAL,
-  grammatical_unit ENUM ('NOUN', 'VERB', 'PHRASAL_VERB', 'ADJECTIVE', 'ADVERB', 'PHRASE', 'IDIOM', 'OTHER') NOT NULL,
-  value            VARCHAR(255),
-  card_id          BIGINT UNSIGNED                                                                          NOT NULL,
+  example          VARCHAR(255),
+  word_id          BIGINT UNSIGNED                                                                          NOT NULL,
   PRIMARY KEY (id),
-  FOREIGN KEY (card_id) REFERENCES card (id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE
+  FOREIGN KEY (word_id) REFERENCES words (id)
+    ON delete CASCADE
+    ON update CASCADE
 );
 
-CREATE TABLE meaning (
+CREATE TABLE collocations (
   id            SERIAL,
-  translation   VARCHAR(1024)   NOT NULL,
-  synonym       VARCHAR(1024),
-  antonym       VARCHAR(1024),
-  example       VARCHAR(4096),
-  definition_id BIGINT UNSIGNED NOT NULL,
+  example       VARCHAR(255),
+  word_id       BIGINT UNSIGNED,
   PRIMARY KEY (id),
-  FOREIGN KEY (definition_id) REFERENCES definition (id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE
+  FOREIGN KEY (word_id) REFERENCES words (id)
+    ON delete CASCADE
+    ON update CASCADE
 );

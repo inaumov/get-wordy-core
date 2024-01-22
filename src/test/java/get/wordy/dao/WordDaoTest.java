@@ -1,20 +1,23 @@
 package get.wordy.dao;
 
-import get.wordy.core.api.dao.DaoException;
-import get.wordy.core.api.dao.IWordDao;
+import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.bean.Word;
-import org.junit.Test;
+import get.wordy.core.dao.impl.WordDao;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.*;
 
-public class WordDaoIT extends DaoTestBase {
+import static org.junit.jupiter.api.Assertions.*;
 
-    private static final int PREDEFINED_WORDS_CNT = 5;
-    private static final int EXPECTED_NEW_ID = 6;
+public class WordDaoTest extends BaseDaoTest {
 
-    private IWordDao wordDao;
+    private static final int PREDEFINED_WORDS_CNT = 3;
+    private static final int EXPECTED_NEW_ID = 4;
 
-    @Override
+    private WordDao wordDao;
+
+    @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
         wordDao = factory.getWordDao();
@@ -23,12 +26,10 @@ public class WordDaoIT extends DaoTestBase {
 
     @Test
     public void testInsert() throws DaoException {
-        Word word = new Word();
-        word.setValue("word");
-        word.setTranscription("transcription");
+        Word word = new Word(0, "apple", null, "transcription", null);
 
-        wordDao.insert(word);
-        assertTrue(word.getId() >= EXPECTED_NEW_ID);
+        Word inserted = wordDao.insert(word);
+        assertTrue(inserted.id() >= EXPECTED_NEW_ID);
 
         List<Word> words = wordDao.selectAll();
         assertNotNull(words);
@@ -38,13 +39,13 @@ public class WordDaoIT extends DaoTestBase {
         Iterator<Word> iterator = words.iterator();
         while (iterator.hasNext()) {
             Word actual = iterator.next();
-            if (actual.getId() >= EXPECTED_NEW_ID) {
-                assertEquals(word.getValue(), actual.getValue());
-                assertEquals("transcription", actual.getTranscription());
+            if (actual.id() >= EXPECTED_NEW_ID) {
+                assertEquals(word.value(), actual.value());
+                assertEquals("transcription", actual.transcription());
             } else {
-                assertEquals(id, actual.getId());
-                assertEquals("example" + id, actual.getValue());
-                assertNotNull(actual.getTranscription());
+                assertEquals(id, actual.id());
+                assertEquals("example" + id, actual.value());
+                assertNotNull(actual.transcription());
             }
             id++;
         }
@@ -54,10 +55,7 @@ public class WordDaoIT extends DaoTestBase {
     public void testUpdate() throws DaoException {
         // update an existed word
         for (int id = 1; id <= PREDEFINED_WORDS_CNT; id++) {
-            Word word = new Word();
-            word.setId(id);
-            word.setValue("word" + id);
-            word.setTranscription("transcription" + id);
+            Word word = new Word(id, "to test " + id, "VERB", "transcription" + id, "test");
             wordDao.update(word);
         }
         // count words after updating
@@ -66,12 +64,10 @@ public class WordDaoIT extends DaoTestBase {
         assertEquals(PREDEFINED_WORDS_CNT, words.size());
 
         int id = 1;
-        Iterator<Word> iterator = words.iterator();
-        while (iterator.hasNext()) {
-            Word actual = iterator.next();
-            assertEquals(id, actual.getId());
-            assertEquals("word" + id, actual.getValue());
-            assertEquals("transcription" + id, actual.getTranscription());
+        for (Word actual : words) {
+            assertEquals(id, actual.id());
+            assertEquals("to test " + id, actual.value());
+            assertEquals("transcription" + id, actual.transcription());
             id++;
         }
     }
@@ -111,20 +107,21 @@ public class WordDaoIT extends DaoTestBase {
         assertNotNull(words);
         assertEquals(PREDEFINED_WORDS_CNT + 1, words.size());
 
-        LinkedList<Word> newList = new LinkedList(words);
+        LinkedList<Word> newList = new LinkedList<>(words);
         Word last = newList.getLast();
-        assertTrue(last.getId() >= EXPECTED_NEW_ID);
-        assertEquals("generated", last.getValue());
-        assertNull(last.getTranscription());
+        assertTrue(last.id() >= EXPECTED_NEW_ID);
+        assertEquals("generated", last.value());
+        assertNull(last.transcription());
     }
 
     private static void assertTestData(List<Word> words, int startFromId) {
         for (int i = 0, id = startFromId; i < words.size(); i++, id++) {
             Word next = words.get(i);
-            assertEquals(id, next.getId());
-            assertEquals("example" + id, next.getValue());
-            assertNotNull(next.getTranscription());
-            assertEquals(9, next.getTranscription().length());
+            assertEquals(id, next.id());
+            assertEquals("example" + id, next.value());
+            assertNotNull(next.transcription());
+            assertEquals("noun", next.partOfSpeech().toLowerCase());
+            assertNotNull(next.meaning());
         }
     }
 

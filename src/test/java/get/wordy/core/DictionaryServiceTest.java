@@ -1,632 +1,619 @@
 package get.wordy.core;
 
-import get.wordy.core.api.IDictionaryService;
-import get.wordy.core.api.IScore;
-import get.wordy.core.api.dao.DaoException;
-import get.wordy.core.api.dao.ICardDao;
-import get.wordy.core.api.dao.IDictionaryDao;
-import get.wordy.core.api.dao.IWordDao;
+import get.wordy.core.bean.Card;
 import get.wordy.core.bean.Dictionary;
 import get.wordy.core.bean.Word;
 import get.wordy.core.bean.wrapper.CardStatus;
-import get.wordy.core.db.ConnectionFactory;
-import get.wordy.core.bean.Card;
-import junit.framework.TestCase;
+import get.wordy.core.dao.exception.DaoException;
+import get.wordy.core.dao.impl.CardDao;
+import get.wordy.core.dao.impl.DictionaryDao;
+import get.wordy.core.dao.impl.WordDao;
+import get.wordy.core.db.ConnectionWrapper;
+import get.wordy.core.wrapper.Score;
 import org.easymock.*;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
+import java.time.Instant;
 import java.util.*;
 
 import static org.easymock.EasyMock.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(EasyMockRunner.class)
-public class DictionaryServiceTest extends TestCase {
+@ExtendWith(EasyMockExtension.class)
+public class DictionaryServiceTest {
 
-    private static final String DICTIONARY_NAME = "Test name";
-
-    @Mock
-    private ConnectionFactory connection;
+    private static final int DICTIONARY_ID = 42;
+    private static final String DICTIONARY_NAME = "Default";
 
     @Mock(name = "dictionaryDao")
-    private IDictionaryDao dictionaryDaoMock;
+    private DictionaryDao dictionaryDaoMock;
     @Mock(name = "cardDao")
-    private ICardDao cardDaoMock;
+    private CardDao cardDaoMock;
     @Mock(name = "wordDao")
-    private IWordDao wordDaoMock;
-
-    @Mock(name = "dictionaryList", type = MockType.NICE)
-    private ArrayList<Dictionary> dictionaryListMock;
-
-    @Mock(name = "cardsCache", type = MockType.NICE)
-    private HashMap<String, Card> cardsCacheMock;
+    private WordDao wordDaoMock;
+    @Mock(name = "connection")
+    private ConnectionWrapper connectionMock;
 
     @TestSubject
-    private IDictionaryService dictionaryService = new DictionaryService(EasyMock.createMock(ServerInfo.class));
+    private DictionaryService dictionaryService;
 
-    private Dictionary dictionaryMock;
-    private Iterator dictionaryIteratorMock;
-
-    @Before
-    public void setUp() throws Exception {
-        dictionaryMock = createMock(Dictionary.class);
-        expect(dictionaryMock.getName()).andReturn(DICTIONARY_NAME).once();
-        expect(dictionaryMock.getId()).andReturn(43).once();
-
-        dictionaryIteratorMock = createMock(Iterator.class);
-        expect(dictionaryIteratorMock.hasNext()).andReturn(true).once();
-        expect(dictionaryIteratorMock.next()).andReturn(dictionaryMock).once();
+    @BeforeEach
+    public void setUp() {
+        EasyMockSupport.injectMocks(this);
     }
 
     // test dictionary section
 
     @Test
     public void testGetDictionaries() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
+
+        Dictionary dictionaryMock = createDictionaryMock();
+        replay(dictionaryMock);
 
         List<Dictionary> dictionaries = Collections.singletonList(dictionaryMock);
         expect(dictionaryDaoMock.selectAll()).andReturn(dictionaries);
-        dictionaryListMock.clear();
         expectLastCall().once();
-        expect(dictionaryListMock.addAll(dictionaries)).andReturn(true).once();
-
-        connection.close();
-        expectLastCall().once();
-        replay(connection);
-
         replay(dictionaryDaoMock);
+
+        connectionMock.close();
+        expectLastCall().once();
+        replay(connectionMock);
 
         List<Dictionary> list = dictionaryService.getDictionaries();
         assertEquals(1, list.size());
-        verify(dictionaryDaoMock);
+        verify(connectionMock, dictionaryDaoMock);
     }
 
     @Test
     public void testGetDictionariesWhenDaoException() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
         expect(dictionaryDaoMock.selectAll()).andStubThrow(new DaoException("selectAll", null));
-
-        connection.close();
-        expectLastCall().once();
-        replay(connection);
-
         replay(dictionaryDaoMock);
+
+        connectionMock.close();
+        expectLastCall().once();
+        replay(connectionMock);
 
         List<Dictionary> list = dictionaryService.getDictionaries();
         assertTrue(list.isEmpty());
-        verify(dictionaryDaoMock);
+        verify(connectionMock, dictionaryDaoMock);
     }
 
     @Test
     public void testCreateDictionary() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
-        Capture<Dictionary> dictionaryCapture = new Capture<Dictionary>();
+        Dictionary dictionaryMock = createDictionaryMock();
+        replay(dictionaryMock);
+
+        Capture<Dictionary> dictionaryCapture = Capture.newInstance();
         dictionaryDaoMock.insert(capture(dictionaryCapture));
-        expectLastCall().once();
-        expect(dictionaryListMock.add(anyObject(Dictionary.class))).andReturn(true).once();
+        expectLastCall().andReturn(dictionaryMock);
+        replay(dictionaryDaoMock);
 
-        connection.commit();
+        connectionMock.commit();
         expectLastCall().once();
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
-
-        replay(dictionaryDaoMock, dictionaryListMock);
+        replay(connectionMock);
 
         boolean done = dictionaryService.createDictionary(DICTIONARY_NAME) != null;
         assertTrue(done);
         assertEquals(DICTIONARY_NAME, dictionaryCapture.getValue().getName());
-        verify(dictionaryDaoMock, dictionaryListMock);
+        verify(connectionMock, dictionaryDaoMock);
     }
 
     @Test
     public void testCreateDictionaryWhenDaoException() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
-        Capture<Dictionary> dictionaryCapture = new Capture<Dictionary>();
+        Capture<Dictionary> dictionaryCapture = Capture.newInstance();
         dictionaryDaoMock.insert(capture(dictionaryCapture));
         expectLastCall().andStubThrow(new DaoException("insert", null));
-
-        connection.rollback();
-        expectLastCall().once();
-        connection.close();
-        expectLastCall().once();
-        replay(connection);
-
         replay(dictionaryDaoMock);
+
+        connectionMock.rollback();
+        expectLastCall().once();
+        connectionMock.close();
+        expectLastCall().once();
+        replay(connectionMock);
 
         boolean exceptionHappened = dictionaryService.createDictionary(DICTIONARY_NAME) == null;
         assertTrue(exceptionHappened);
         assertEquals(DICTIONARY_NAME, dictionaryCapture.getValue().getName());
-        verify(dictionaryDaoMock);
+        verify(connectionMock, dictionaryDaoMock);
     }
 
     @Test
     public void testRenameDictionary() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
-        expect(dictionaryListMock.iterator()).andReturn(dictionaryIteratorMock).once();
+        Dictionary dictionaryMock = createDictionaryMock();
+        replay(dictionaryMock);
 
-        Capture<Dictionary> dictionaryCapture = new Capture<Dictionary>();
+        addDictionaryToCache(dictionaryMock);
+
+        Capture<Dictionary> dictionaryCapture = Capture.newInstance();
         dictionaryDaoMock.update(capture(dictionaryCapture));
-        expectLastCall().once();
-        dictionaryMock.setName("nameUpdated");
-        expectLastCall().once();
+        expectLastCall().andReturn(dictionaryMock)
+                .once();
+        replay(dictionaryDaoMock);
 
-        connection.commit();
+        connectionMock.commit();
         expectLastCall().once();
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
+        replay(connectionMock);
 
-        replay(dictionaryMock, dictionaryDaoMock, dictionaryListMock, dictionaryIteratorMock);
-
-        boolean done = dictionaryService.renameDictionary(DICTIONARY_NAME, "nameUpdated");
+        boolean done = dictionaryService.renameDictionary(DICTIONARY_ID, "nameUpdated");
         assertTrue(done);
         assertEquals("nameUpdated", dictionaryCapture.getValue().getName());
-        verify(dictionaryMock, dictionaryDaoMock, dictionaryListMock, dictionaryIteratorMock);
+        verify(connectionMock, dictionaryDaoMock);
+    }
+
+    @Test
+    public void testRenameDictionaryWhenNotFound() {
+        boolean done = dictionaryService.renameDictionary(DICTIONARY_ID, "nameUpdated");
+        assertFalse(done);
     }
 
     @Test
     public void testRenameDictionaryWhenDaoException() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
-        expect(dictionaryListMock.iterator()).andReturn(dictionaryIteratorMock).once();
+        Dictionary dictionaryMock = createDictionaryMock();
+        replay(dictionaryMock);
 
-        Capture<Dictionary> dictionaryCapture = new Capture<Dictionary>();
+        addDictionaryToCache(dictionaryMock);
+
+        Capture<Dictionary> dictionaryCapture = Capture.newInstance();
         dictionaryDaoMock.update(capture(dictionaryCapture));
         expectLastCall().andStubThrow(new DaoException("rename", null));
 
-        connection.rollback();
+        connectionMock.rollback();
         expectLastCall().once();
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
+        replay(connectionMock);
 
-        replay(dictionaryMock, dictionaryDaoMock, dictionaryListMock, dictionaryIteratorMock);
+        replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.renameDictionary(DICTIONARY_NAME, "nameUpdated");
+        boolean done = dictionaryService.renameDictionary(DICTIONARY_ID, "nameUpdated");
         assertFalse(done);
         assertEquals("nameUpdated", dictionaryCapture.getValue().getName());
-        verify(dictionaryMock, dictionaryDaoMock, dictionaryListMock, dictionaryIteratorMock);
+        verify(connectionMock, dictionaryDaoMock);
     }
 
     @Test
     public void testRemoveDictionary() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
-        expect(dictionaryListMock.iterator()).andReturn(dictionaryIteratorMock).once();
+        Dictionary dictionaryMock = createDictionaryMock();
+        replay(dictionaryMock);
 
+        addDictionaryToCache(dictionaryMock);
         dictionaryDaoMock.delete(dictionaryMock);
         expectLastCall().once();
 
-        connection.commit();
+        connectionMock.commit();
         expectLastCall().once();
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
+        replay(connectionMock);
 
-        replay(dictionaryMock, dictionaryDaoMock, dictionaryListMock, dictionaryIteratorMock);
+        replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.removeDictionary(DICTIONARY_NAME);
+        boolean done = dictionaryService.removeDictionary(DICTIONARY_ID);
         assertTrue(done);
-        verify(dictionaryDaoMock);
+        verify(connectionMock, dictionaryDaoMock);
+    }
+
+    @Test
+    public void testRemoveDictionaryWhenNotFound() {
+        boolean done = dictionaryService.removeDictionary(DICTIONARY_ID);
+        assertFalse(done);
     }
 
     @Test
     public void testRemoveDictionaryWhenDaoException() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
-        expect(dictionaryListMock.iterator()).andReturn(dictionaryIteratorMock).once();
+        Dictionary dictionaryMock = createDictionaryMock();
+        replay(dictionaryMock);
+        addDictionaryToCache(dictionaryMock);
 
         dictionaryDaoMock.delete(dictionaryMock);
         expectLastCall().andStubThrow(new DaoException("insert", null));
 
-        connection.rollback();
+        connectionMock.rollback();
         expectLastCall().once();
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
+        replay(connectionMock);
 
-        replay(dictionaryMock, dictionaryDaoMock, dictionaryListMock, dictionaryIteratorMock);
+        replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.removeDictionary(DICTIONARY_NAME);
+        boolean done = dictionaryService.removeDictionary(DICTIONARY_ID);
         assertFalse(done);
-        verify(connection, dictionaryDaoMock);
+        verify(connectionMock, dictionaryDaoMock);
     }
-
-    // test cards section
 
     @Test
     public void testGetCards() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
-        expect(dictionaryListMock.iterator()).andReturn(dictionaryIteratorMock).once();
-        replay(dictionaryMock, dictionaryListMock);
+        Dictionary dictionaryMock = createDictionaryMock();
+        replay(dictionaryMock);
+        addDictionaryToCache(dictionaryMock);
+        Word wordMock = createWordMock(1, "word");
+        replay(wordMock);
+        Card cardMock = createCardMock(1);
+        cardMock.setWord(wordMock);
+        replay(cardMock);
 
-        Card card = createCardStub(1);
-        expect(cardDaoMock.selectCardsForDictionary(anyObject(Dictionary.class))).andReturn(Collections.singletonList(card)).once();
-
-        Word word = createWordStub("word");
-        expect(wordDaoMock.selectAll()).andReturn(Collections.singletonList(word)).once();
-
-        cardsCacheMock.putAll(anyObject(HashMap.class));
+        expect(cardDaoMock.selectCardsForDictionary(anyObject(Dictionary.class)))
+                .andReturn(Collections.singletonList(cardMock));
         expectLastCall().once();
-        replay(cardDaoMock, wordDaoMock, cardsCacheMock);
+        replay(cardDaoMock);
 
-        connection.close();
+        expect(wordDaoMock.selectAll())
+                .andReturn(Collections.singletonList(wordMock));
         expectLastCall().once();
-        replay(connection);
+        replay(wordDaoMock);
 
-        Map<String, Card> cards = dictionaryService.getCards(DICTIONARY_NAME);
+        connectionMock.close();
+        expectLastCall().once();
+        replay(connectionMock);
+
+        Map<String, Card> cards = dictionaryService.getCards(DICTIONARY_ID);
         assertNotNull(cards);
         assertFalse(cards.isEmpty());
         verify(wordDaoMock, cardDaoMock);
-        verify(connection);
+        verify(connectionMock);
     }
 
     @Test
     public void testGetCardsForExercise() throws DaoException {
-        expect(dictionaryListMock.iterator()).andReturn(dictionaryIteratorMock).once();
+        Dictionary dictionaryMock = createDictionaryMock();
+        replay(dictionaryMock);
+        addDictionaryToCache(dictionaryMock);
 
-        int[] ids = {1, 2, 3, 5, 8, 13};
-        expect(cardDaoMock.selectCardsForExercise(anyObject(Dictionary.class), anyInt())).andReturn(ids).once();
+        int[] ids = {8, 1, 3};
+        expect(cardDaoMock.selectCardIdsForExercise(anyInt(), anyInt()))
+                .andReturn(ids)
+                .once();
 
-        Collection list = new ArrayList();
-        for (int id : ids) {
-            Card cardStub = createCardStub(id);
-            cardStub.setWord(createWordStub("word" + id));
-            list.add(cardStub);
+        int[] all = {1, 2, 3, 5, 8, 13};
+        for (int id : all) {
+            Card cardMock = createCardMock(id);
+            Word wordMock = createWordMock(id, "word " + id);
+            replay(wordMock);
+            cardMock.setWord(wordMock);
+            expect(cardMock.getWord()).andStubReturn(wordMock);
+            replay(cardMock);
+            addCardToCache("word " + id, cardMock);
         }
 
-        expect(cardsCacheMock.values()).andReturn(list).times(6);
-        replay(cardsCacheMock);
+        replay(cardDaoMock);
 
-        replay(dictionaryMock, dictionaryListMock, dictionaryIteratorMock, cardDaoMock);
-
-        Map<String, Card> cards = dictionaryService.getCardsForExercise(DICTIONARY_NAME, 6);
-        assertEquals(6, cards.size());
+        List<Card> cards = dictionaryService.getCardsForExercise(1, 6);
+        assertEquals(3, cards.size());
     }
 
     @Test
-    public void testSaveCard() throws DaoException {
-        connection.open();
+    public void testSaveNewCard() throws DaoException {
+        connectionMock.open();
         expectLastCall().once();
 
-        expect(dictionaryListMock.iterator()).andReturn(dictionaryIteratorMock).once();
-        replay(dictionaryMock, dictionaryListMock, dictionaryIteratorMock);
+        Dictionary dictionaryMock = createDictionaryMock();
+        replay(dictionaryMock);
+        addDictionaryToCache(dictionaryMock);
 
-        Card cardMock = createNiceMock(Card.class);
-        expect(cardsCacheMock.put("word", cardMock)).andStubReturn(cardMock);
-        replay(cardsCacheMock);
+        Word wordMock = createWordMock(1, "test");
+        expect(wordMock.id()).andReturn(1).times(2);
+        replay(wordMock);
 
-        Word wordMock = createNiceMock(Word.class);
-        expect(wordMock.getValue()).andReturn("word");
-        expect(wordMock.getId()).andReturn(1).times(2);
-
-        cardMock.setWordId(anyInt());
-        expectLastCall();
-        cardMock.setDictionaryId(anyInt());
-        expectLastCall();
-
-        expect(cardMock.getId()).andReturn(0).andStubReturn(1);
+        Card cardMock = createCardMock(0);
+        expect(cardMock.getId()).andStubReturn(1);
         expect(cardMock.getWord()).andStubReturn(wordMock);
-        replay(cardMock, wordMock);
+        cardMock.setWordId(anyInt());
+        cardMock.setInsertedAt(anyObject(Instant.class));
+        replay(cardMock);
+        addCardToCache("test", cardMock);
 
         wordDaoMock.insert(wordMock);
-        expectLastCall().once();
+        expectLastCall().andAnswer(() -> wordMock);
         cardDaoMock.insert(cardMock);
-        expectLastCall().once();
+        expectLastCall().andAnswer(() -> cardMock);
         replay(wordDaoMock, cardDaoMock);
 
-        connection.commit();
+        connectionMock.commit();
         expectLastCall().once();
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
+        replay(connectionMock);
 
-        boolean done = dictionaryService.saveOrUpdateCard(cardMock, DICTIONARY_NAME);
+        boolean done = dictionaryService.save(cardMock);
         assertTrue(done);
-        verify(cardMock, wordMock);
         verify(wordDaoMock, cardDaoMock);
-        verify(connection);
+        verify(connectionMock);
     }
 
     @Test
     public void testUpdateCard() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
-        expect(dictionaryListMock.iterator()).andReturn(dictionaryIteratorMock).once();
-        replay(dictionaryMock, dictionaryListMock, dictionaryIteratorMock);
+        Dictionary dictionaryMock = createDictionaryMock();
+        replay(dictionaryMock);
+        addDictionaryToCache(dictionaryMock);
 
-        Card oldCardMock = createNiceMock(Card.class);
-        Word oldWordMock = createNiceMock(Word.class);
+        Word wordMock = createWordMock(1, "test");
+        expect(wordMock.id()).andReturn(1).times(2);
+        replay(wordMock);
 
-        expect(oldCardMock.getWord()).andReturn(oldWordMock).times(2);
-        expect(oldWordMock.getValue()).andReturn("word");
-        replay(oldCardMock, oldWordMock);
+        Card cardMock = createCardMock(1);
+        expect(cardMock.getId()).andStubReturn(1);
+        expect(cardMock.getWord()).andStubReturn(wordMock);
+        cardMock.setWordId(anyInt());
+        cardMock.setInsertedAt(anyObject(Instant.class));
+        replay(cardMock);
+        addCardToCache("test", cardMock);
 
-        Collection list = Collections.singletonList(oldCardMock);
-        expect(cardsCacheMock.values()).andReturn(list).once();
+        Word wordForUpdMock = createNiceMock(Word.class);
+        expect(wordForUpdMock.id()).andStubReturn(2);
+        replay(wordForUpdMock);
 
-        Card cardMock = createNiceMock(Card.class);
-        expect(cardMock.getId()).andReturn(1);
-        Word wordMock = createNiceMock(Word.class);
-        expect(wordMock.getValue()).andReturn("word");
-        expect(cardMock.getWord()).andReturn(wordMock).once();
-        replay(cardMock, wordMock);
+        Card cardForUpdMock = createNiceMock(Card.class);
+        expect(cardForUpdMock.getId()).andStubReturn(1);
+        expect(cardForUpdMock.getWord()).andReturn(wordForUpdMock);
+        replay(cardForUpdMock);
 
-        expect(cardsCacheMock.remove("word")).andStubReturn(oldCardMock);
-        expect(cardsCacheMock.put("word", cardMock)).andStubReturn(cardMock);
-        replay(cardsCacheMock);
-
-        wordDaoMock.update(wordMock);
-        expectLastCall().once();
-        cardDaoMock.update(cardMock);
-        expectLastCall().once();
+        wordDaoMock.update(wordForUpdMock);
+        expectLastCall().andAnswer(() -> wordForUpdMock);
+        cardDaoMock.update(cardForUpdMock);
+        expectLastCall().andAnswer(() -> cardForUpdMock);
         replay(wordDaoMock, cardDaoMock);
 
-        connection.commit();
+        connectionMock.commit();
         expectLastCall().once();
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
+        replay(connectionMock);
 
-        boolean done = dictionaryService.saveOrUpdateCard(cardMock, DICTIONARY_NAME);
+        boolean done = dictionaryService.save(cardForUpdMock);
 
         assertTrue(done);
-        verify(cardMock, wordMock);
+        verify(cardForUpdMock, wordForUpdMock);
         verify(wordDaoMock, cardDaoMock);
-        verify(connection);
+        verify(connectionMock);
     }
 
     @Test
     public void testRemoveCard() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
         Card cardMock = createMock(Card.class);
-        expect(cardsCacheMock.get(anyString())).andStubReturn(cardMock);
-        expect(cardsCacheMock.remove(anyString())).andStubReturn(cardMock);
-        replay(cardsCacheMock);
-
+        expect(cardMock.getWordId()).andStubReturn(1);
         Word wordMock = createMock(Word.class);
-        expect(wordMock.getValue()).andReturn("word");
+        expect(wordMock.value()).andReturn("word");
         expect(cardMock.getWord()).andStubReturn(wordMock);
         replay(cardMock, wordMock);
+        addCardToCache("word", cardMock);
 
         cardDaoMock.delete(cardMock);
         expectLastCall().once();
         replay(cardDaoMock);
 
-        connection.commit();
+        connectionMock.commit();
         expectLastCall().once();
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
+        replay(connectionMock);
 
 
         boolean done = dictionaryService.removeCard("word");
         assertTrue(done);
         verify(cardMock, wordMock);
         verify(cardDaoMock);
-        verify(connection);
+        verify(connectionMock);
     }
-
-
-    // test status section
 
     @Test
     public void testChangeStatusWhenThrowDaoException() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
         Card cardMock = createMock(Card.class);
-        expect(cardsCacheMock.get(anyString())).andStubReturn(cardMock);
-        replay(cardsCacheMock);
-
         cardMock.setStatus(CardStatus.DEFAULT_STATUS);
         cardMock.setRating(0);
         replay(cardMock);
 
-        cardDaoMock.update(cardMock);
+        addCardToCache("word", cardMock);
+
+        cardDaoMock.updateStatus(cardMock);
         expectLastCall().andStubThrow(new DaoException("changeStatus", null));
         replay(cardDaoMock);
 
-        connection.rollback();
+        connectionMock.rollback();
         expectLastCall().once();
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
+        replay(connectionMock);
 
         boolean done = dictionaryService.changeStatus("word", CardStatus.DEFAULT_STATUS);
         assertFalse(done);
         verify(cardDaoMock);
-        verify(connection);
+        verify(connectionMock);
     }
 
-    @Test
-    public void testChangeStatus() throws DaoException {
+    @ParameterizedTest
+    @CsvSource(value = {"EDIT,0", "TO_LEARN,50", "LEARNT,100", "POSTPONED,20"})
+    public void testChangeStatus(CardStatus cardStatus, int rating) throws DaoException {
         Card cardMock = createMock(Card.class);
-        expect(cardsCacheMock.get(anyString())).andStubReturn(cardMock);
-        replay(cardsCacheMock);
-
-        cardMock.setStatus(CardStatus.EDIT);
-        cardMock.setRating(0);
+        cardMock.setStatus(cardStatus);
+        cardMock.setRating(rating);
         replay(cardMock);
-        doChangeStatusTest(cardMock, CardStatus.EDIT);
-
-        reset(cardMock);
-        reset(connection, cardDaoMock);
-        cardMock.setStatus(CardStatus.TO_LEARN);
-        replay(cardMock);
-        doChangeStatusTest(cardMock, CardStatus.TO_LEARN);
-
-        reset(cardMock);
-        reset(connection, cardDaoMock);
-        cardMock.setStatus(CardStatus.LEARNT);
-        cardMock.setRating(100);
-        replay(cardMock);
-        doChangeStatusTest(cardMock, CardStatus.LEARNT);
-
-        reset(cardMock);
-        reset(connection, cardDaoMock);
-        cardMock.setStatus(CardStatus.POSTPONED);
-        replay(cardMock);
-        doChangeStatusTest(cardMock, CardStatus.POSTPONED);
+        addCardToCache("word", cardMock);
+        doChangeStatusTest("word", cardMock, cardStatus);
     }
 
-    private void doChangeStatusTest(Card cardMock, CardStatus status) throws DaoException {
-        connection.open();
+    private void doChangeStatusTest(String word, Card cardMock, CardStatus status) throws DaoException {
+        connectionMock.open();
         expectLastCall().once();
 
-        cardDaoMock.update(cardMock);
-        expectLastCall().once();
+        cardDaoMock.updateStatus(cardMock);
+        expectLastCall().andReturn(cardMock);
         replay(cardDaoMock);
 
-        connection.commit();
+        connectionMock.commit();
         expectLastCall().once();
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
+        replay(connectionMock);
 
-        boolean done = dictionaryService.changeStatus("word", status);
+        boolean done = dictionaryService.changeStatus(word, status);
         assertTrue(done);
         verify(cardDaoMock);
-        verify(connection);
+        verify(connectionMock);
     }
-
-    // test score section
 
     @Test
     public void testGetScore() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
-        expect(dictionaryListMock.iterator()).andReturn(dictionaryIteratorMock).once();
+        Dictionary dictionaryMock = createDictionaryMock();
+        addDictionaryToCache(dictionaryMock);
 
-        expect(cardDaoMock.getScore(anyObject(Dictionary.class))).andReturn(createMock(IScore.class));
-        replay(dictionaryListMock, cardDaoMock);
+        expect(cardDaoMock.getScore(anyObject(Dictionary.class))).andReturn(Map.of("EDIT", 1));
+        replay(cardDaoMock);
 
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
+        replay(connectionMock);
 
-        IScore score = dictionaryService.getScore(DICTIONARY_NAME);
+        Score score = dictionaryService.getScore(DICTIONARY_ID);
+        assertEquals(1, score.getTotalCount());
+        assertEquals(1, score.getEditCnt());
+        assertEquals(0, score.getToLearnCnt());
+        assertEquals(0, score.getPostponedCnt());
+        assertEquals(0, score.getLearntCnt());
         assertNotNull(score);
         verify(cardDaoMock);
-        verify(connection);
+        verify(connectionMock);
     }
 
     @Test
     public void testResetScore() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
-        expect(dictionaryListMock.iterator()).andReturn(dictionaryIteratorMock).once();
+        Dictionary dictionaryMock = createDictionaryMock();
+        replay(dictionaryMock);
+        addDictionaryToCache(dictionaryMock);
 
-        cardDaoMock.resetScore(anyObject(Dictionary.class));
+        cardDaoMock.resetScore(dictionaryMock);
         expectLastCall().once();
 
-        connection.commit();
+        connectionMock.commit();
         expectLastCall().once();
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
+        replay(connectionMock);
 
-        replay(dictionaryListMock, cardDaoMock);
+        replay(cardDaoMock);
 
-        boolean done = dictionaryService.resetScore(DICTIONARY_NAME);
+        boolean done = dictionaryService.resetScore(DICTIONARY_ID);
         assertTrue(done);
         verify(cardDaoMock);
-        verify(connection);
+        verify(connectionMock);
     }
 
     @Test
     public void testIncreaseScoreUp() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
         Card cardMock = createStrictMock(Card.class);
         expect(cardMock.getRating()).andReturn(10).once();
-        expect(cardsCacheMock.get(anyString())).andStubReturn(cardMock);
         cardMock.setRating(20);
         expectLastCall().once();
-
-        replay(cardsCacheMock, cardMock);
+        replay(cardMock);
+        addCardToCache("word", cardMock);
 
         cardDaoMock.update(cardMock);
-        expectLastCall().once();
+        expectLastCall().andReturn(cardMock);
 
-        connection.commit();
+        connectionMock.commit();
         expectLastCall().once();
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
+        replay(connectionMock);
 
         replay(cardDaoMock);
 
         boolean done = dictionaryService.increaseScoreUp("word", 10);
         assertTrue(done);
         verify(cardMock, cardDaoMock);
-        verify(connection);
+        verify(connectionMock);
     }
 
     @Test
     public void testIncreaseScoreUpWhenReach100Percents() throws DaoException {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
         Card cardMock = createStrictMock(Card.class);
-        expect(cardMock.getRating()).andReturn(90);
-        expect(cardsCacheMock.get(anyString())).andStubReturn(cardMock);
+        expect(cardMock.getRating()).andReturn(90).once();
         cardMock.setStatus(CardStatus.LEARNT);
         expectLastCall().once();
         cardMock.setRating(100);
         expectLastCall().once();
-        replay(cardsCacheMock, cardMock);
+        replay(cardMock);
+        addCardToCache("word", cardMock);
 
         cardDaoMock.update(cardMock);
-        expectLastCall().once();
+        expectLastCall().andReturn(cardMock);
 
-        connection.commit();
+        connectionMock.commit();
         expectLastCall().once();
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
+        replay(connectionMock);
 
         replay(cardDaoMock);
 
         boolean done = dictionaryService.increaseScoreUp("word", 10);
         assertTrue(done);
         verify(cardMock, cardDaoMock);
-        verify(connection);
+        verify(connectionMock);
     }
 
     @Test
     public void testGenerateCards() throws Exception {
-        connection.open();
+        connectionMock.open();
         expectLastCall().once();
 
-        reset(dictionaryMock);
-        expect(dictionaryMock.getName()).andReturn("Default").once();
-        expect(dictionaryMock.getId()).andReturn(0).once();
-
-        expect(dictionaryListMock.iterator()).andReturn(dictionaryIteratorMock).once();
-        replay(dictionaryMock, dictionaryListMock, dictionaryIteratorMock);
+        Dictionary dictionaryMock = createDictionaryMock();
+        replay(dictionaryMock);
+        addDictionaryToCache(dictionaryMock);
 
         Set<String> words = Collections.singleton("generated");
         Set<Integer> wordIds = Collections.singleton(87);
@@ -636,28 +623,47 @@ public class DictionaryServiceTest extends TestCase {
 
         replay(wordDaoMock, cardDaoMock);
 
-        connection.commit();
+        connectionMock.commit();
         expectLastCall().once();
-        connection.close();
+        connectionMock.close();
         expectLastCall().once();
-        replay(connection);
+        replay(connectionMock);
 
-        boolean done = dictionaryService.generateCards(words);
+        boolean done = dictionaryService.generateCards(DICTIONARY_ID, words);
         assertTrue(done);
         verify(wordDaoMock, cardDaoMock);
-        verify(connection);
+        verify(connectionMock);
     }
 
-    private static Word createWordStub(String word) {
-        return new Word(18, word);
+    private void addDictionaryToCache(Dictionary dictionaryMock) {
+        dictionaryService.getDictionaryCache().add(dictionaryMock);
     }
 
-    private static Card createCardStub(int id) {
-        Card card = new Card();
-        card.setId(id);
-        card.setDictionaryId(1);
-        card.setWordId(18);
-        return card;
+    private void addCardToCache(String word, Card cardMock) {
+        dictionaryService.getCardsCache().put(word, cardMock);
+    }
+
+    private Dictionary createDictionaryMock() {
+        Dictionary dictionaryMock = createNiceMock(Dictionary.class);
+        expect(dictionaryMock.getId()).andReturn(DICTIONARY_ID).atLeastOnce();
+        expect(dictionaryMock.getName()).andReturn(DICTIONARY_NAME).atLeastOnce();
+        return dictionaryMock;
+    }
+
+    private Word createWordMock(int id, String word) {
+        Word wordMock = createNiceMock(Word.class);
+        expect(wordMock.id()).andReturn(id);
+        expect(wordMock.value()).andReturn(word);
+        return wordMock;
+    }
+
+    private Card createCardMock(int id) {
+        Card cardMock = createNiceMock(Card.class);
+        expect(cardMock.getId()).andReturn(id);
+        expect(cardMock.getDictionaryId()).andReturn(1);
+        expect(cardMock.getWordId()).andReturn(id);
+        expect(cardMock.getRating()).andReturn(90);
+        return cardMock;
     }
 
 }

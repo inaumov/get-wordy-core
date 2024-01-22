@@ -20,8 +20,6 @@ public interface ColumnNames {
     String GRAM_UNIT = "grammatical_unit ";
     String DEFINITION = "value";
     String TRANSLATION = "translation";
-    String SYNONYM = "synonym";
-    String ANTONYM = "antonym";
     String EXAMPLE = "example";
 
 }

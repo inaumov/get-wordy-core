@@ -1,9 +1,8 @@
 package get.wordy.core.wrapper;
 
-import get.wordy.core.api.IScore;
 import get.wordy.core.bean.wrapper.CardStatus;
 
-public final class Score implements IScore {
+public class Score {
 
     private int editCnt, postponedCnt, toLearnCnt, learntCnt;
 
@@ -22,7 +21,6 @@ public final class Score implements IScore {
         this.editCnt = editCnt;
     }
 
-    @Override
     public int getEditCnt() {
         return editCnt;
     }
@@ -31,7 +29,6 @@ public final class Score implements IScore {
         this.postponedCnt = postponedCnt;
     }
 
-    @Override
     public int getPostponedCnt() {
         return postponedCnt;
     }
@@ -40,7 +37,6 @@ public final class Score implements IScore {
         this.toLearnCnt = toLearnCnt;
     }
 
-    @Override
     public int getToLearnCnt() {
         return toLearnCnt;
     }
@@ -49,36 +45,20 @@ public final class Score implements IScore {
         this.learntCnt = learntCnt;
     }
 
-    @Override
     public int getLearntCnt() {
         return learntCnt;
     }
 
-    @Override
     public int getTotalCount() {
         return editCnt + postponedCnt + toLearnCnt + learntCnt;
     }
 
     public void setScoreCount(CardStatus cardStatus, int count) {
-
         switch (cardStatus) {
-
-            case LEARNT: {
-                this.setLearntCnt(count);
-                break;
-            }
-            case TO_LEARN: {
-                this.setToLearnCnt(count);
-                break;
-            }
-            case EDIT: {
-                this.setEditCnt(count);
-                break;
-            }
-            case POSTPONED: {
-                this.setPostponedCnt(count);
-                break;
-            }
+            case LEARNT -> this.setLearntCnt(count);
+            case TO_LEARN -> this.setToLearnCnt(count);
+            case EDIT -> this.setEditCnt(count);
+            case POSTPONED -> this.setPostponedCnt(count);
         }
     }
 

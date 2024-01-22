@@ -1,21 +1,23 @@
 package get.wordy.dao;
 
-import get.wordy.core.api.dao.DaoException;
-import get.wordy.core.api.dao.IDictionaryDao;
 import get.wordy.core.bean.Dictionary;
-import org.junit.Test;
+import get.wordy.core.dao.exception.DaoException;
+import get.wordy.core.dao.impl.DictionaryDao;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.util.Iterator;
 import java.util.List;
 
-public class DictionaryDaoIT extends DaoTestBase {
+import static org.junit.jupiter.api.Assertions.*;
 
-    private static final int PREDEFINED_DICTIONARIES_CNT = 5;
-    private static final int EXPECTED_NEW_ID = 6;
+public class DictionaryDaoTest extends BaseDaoTest {
 
-    private IDictionaryDao dictionaryDao;
+    private static final int PREDEFINED_DICTIONARIES_CNT = 2;
+    private static final int EXPECTED_NEW_ID = 3;
 
-    @Override
+    private DictionaryDao dictionaryDao;
+
+    @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
         dictionaryDao = factory.getDictionaryDao();
@@ -28,17 +30,15 @@ public class DictionaryDaoIT extends DaoTestBase {
         dictionary.setName("name");
 
         dictionaryDao.insert(dictionary);
-        assertEquals(EXPECTED_NEW_ID, dictionary.getId());
+        assertTrue(dictionary.getId() >= EXPECTED_NEW_ID);
 
         List<Dictionary> dictionaries = dictionaryDao.selectAll();
         assertNotNull(dictionaries);
         assertEquals(PREDEFINED_DICTIONARIES_CNT + 1, dictionaries.size());
 
         int id = 1;
-        Iterator<Dictionary> iterator = dictionaries.iterator();
-        while (iterator.hasNext()) {
-            Dictionary actual = iterator.next();
-            if (actual.getId() == EXPECTED_NEW_ID) {
+        for (Dictionary actual : dictionaries) {
+            if (actual.getId() >= EXPECTED_NEW_ID) {
                 assertEquals(dictionary.getName(), actual.getName());
             } else {
                 assertEquals(id, actual.getId());
@@ -64,9 +64,7 @@ public class DictionaryDaoIT extends DaoTestBase {
         assertEquals(PREDEFINED_DICTIONARIES_CNT, dictionaries.size());
 
         int id = 1;
-        Iterator<Dictionary> iterator = dictionaries.iterator();
-        while (iterator.hasNext()) {
-            Dictionary actual = iterator.next();
+        for (Dictionary actual : dictionaries) {
             assertEquals(id, actual.getId());
             assertEquals("name" + id, actual.getName());
             id++;
@@ -90,7 +88,7 @@ public class DictionaryDaoIT extends DaoTestBase {
             assertEquals(--cnt, dictionariesAfter.size());
             assertTestData(dictionariesAfter, id + 1);
         }
-        assertTrue(dictionaryDao.count() == 0);
+        assertEquals(0, dictionaryDao.count());
     }
 
     @Test

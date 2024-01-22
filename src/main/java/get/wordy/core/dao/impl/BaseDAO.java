@@ -1,17 +1,18 @@
 package get.wordy.core.dao.impl;
 
-import get.wordy.core.api.db.IConnectionFactory;
+import get.wordy.core.dao.exception.DaoException;
+import get.wordy.core.db.ConnectionWrapper;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class BaseDao {
+public abstract class BaseDao<T> {
 
-    private IConnectionFactory connectionFactory;
+    private final ConnectionWrapper connectionFactory;
 
-    BaseDao(IConnectionFactory connectionFactory) {
+    BaseDao(ConnectionWrapper connectionFactory) {
         this.connectionFactory = connectionFactory;
     }
 
@@ -26,5 +27,11 @@ public class BaseDao {
     PreparedStatement prepareInsert(String sql) throws SQLException {
         return getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
     }
+
+    public abstract T insert(T record) throws DaoException;
+
+    public abstract T update(T record) throws DaoException;
+
+    public abstract void delete(T record) throws DaoException;
 
 }

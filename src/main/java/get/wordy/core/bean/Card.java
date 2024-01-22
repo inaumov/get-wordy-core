@@ -1,32 +1,27 @@
 package get.wordy.core.bean;
 
 import get.wordy.core.bean.wrapper.CardStatus;
-import get.wordy.core.bean.xml.JaxbXMLHelper;
-import get.wordy.core.bean.xml.TimestampAdapter;
+import get.wordy.core.dao.exception.InconsistentDataException;
 
-import javax.xml.bind.annotation.*;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-import java.sql.Timestamp;
-import java.util.*;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
 
-/**
- * @since 1.0
- */
-
-@XmlRootElement
-@XmlType(propOrder = {"word", "status", "rating", "insertTime", "updateTime", "definitions"})
-public class Card extends Parent<Definition> {
+public class Card {
 
     private int id;
     private int dictionaryId;
     private int wordId;
     private CardStatus status = CardStatus.DEFAULT_STATUS;
     private int rating;
-    private Timestamp insertTime;
-    private Timestamp updateTime;
+    private Instant insertedAt;
+    private Instant updatedAt;
     private Word word;
+    private final LinkedHashSet<Context> contexts = new LinkedHashSet<>();
+    private final LinkedHashSet<Collocation> collocations = new LinkedHashSet<>();
 
-    @XmlAttribute
     public int getId() {
         return id;
     }
@@ -35,7 +30,6 @@ public class Card extends Parent<Definition> {
         this.id = cardId;
     }
 
-    @XmlAttribute(name = "dictionary-id")
     public int getDictionaryId() {
         return dictionaryId;
     }
@@ -44,7 +38,6 @@ public class Card extends Parent<Definition> {
         this.dictionaryId = dictionaryId;
     }
 
-    @XmlTransient
     public int getWordId() {
         return wordId;
     }
@@ -53,7 +46,6 @@ public class Card extends Parent<Definition> {
         this.wordId = wordId;
     }
 
-    @XmlElement
     public int getRating() {
         return rating;
     }
@@ -62,7 +54,6 @@ public class Card extends Parent<Definition> {
         this.rating = rating;
     }
 
-    @XmlElement
     public CardStatus getStatus() {
         return status;
     }
@@ -71,46 +62,55 @@ public class Card extends Parent<Definition> {
         this.status = status;
     }
 
-    @XmlElement(name = "insert-time")
-    @XmlJavaTypeAdapter(value = TimestampAdapter.class, type = Timestamp.class)
-    public Timestamp getInsertTime() {
-        return insertTime;
+    public Instant getInsertedAt() {
+        return insertedAt;
     }
 
-    public void setInsertTime(Timestamp insertTime) {
-        this.insertTime = insertTime;
+    public void setInsertedAt(Instant insertedAt) {
+        this.insertedAt = insertedAt;
     }
 
-    @XmlElement(name = "update-time")
-    @XmlJavaTypeAdapter(value = TimestampAdapter.class, type = Timestamp.class)
-    public Timestamp getUpdateTime() {
-        return updateTime;
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 
-    public void setUpdateTime(Timestamp updateTime) {
-        this.updateTime = updateTime;
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
-    @XmlElement(required = true)
     public Word getWord() {
         return word;
     }
 
     public void setWord(Word word) {
-        if (word.getId() != wordId) {
-            throw new InconsistentDataException("Card and Word objects are not consistent with their wordId");
+        if (word.id() != wordId) {
+            throw new InconsistentDataException("Card and Word objects (wordIds) are not consistent");
         }
         this.word = word;
     }
 
-    @XmlElement(name = "definition", required = false)
-    @XmlElementWrapper
-    public List<Definition> getDefinitions() {
-        return getChildren();
+    public ArrayList<Context> getContexts() {
+        return new ArrayList<>(contexts);
     }
 
-    public void removeAllDefinitions() {
-        children.clear();
+    public void addContext(Context bean) {
+        contexts.add(bean);
+    }
+
+    public void addContexts(List<Context> beans) {
+        this.contexts.addAll(beans);
+    }
+
+    public ArrayList<Collocation> getCollocations() {
+        return new ArrayList<>(collocations);
+    }
+
+    public void addCollocation(Collocation bean) {
+        collocations.add(bean);
+    }
+
+    public void addCollocations(List<Collocation> beans) {
+        this.collocations.addAll(beans);
     }
 
     @Override
@@ -125,9 +125,10 @@ public class Card extends Parent<Definition> {
                 && Objects.equals(this.dictionaryId, that.dictionaryId)
                 && Objects.equals(this.status, that.status)
                 && Objects.equals(this.rating, that.rating)
-                && Objects.equals(this.insertTime, that.insertTime)
-                && Objects.equals(this.updateTime, that.updateTime)
-                && Objects.deepEquals(this.getChildren(), that.getChildren());
+                && Objects.equals(this.insertedAt, that.insertedAt)
+                && Objects.equals(this.updatedAt, that.updatedAt)
+                && Objects.deepEquals(this.getContexts(), that.getContexts())
+                && Objects.deepEquals(this.getCollocations(), that.getCollocations());
     }
 
     @Override
@@ -136,48 +137,6 @@ public class Card extends Parent<Definition> {
         result = 31 * result + wordId;
         result = 31 * result + dictionaryId;
         return result;
-    }
-
-    @Override
-    public Card clone() {
-        Card clone;
-        try {
-            clone = (Card) super.clone();
-            clone.setWord(word.clone());
-            Iterator<Definition> iterator = getDefinitions().iterator();
-            clone.children.clear();
-            while (iterator.hasNext()) {
-                clone.add(iterator.next().clone());
-            }
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);
-        }
-        return clone;
-    }
-
-    public String toXml() {
-        return new JaxbXMLHelper().convertFromPojoToXML(this, Card.class);
-    }
-
-    private class InconsistentDataException extends RuntimeException {
-
-        /**
-         * Constructs a {@code InconsistentDataException} with no detail message.
-         */
-        public InconsistentDataException() {
-            super();
-        }
-
-        /**
-         * Constructs a {@code InconsistentDataException} with the specified
-         * detail message.
-         *
-         * @param s the detail message.
-         */
-        public InconsistentDataException(String s) {
-            super(s);
-        }
-
     }
 
 }

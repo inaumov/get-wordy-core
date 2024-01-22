@@ -1,4 +1,4 @@
-package get.wordy.core.api.dao;
+package get.wordy.core.dao.exception;
 
 public class DaoException extends Exception {
 

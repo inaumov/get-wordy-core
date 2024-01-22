@@ -1,8 +1,7 @@
 package get.wordy.core.db;
 
 import get.wordy.core.ServerInfo;
-import get.wordy.core.api.dao.DaoException;
-import get.wordy.core.api.db.IConnectionFactory;
+import get.wordy.core.dao.exception.DaoException;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -12,34 +11,34 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ConnectionFactory implements IConnectionFactory {
+public class ConnectionWrapper {
 
-    private static final Logger LOG = Logger.getLogger(ConnectionFactory.class.getName());
+    private static final Logger LOG = Logger.getLogger(ConnectionWrapper.class.getName());
 
-    private static final ConnectionFactory INSTANCE = new ConnectionFactory();
+    private static final ConnectionWrapper INSTANCE = new ConnectionWrapper();
 
     private Connection connection;
     private ServerInfo info;
 
-    private ConnectionFactory() {
+    private ConnectionWrapper() {
         // default
     }
 
-    public static final ConnectionFactory getInstance() {
-        return ConnectionFactory.INSTANCE;
+    public static ConnectionWrapper getInstance() {
+        return ConnectionWrapper.INSTANCE;
     }
 
-    @Override
     public void open() throws DaoException {
         String database = info.getDatabase();
         String host = info.getHost();
         String url = host + "/" + database + getParameters();
         try {
-            close();
-            connection = DriverManager.getConnection(url, info.getAccount());
-            connection.setAutoCommit(false);
+            if (connection == null || connection.isClosed()) {
+                connection = DriverManager.getConnection(url, info.getAccount());
+                connection.setAutoCommit(false);
+            }
         } catch (SQLException ex) {
-            throw new DaoException("Error while creating connection to MySQL database", ex);
+            throw new DaoException("Error while creating connection to database", ex);
         }
     }
 
@@ -59,25 +58,22 @@ public class ConnectionFactory implements IConnectionFactory {
         return str;
     }
 
-    @Override
     public void commit() throws DaoException {
         try {
             connection.commit();
         } catch (SQLException ex) {
-            throw new DaoException("Error while committing changes to MySQL database", ex);
+            throw new DaoException("Error while committing changes to database", ex);
         }
     }
 
-    @Override
     public void rollback() {
         try {
             connection.rollback();
         } catch (SQLException ex) {
-            LOG.log(Level.WARNING, "Error while rolling back connection to MySQL database", ex);
+            LOG.log(Level.WARNING, "Error while rolling back changes from database", ex);
         }
     }
 
-    @Override
     public void close() {
         try {
             if (connection != null && !connection.isClosed()) {
@@ -88,7 +84,6 @@ public class ConnectionFactory implements IConnectionFactory {
         }
     }
 
-    @Override
     public Connection get() {
         if (connection == null) {
             throw new NullPointerException("Connection is not opened right now");
