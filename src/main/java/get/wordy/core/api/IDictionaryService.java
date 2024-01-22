@@ -6,7 +6,6 @@ import get.wordy.core.bean.wrapper.CardStatus;
 import get.wordy.core.wrapper.Score;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public interface IDictionaryService {
@@ -19,23 +18,23 @@ public interface IDictionaryService {
 
     boolean renameDictionary(final int dictionaryId, final String newDictionaryName);
 
-    Map<String, Card> getCards(int dictionaryId);
+    Set<Card> getCards(int dictionaryId);
 
     List<Card> getCardsForExercise(int dictionaryId, final int amount);
 
     boolean save(Card card);
 
-    boolean removeCard(final String word);
+    boolean removeCard(final int cardId);
 
-    Card loadCard(final String word);
+    Card loadCard(final int cardId);
 
-    boolean changeStatus(final String word, CardStatus updatedStatus);
+    boolean changeStatus(final int cardId, CardStatus updatedStatus);
 
     Score getScore(final int dictionaryId);
 
     boolean resetScore(int dictionaryId);
 
-    boolean increaseScoreUp(final String word, int repetitions);
+    boolean increaseScoreUp(final int cardId, int repetitions);
 
     boolean generateCards(int dictionaryId, Set<String> words);
 
