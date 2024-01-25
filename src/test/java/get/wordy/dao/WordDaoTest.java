@@ -29,7 +29,7 @@ public class WordDaoTest extends BaseDaoTest {
         Word word = new Word(0, "apple", null, "transcription", null);
 
         Word inserted = wordDao.insert(word);
-        assertTrue(inserted.id() >= EXPECTED_NEW_ID);
+        assertTrue(inserted.getId() >= EXPECTED_NEW_ID);
 
         List<Word> words = wordDao.selectAll();
         assertNotNull(words);
@@ -39,13 +39,13 @@ public class WordDaoTest extends BaseDaoTest {
         Iterator<Word> iterator = words.iterator();
         while (iterator.hasNext()) {
             Word actual = iterator.next();
-            if (actual.id() >= EXPECTED_NEW_ID) {
-                assertEquals(word.value(), actual.value());
-                assertEquals("transcription", actual.transcription());
+            if (actual.getId() >= EXPECTED_NEW_ID) {
+                assertEquals(word.getValue(), actual.getValue());
+                assertEquals("transcription", actual.getTranscription());
             } else {
-                assertEquals(id, actual.id());
-                assertEquals("example" + id, actual.value());
-                assertNotNull(actual.transcription());
+                assertEquals(id, actual.getId());
+                assertEquals("example" + id, actual.getValue());
+                assertNotNull(actual.getTranscription());
             }
             id++;
         }
@@ -65,9 +65,9 @@ public class WordDaoTest extends BaseDaoTest {
 
         int id = 1;
         for (Word actual : words) {
-            assertEquals(id, actual.id());
-            assertEquals("to test " + id, actual.value());
-            assertEquals("transcription" + id, actual.transcription());
+            assertEquals(id, actual.getId());
+            assertEquals("to test " + id, actual.getValue());
+            assertEquals("transcription" + id, actual.getTranscription());
             id++;
         }
     }
@@ -109,19 +109,19 @@ public class WordDaoTest extends BaseDaoTest {
 
         LinkedList<Word> newList = new LinkedList<>(words);
         Word last = newList.getLast();
-        assertTrue(last.id() >= EXPECTED_NEW_ID);
-        assertEquals("generated", last.value());
-        assertNull(last.transcription());
+        assertTrue(last.getId() >= EXPECTED_NEW_ID);
+        assertEquals("generated", last.getValue());
+        assertNull(last.getTranscription());
     }
 
     private static void assertTestData(List<Word> words, int startFromId) {
         for (int i = 0, id = startFromId; i < words.size(); i++, id++) {
             Word next = words.get(i);
-            assertEquals(id, next.id());
-            assertEquals("example" + id, next.value());
-            assertNotNull(next.transcription());
-            assertEquals("noun", next.partOfSpeech().toLowerCase());
-            assertNotNull(next.meaning());
+            assertEquals(id, next.getId());
+            assertEquals("example" + id, next.getValue());
+            assertNotNull(next.getTranscription());
+            assertEquals("noun", next.getPartOfSpeech().toLowerCase());
+            assertNotNull(next.getMeaning());
         }
     }
 

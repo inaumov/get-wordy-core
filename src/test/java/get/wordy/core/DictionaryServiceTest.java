@@ -1,8 +1,7 @@
 package get.wordy.core;
 
-import get.wordy.core.bean.Card;
+import get.wordy.core.bean.*;
 import get.wordy.core.bean.Dictionary;
-import get.wordy.core.bean.Word;
 import get.wordy.core.bean.wrapper.CardStatus;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.CardDao;
@@ -264,19 +263,38 @@ public class DictionaryServiceTest {
         addDictionaryToCache(dictionaryMock);
 
         Word wordMock = strictMock(Word.class);
-        expect(wordMock.id()).andReturn(1);
-        expect(wordMock.value()).andReturn("word");
+        expect(wordMock.getId()).andReturn(1);
+        expect(wordMock.getValue()).andReturn("word");
         replay(wordMock);
 
+        Context contextMock = niceMock(Context.class);
+        expect(contextMock.getId()).andReturn(1);
+        replay(contextMock);
+
+        Collocation collocationMock = niceMock(Collocation.class);
+        expect(collocationMock.getId()).andReturn(1);
+        replay(collocationMock);
+
         Card cardMock = strictMock(Card.class);
-        expect(cardMock.getWordId()).andReturn(1);
+        expect(cardMock.getWordId()).andReturn(1).times(2);
         cardMock.setWord(wordMock);
+        cardMock.addContexts(List.of(contextMock));
+        expectLastCall().anyTimes();
+        cardMock.addCollocations(List.of(collocationMock));
+        expectLastCall().anyTimes();
         expect(cardMock.getId()).andReturn(1);
         replay(cardMock);
 
         expect(cardDaoMock.selectCardsForDictionary(anyObject(Dictionary.class)))
                 .andReturn(Collections.singletonList(cardMock));
         expectLastCall().once();
+        expect(cardDaoMock.getContextsFor(cardMock))
+                .andReturn(Collections.singletonList(contextMock));
+        expectLastCall().once();
+        expect(cardDaoMock.getCollocationsFor(cardMock))
+                .andReturn(Collections.singletonList(collocationMock));
+        expectLastCall().once();
+
         replay(cardDaoMock);
 
         expect(wordDaoMock.selectAll())
@@ -328,7 +346,7 @@ public class DictionaryServiceTest {
         addDictionaryToCache(dictionaryMock);
 
         Word wordMock = strictMock(Word.class);
-        expect(wordMock.id()).andReturn(0);
+        expect(wordMock.getId()).andReturn(0);
         replay(wordMock);
 
         Card cardMock = strictMock(Card.class);
@@ -339,7 +357,7 @@ public class DictionaryServiceTest {
         replay(cardMock);
 
         Word insertedWordMock = strictMock(Word.class);
-        expect(insertedWordMock.id()).andReturn(1);
+        expect(insertedWordMock.getId()).andReturn(1);
         replay(insertedWordMock);
 
         Card insertedCardMock = strictMock(Card.class);
@@ -378,7 +396,7 @@ public class DictionaryServiceTest {
         addCardToCache(1, cardMock);
 
         Word wordForUpdMock = strictMock(Word.class);
-        expect(wordForUpdMock.id()).andReturn(1);
+        expect(wordForUpdMock.getId()).andReturn(1);
         replay(wordForUpdMock);
 
         Card cardForUpdMock = strictMock(Card.class);
@@ -443,8 +461,8 @@ public class DictionaryServiceTest {
 
         Card cardMock = strictMock(Card.class);
         cardMock.setStatus(CardStatus.DEFAULT_STATUS);
-        cardMock.setRating(0);
-        expect(cardMock.getRating()).andReturn(0);
+        cardMock.setScore(0);
+        expect(cardMock.getScore()).andReturn(0);
         replay(cardMock);
 
         addCardToCache(1, cardMock);
@@ -467,32 +485,32 @@ public class DictionaryServiceTest {
 
     @ParameterizedTest
     @CsvSource(value = {"EDIT,0", "LEARNT,100"})
-    public void testChangeStatusWhenResetRating(CardStatus cardStatus, int rating) throws Exception {
+    public void testChangeStatusWhenResetRating(CardStatus cardStatus, int score) throws Exception {
         Card cardMock = strictMock(Card.class);
         cardMock.setStatus(cardStatus);
-        cardMock.setRating(rating);
-        expect(cardMock.getRating()).andReturn(rating);
+        cardMock.setScore(score);
+        expect(cardMock.getScore()).andReturn(score);
         replay(cardMock);
         addCardToCache(1, cardMock);
-        doChangeStatusTest(1, cardStatus, rating);
+        doChangeStatusTest(1, cardStatus, score);
     }
 
     @ParameterizedTest
     @CsvSource(value = {"TO_LEARN,50", "POSTPONED,20"})
-    public void testChangeStatusWhenKeepRating(CardStatus cardStatus, int rating) throws Exception {
+    public void testChangeStatusWhenKeepRating(CardStatus cardStatus, int score) throws Exception {
         Card cardMock = strictMock(Card.class);
         cardMock.setStatus(cardStatus);
-        expect(cardMock.getRating()).andReturn(rating);
+        expect(cardMock.getScore()).andReturn(score);
         replay(cardMock);
         addCardToCache(1, cardMock);
-        doChangeStatusTest(1, cardStatus, rating);
+        doChangeStatusTest(1, cardStatus, score);
     }
 
-    private void doChangeStatusTest(int cardId, CardStatus status, int rating) throws DaoException {
+    private void doChangeStatusTest(int cardId, CardStatus status, int score) throws DaoException {
         connectionMock.open();
         expectLastCall().once();
 
-        cardDaoMock.updateStatus(cardId, status, rating);
+        cardDaoMock.updateStatus(cardId, status, score);
         expectLastCall().once();
         replay(cardDaoMock);
 
@@ -566,8 +584,8 @@ public class DictionaryServiceTest {
         expectLastCall().once();
 
         Card cardMock = strictMock(Card.class);
-        expect(cardMock.getRating()).andReturn(10).once();
-        cardMock.setRating(20);
+        expect(cardMock.getScore()).andReturn(10).once();
+        cardMock.setScore(20);
         expectLastCall().once();
         replay(cardMock);
         addCardToCache(1, cardMock);
@@ -595,10 +613,10 @@ public class DictionaryServiceTest {
         expectLastCall().once();
 
         Card cardMock = strictMock(Card.class);
-        expect(cardMock.getRating()).andReturn(90).once();
+        expect(cardMock.getScore()).andReturn(90).once();
         cardMock.setStatus(CardStatus.LEARNT);
         expectLastCall().once();
-        cardMock.setRating(100);
+        cardMock.setScore(100);
         expectLastCall().once();
         replay(cardMock);
         addCardToCache(1, cardMock);

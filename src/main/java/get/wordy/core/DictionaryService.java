@@ -13,8 +13,10 @@ import get.wordy.core.wrapper.Score;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class DictionaryService implements IDictionaryService {
 
@@ -125,10 +127,17 @@ public class DictionaryService implements IDictionaryService {
     public Set<Card> getCards(int dictionaryId) {
         List<Card> cardList;
         List<Word> wordList;
+        Map<Integer, List<Context>> contextMap = new HashMap<>();
+        Map<Integer, List<Collocation>> collocationMap = new HashMap<>();
         try {
             connection.open();
             cardList = cardDao.selectCardsForDictionary(findDictionary(dictionaryId));
             wordList = wordDao.selectAll();
+            for (Card card : cardList) {
+                int wordId = card.getWordId();
+                contextMap.put(wordId, cardDao.getContextsFor(card));
+                collocationMap.put(wordId, cardDao.getCollocationsFor(card));
+            }
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while loading card or word beans", e);
             return Collections.emptySet();
@@ -136,13 +145,17 @@ public class DictionaryService implements IDictionaryService {
             connection.close();
         }
 
-        Comparator<Word> c = Comparator.comparingInt(Word::id);
+        Map<Integer, Word> wordsMap = wordList
+                .stream()
+                .collect(Collectors.toMap(Word::getId, Function.identity()));
 
         HashMap<Integer, Card> cardsMap = new HashMap<>();
 
         for (Card card : cardList) {
-            Word word = findWord(card.getWordId(), wordList, c);
-            card.setWord(word);
+            int wordId = card.getWordId();
+            card.setWord(wordsMap.get(wordId));
+            card.addContexts(contextMap.get(wordId));
+            card.addCollocations(collocationMap.get(wordId));
             cardsMap.put(card.getId(), card);
         }
 
@@ -184,7 +197,7 @@ public class DictionaryService implements IDictionaryService {
             connection.open();
 
             Word insertedWord = wordDao.insert(card.getWord());
-            int wordId = insertedWord.id();
+            int wordId = insertedWord.getId();
 
             card.setWordId(wordId);
             card.setInsertedAt(Instant.now());
@@ -286,14 +299,14 @@ public class DictionaryService implements IDictionaryService {
         card.setStatus(newStatus);
 
         if (newStatus == CardStatus.LEARNT) {
-            card.setRating(100);
+            card.setScore(100);
         } else if (newStatus == CardStatus.EDIT) {
-            card.setRating(0);
+            card.setScore(0);
         }
 
         try {
             connection.open();
-            cardDao.updateStatus(cardId, newStatus, card.getRating());
+            cardDao.updateStatus(cardId, newStatus, card.getScore());
             connection.commit();
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while changing status", e);
@@ -345,21 +358,21 @@ public class DictionaryService implements IDictionaryService {
         Card card = findCardById(cardId);
 
         int diff = 100 / repetitions;
-        int rating = card.getRating();
-        rating += diff;
+        int score = card.getScore();
+        score += diff;
 
-        if (rating > 99) {
-            rating = 100;
+        if (score > 99) {
+            score = 100;
             card.setStatus(CardStatus.LEARNT);
         }
-        card.setRating(rating);
+        card.setScore(score);
 
         try {
             connection.open();
             cardDao.update(card);
             connection.commit();
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while increasing rating up", e);
+            LOG.log(Level.WARNING, "Error while increasing score up", e);
             connection.rollback();
             return false;
         } finally {
@@ -373,11 +386,6 @@ public class DictionaryService implements IDictionaryService {
                 .filter(dictionary -> dictionary.getId() == dictionaryId)
                 .findFirst()
                 .orElse(null);
-    }
-
-    private Word findWord(int id, List<Word> wordList, Comparator<Word> c) {
-        int index = Collections.binarySearch(wordList, new Word(id, null, null, null, null), c);
-        return wordList.get(index);
     }
 
     private Card findCardById(int cardId) {

@@ -25,10 +25,10 @@ public class WordDao extends BaseDao<Word> {
     @Override
     public Word insert(Word word) throws DaoException {
         try (PreparedStatement statement = prepareInsert(INSERT_SQL)) {
-            statement.setString(1, word.value());
-            statement.setString(2, word.partOfSpeech());
-            statement.setString(3, word.transcription());
-            statement.setString(4, word.meaning());
+            statement.setString(1, word.getValue());
+            statement.setString(2, word.getPartOfSpeech());
+            statement.setString(3, word.getTranscription());
+            statement.setString(4, word.getMeaning());
             statement.execute();
             // get last inserted id
             ResultSet keys = statement.getGeneratedKeys();
@@ -64,7 +64,7 @@ public class WordDao extends BaseDao<Word> {
     @Override
     public void delete(Word word) throws DaoException {
         try (PreparedStatement statement = prepare(DELETE_SQL)) {
-            statement.setInt(1, word.id());
+            statement.setInt(1, word.getId());
             statement.execute();
         } catch (SQLException ex) {
             throw new DaoException("Error while deleting word entity", ex);
@@ -74,11 +74,11 @@ public class WordDao extends BaseDao<Word> {
     @Override
     public Word update(Word word) throws DaoException {
         try (PreparedStatement statement = prepare(UPDATE_SQL)) {
-            statement.setString(1, word.value());
-            statement.setString(2, word.partOfSpeech());
-            statement.setString(3, word.transcription());
-            statement.setString(4, word.meaning());
-            statement.setInt(5, word.id());
+            statement.setString(1, word.getValue());
+            statement.setString(2, word.getPartOfSpeech());
+            statement.setString(3, word.getTranscription());
+            statement.setString(4, word.getMeaning());
+            statement.setInt(5, word.getId());
             statement.execute();
         } catch (SQLException ex) {
             throw new DaoException("Error while updating word entity", ex);
@@ -89,7 +89,7 @@ public class WordDao extends BaseDao<Word> {
     public List<Word> selectAll() throws DaoException {
         Connection connection = getConnection();
         Statement statement = null;
-        List<Word> words = new ArrayList<Word>();
+        List<Word> words = new ArrayList<>();
         try {
             statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(SELECT_ALL_SQL);

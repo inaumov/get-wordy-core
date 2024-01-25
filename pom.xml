@@ -27,7 +27,7 @@
         <mysql.connector.version>8.0.32</mysql.connector.version>
         <junit.version>5.10.1</junit.version>
         <easymock.version>5.2.0</easymock.version>
-        <flyway.version>9.16.0</flyway.version>
+        <flyway.version>9.22.3</flyway.version>
     </properties>
 
     <dependencyManagement>
@@ -58,7 +58,7 @@
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -114,7 +114,7 @@
                         <configuration>
                             <systemPropertyVariables>
                                 <get.wordy.jdbc.url>jdbc:mysql://localhost:3306/get_wordy?useUnicode=yes,characterEncoding=utf8,connectionCollation=utf8_general_ci,sql_mode=STRICT_TRANS_TABLES</get.wordy.jdbc.url>
-                                <get.wordy.jdbc.database>get_wordy</get.wordy.jdbc.database>
+                                <get.wordy.jdbc.database>get_wordy_test</get.wordy.jdbc.database>
                                 <get.wordy.jdbc.user>root</get.wordy.jdbc.user>
                                 <get.wordy.jdbc.password>root</get.wordy.jdbc.password>
                             </systemPropertyVariables>
@@ -123,14 +123,14 @@
                     <plugin>
                         <groupId>org.flywaydb</groupId>
                         <artifactId>flyway-maven-plugin</artifactId>
-                        <version>9.8.1</version>
+                        <version>${flyway.version}</version>
                         <configuration>
                             <driver>com.mysql.cj.jdbc.Driver</driver>
-                            <url>jdbc:mysql://localhost:3306/get_wordy?useUnicode=yes,characterEncoding=utf8,connectionCollation=utf8_general_ci,sql_mode=STRICT_TRANS_TABLES</url>
+                            <url>jdbc:mysql://localhost:3306/get_wordy_test?useUnicode=yes,characterEncoding=utf8,connectionCollation=utf8_general_ci,sql_mode=STRICT_TRANS_TABLES</url>
                             <user>root</user>
                             <password>root</password>
                              <schemas>
-                                 <schema>get_wordy</schema>
+                                 <schema>get_wordy_test</schema>
                              </schemas>
                             <createSchemas>true</createSchemas>
                             <table>schema_history</table>

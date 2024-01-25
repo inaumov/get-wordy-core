@@ -16,7 +16,7 @@ CREATE TABLE words (
 CREATE TABLE cards (
   id            SERIAL,
   status        ENUM ('EDIT', 'POSTPONED', 'TO_LEARN', 'LEARNT')  NOT NULL DEFAULT 'EDIT',
-  rating        SMALLINT DEFAULT '0'                              NOT NULL,
+  score         SMALLINT DEFAULT '0'                              NOT NULL,
   create_time   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   update_time   TIMESTAMP,
   dictionary_id BIGINT UNSIGNED                                   NOT NULL,

@@ -15,7 +15,7 @@ public class Card {
     private int dictionaryId;
     private int wordId;
     private CardStatus status = CardStatus.DEFAULT_STATUS;
-    private int rating;
+    private int score;
     private Instant insertedAt;
     private Instant updatedAt;
     private Word word;
@@ -46,12 +46,12 @@ public class Card {
         this.wordId = wordId;
     }
 
-    public int getRating() {
-        return rating;
+    public int getScore() {
+        return score;
     }
 
-    public void setRating(int rating) {
-        this.rating = rating;
+    public void setScore(int score) {
+        this.score = score;
     }
 
     public CardStatus getStatus() {
@@ -83,7 +83,7 @@ public class Card {
     }
 
     public void setWord(Word word) {
-        if (word.id() != wordId) {
+        if (word.getId() != wordId) {
             throw new InconsistentDataException("Card and Word objects (wordIds) are not consistent");
         }
         this.word = word;
@@ -124,7 +124,7 @@ public class Card {
                 && Objects.equals(this.wordId, that.wordId)
                 && Objects.equals(this.dictionaryId, that.dictionaryId)
                 && Objects.equals(this.status, that.status)
-                && Objects.equals(this.rating, that.rating)
+                && Objects.equals(this.score, that.score)
                 && Objects.equals(this.insertedAt, that.insertedAt)
                 && Objects.equals(this.updatedAt, that.updatedAt)
                 && Objects.deepEquals(this.getContexts(), that.getContexts())

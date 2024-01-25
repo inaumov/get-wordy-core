@@ -22,15 +22,15 @@ public class CardDao extends BaseDao<Card> {
             """;
     public static final String DELETE_SQL = "DELETE FROM cards WHERE id=?";
     public static final String UPDATE_SQL = """
-            UPDATE cards SET status=?,rating=?,word_id=?,dictionary_id=?,update_time=NOW() WHERE id=?
+            UPDATE cards SET status=?,score=?,word_id=?,dictionary_id=?,update_time=NOW() WHERE id=?
             """;
     public static final String SELECT_ALL_CARDS = """
-            SELECT cards.id, status, rating, create_time, update_time, word_id, dictionary_id FROM cards
+            SELECT cards.id, status, score, create_time, update_time, word_id, dictionary_id FROM cards
             JOIN words ON cards.word_id = words.id ORDER BY %s DESC
             """;
-    private static final String RESET_SCORE_SQL = "UPDATE cards SET rating=?, status=? WHERE dictionary_id=?";
+    private static final String RESET_SCORE_SQL = "UPDATE cards SET score=?, status=? WHERE dictionary_id=?";
     private static final String UPDATE_STATUS = """
-            UPDATE cards SET status=?,rating=?,update_time=NOW() WHERE id=?
+            UPDATE cards SET status=?,score=?,update_time=NOW() WHERE id=?
             """;
     private static final String COUNT_SCORE_SQL = """
             SELECT status, COUNT(status) FROM cards WHERE dictionary_id=? GROUP BY status
@@ -103,8 +103,8 @@ public class CardDao extends BaseDao<Card> {
                 + ") VALUES (?,?)";
         ResultSet resultSet = null;
         try (PreparedStatement statement = prepareInsert(INSERT)) {
-            statement.setInt(1, context.wordId());
-            statement.setString(2, context.example());
+            statement.setInt(1, context.getWordId());
+            statement.setString(2, context.getExample());
             statement.execute();
             // get last inserted id
             resultSet = statement.getGeneratedKeys();
@@ -136,8 +136,8 @@ public class CardDao extends BaseDao<Card> {
                 + ") VALUES (?,?)";
         ResultSet resultSet = null;
         try (PreparedStatement statement = prepareInsert(INSERT)) {
-            statement.setInt(1, collocation.wordId());
-            statement.setString(2, collocation.example());
+            statement.setInt(1, collocation.getWordId());
+            statement.setString(2, collocation.getExample());
             statement.execute();
             // get last inserted id
             resultSet = statement.getGeneratedKeys();
@@ -175,7 +175,7 @@ public class CardDao extends BaseDao<Card> {
         try {
             statement = connection.prepareStatement(UPDATE_SQL);
             statement.setString(1, card.getStatus().name());
-            statement.setInt(2, card.getRating());
+            statement.setInt(2, card.getScore());
             statement.setInt(3, card.getWordId());
             statement.setInt(4, card.getDictionaryId());
             statement.setInt(5, card.getId());
@@ -223,7 +223,7 @@ public class CardDao extends BaseDao<Card> {
                 Card card = new Card();
                 card.setId(resultSet.getInt("id"));
                 card.setStatus(CardStatus.valueOf(resultSet.getString("status")));
-                card.setRating(resultSet.getInt("rating"));
+                card.setScore(resultSet.getInt("score"));
                 card.setInsertedAt(resultSet.getTimestamp("create_time").toInstant());
                 card.setUpdatedAt(resultSet.getTimestamp("update_time").toInstant());
                 card.setWordId(resultSet.getInt("word_id"));
@@ -248,7 +248,7 @@ public class CardDao extends BaseDao<Card> {
                 Card card = new Card();
                 card.setId(resultSet.getInt("id"));
                 card.setStatus(CardStatus.valueOf(resultSet.getString("status")));
-                card.setRating(resultSet.getInt("rating"));
+                card.setScore(resultSet.getInt("score"));
                 card.setInsertedAt(resultSet.getTimestamp("create_time").toInstant());
                 card.setUpdatedAt(resultSet.getTimestamp("update_time").toInstant());
                 card.setWordId(resultSet.getInt("word_id"));
@@ -367,17 +367,17 @@ public class CardDao extends BaseDao<Card> {
         }
     }
 
-    public void updateStatus(int id, CardStatus status, int rating) throws DaoException {
+    public void updateStatus(int id, CardStatus status, int score) throws DaoException {
         Connection connection = getConnection();
         PreparedStatement statement = null;
         try {
             statement = connection.prepareStatement(UPDATE_STATUS);
             statement.setString(1, status.name());
-            statement.setInt(2, rating);
+            statement.setInt(2, score);
             statement.setInt(3, id);
             statement.executeUpdate();
         } catch (SQLException ex) {
-            throw new DaoException("Error while updating status and rating", ex);
+            throw new DaoException("Error while updating status and score", ex);
         } finally {
             CloseUtils.closeQuietly(statement);
         }

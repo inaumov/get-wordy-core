@@ -19,8 +19,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CardDaoTest extends BaseDaoTest {
 
     private static final int PREDEFINED_CARDS_CNT = 2;
-    private static final int EXPECTED_NEW_ID = 4;
-    private static final int DEFAULT_RATING = 50;
+    private static final int EXPECTED_NEW_ID = 3;
+    private static final int DEFAULT_SCORE = 50;
 
     private CardDao cardDao;
 
@@ -38,7 +38,7 @@ public class CardDaoTest extends BaseDaoTest {
         newCard.setId(nextCardId);
         newCard.setWordId(3);
         newCard.setDictionaryId(2);
-        newCard.setRating(10);
+        newCard.setScore(10);
         newCard.setStatus(CardStatus.POSTPONED);
         newCard.addContext(prepareContext(newCard.getWordId(), 3));
         newCard.addCollocation(prepareCollocation(newCard.getWordId(), 3));
@@ -68,7 +68,7 @@ public class CardDaoTest extends BaseDaoTest {
         updatedCard.setWordId(2);
         updatedCard.setDictionaryId(2);
         updatedCard.setStatus(CardStatus.LEARNT);
-        updatedCard.setRating(100);
+        updatedCard.setScore(100);
         updatedCard.setUpdatedAt(Instant.now());
         updatedCard.addContext(prepareContext(2, updatedCard.getWordId()));
         updatedCard.addCollocation(prepareCollocation(2, updatedCard.getWordId()));
@@ -170,7 +170,7 @@ public class CardDaoTest extends BaseDaoTest {
             assertEquals(id, card.getWordId());
             assertEquals(id, card.getDictionaryId());
             assertTrue(expectedStatuses.remove(card.getStatus()));
-            assertEquals(50, card.getRating());
+            assertEquals(50, card.getScore());
         }
         assertTrue(expectedStatuses.isEmpty());
     }
@@ -200,9 +200,9 @@ public class CardDaoTest extends BaseDaoTest {
         for (int i = 0; i < expectedDefinitions.size(); i++) {
             Context expected = expectedDefinitions.get(i);
             Context actual = actualContexts.get(i);
-            assertTrue(expected.id() <= actual.id(), "actual: " + actual.id());
-            assertEquals(expected.example(), actual.example());
-            assertEquals(expected.wordId(), actual.wordId());
+            assertTrue(expected.getId() <= actual.getId(), "actual: " + actual.getId());
+            assertEquals(expected.getExample(), actual.getExample());
+            assertEquals(expected.getWordId(), actual.getWordId());
         }
     }
 
@@ -212,9 +212,9 @@ public class CardDaoTest extends BaseDaoTest {
         for (int i = 0; i < meaningsExpected.size(); i++) {
             Collocation expected = meaningsExpected.get(i);
             Collocation actual = actualCollocations.get(i);
-            assertTrue(expected.id() <= actual.id(), "actual: " + actual.id());
-            assertEquals(expected.example(), actual.example());
-            assertEquals(expected.wordId(), actual.wordId());
+            assertTrue(expected.getId() <= actual.getId(), "actual: " + actual.getId());
+            assertEquals(expected.getExample(), actual.getExample());
+            assertEquals(expected.getWordId(), actual.getWordId());
         }
     }
 
@@ -235,11 +235,11 @@ public class CardDaoTest extends BaseDaoTest {
         for (Card card : cards) {
             assertSame(CardStatus.DEFAULT_STATUS, card.getStatus());
             if (CardStatus.DEFAULT_STATUS == CardStatus.LEARNT) {
-                assertEquals(100, card.getRating());
+                assertEquals(100, card.getScore());
             } else if (CardStatus.DEFAULT_STATUS == CardStatus.EDIT) {
-                assertEquals(0, card.getRating());
+                assertEquals(0, card.getScore());
             } else {
-                assertEquals(DEFAULT_RATING, card.getRating());
+                assertEquals(DEFAULT_SCORE, card.getScore());
             }
         }
     }

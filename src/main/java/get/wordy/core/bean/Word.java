@@ -15,23 +15,23 @@ public class Word {
         this.meaning = meaning;
     }
 
-    public int id() {
+    public int getId() {
         return id;
     }
 
-    public String value() {
+    public String getValue() {
         return value;
     }
 
-    public String partOfSpeech() {
+    public String getPartOfSpeech() {
         return partOfSpeech;
     }
 
-    public String transcription() {
+    public String getTranscription() {
         return transcription;
     }
 
-    public String meaning() {
+    public String getMeaning() {
         return meaning;
     }
 
