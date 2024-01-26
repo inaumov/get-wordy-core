@@ -162,7 +162,7 @@ public class DictionaryService implements IDictionaryService {
         cardsCache.clear();
         cardsCache.putAll(cardsMap);
 
-        return Set.copyOf(cardsMap.values());
+        return Set.copyOf(cardList);
     }
 
     @Override

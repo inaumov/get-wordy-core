@@ -26,7 +26,7 @@ public class CardDao extends BaseDao<Card> {
             """;
     public static final String SELECT_ALL_CARDS = """
             SELECT cards.id, status, score, create_time, update_time, word_id, dictionary_id FROM cards
-            JOIN words ON cards.word_id = words.id ORDER BY %s DESC
+            JOIN words ON cards.word_id = words.id ORDER BY %s ASC
             """;
     private static final String RESET_SCORE_SQL = "UPDATE cards SET score=?, status=? WHERE dictionary_id=?";
     private static final String UPDATE_STATUS = """
@@ -38,7 +38,7 @@ public class CardDao extends BaseDao<Card> {
     private static final String SELECT_FOR_EXERCISE_SQL = """
             SELECT id FROM cards WHERE dictionary_id=? AND status=? ORDER BY create_time LIMIT ?
             """;
-    private static final String SELECT_ALL_CARDS_SQL = "SELECT * FROM cards WHERE dictionary_id=?";
+    private static final String SELECT_ALL_CARDS_BY_DIC = "SELECT * FROM cards WHERE dictionary_id=? ORDER BY create_time ASC";
 
     CardDao(ConnectionWrapper connectionFactory) {
         super(connectionFactory);
@@ -71,7 +71,6 @@ public class CardDao extends BaseDao<Card> {
     }
 
     public boolean generateCardsWithoutDefinitions(Set<Integer> wordIds, int dictionaryId, CardStatus status) throws DaoException {
-        ResultSet resultSet = null;
         try (PreparedStatement statement = prepareInsert(GENERATE_SQL)) {
             for (Integer wordId : wordIds) {
                 statement.setString(1, status != null ? status.name() : null);
@@ -82,8 +81,6 @@ public class CardDao extends BaseDao<Card> {
             return statement.executeBatch().length == wordIds.size();
         } catch (SQLException ex) {
             throw new DaoException("Error while generating card entity", ex);
-        } finally {
-            CloseUtils.closeQuietly(resultSet);
         }
     }
 
@@ -216,7 +213,7 @@ public class CardDao extends BaseDao<Card> {
     public List<Card> selectCardsForDictionary(Dictionary dictionary) throws DaoException {
         ResultSet resultSet = null;
         ArrayList<Card> data = new ArrayList<>();
-        try (PreparedStatement statement = prepare(SELECT_ALL_CARDS_SQL)) {
+        try (PreparedStatement statement = prepare(SELECT_ALL_CARDS_BY_DIC)) {
             statement.setInt(1, dictionary.getId());
             resultSet = statement.executeQuery();
             while (resultSet.next()) {

@@ -51,6 +51,7 @@ public class CardDaoTest extends BaseDaoTest {
         List<Card> cards = cardDao.selectCardsForDictionary(getDictionary(2));
         assertNotNull(cards);
         assertEquals(2, cards.size());
+        assertEquals(2, cards.get(0).getId());
         Card actual = cards.get(1);
         assertNotNull(actual);
         assertTrue(actual.getId() >= EXPECTED_NEW_ID);
@@ -97,24 +98,23 @@ public class CardDaoTest extends BaseDaoTest {
 
     @Test
     public void testSelectAllSortedByInsertTimeNewCardsFirst() throws DaoException {
-        Collection<Card> cards = cardDao.selectAllCardsSortedBy("create_time");
+        List<Card> cards = cardDao.selectAllCardsSortedBy("create_time");
         assertNotNull(cards);
         assertFalse(cards.isEmpty());
 
-        Object[] cardsArr = cards.toArray();
-        Card first = (Card) cardsArr[0];
-        assertEquals(2, first.getId());
-        assertEquals(2, first.getWordId());
-        assertEquals(2, first.getDictionaryId());
-        assertEquals(CardStatus.TO_LEARN, first.getStatus());
+        Card first = cards.get(0);
+        assertEquals(1, first.getId());
+        assertEquals(1, first.getWordId());
+        assertEquals(1, first.getDictionaryId());
+        assertEquals(CardStatus.EDIT, first.getStatus());
 
-        Card next = (Card) cardsArr[1];
-        assertEquals(1, next.getId());
-        assertEquals(1, next.getWordId());
-        assertEquals(1, next.getDictionaryId());
-        assertEquals(CardStatus.EDIT, next.getStatus());
+        Card second = cards.get(1);
+        assertEquals(2, second.getId());
+        assertEquals(2, second.getWordId());
+        assertEquals(2, second.getDictionaryId());
+        assertEquals(CardStatus.TO_LEARN, second.getStatus());
 
-        assertTrue(first.getInsertedAt().isAfter(next.getInsertedAt()));
+        assertTrue(first.getInsertedAt().isBefore(second.getInsertedAt())); // oldest first
     }
 
     @Test
@@ -228,7 +228,11 @@ public class CardDaoTest extends BaseDaoTest {
         List<Card> cards = cardDao.selectCardsForDictionary(getDictionary(dictionaryId));
         assertNotNull(cards);
         assertEquals(2, cards.size());
-        assertTrue(cards.get(1).getId() >= EXPECTED_NEW_ID);
+        Card first = cards.get(0);
+        assertEquals(2, first.getId());
+        Card actual = cards.get(1);
+        assertTrue(actual.getId() >= EXPECTED_NEW_ID);
+        assertTrue(first.getInsertedAt().isBefore(actual.getInsertedAt())); // oldest first
     }
 
     private static void assertStatus(List<Card> cards) {
