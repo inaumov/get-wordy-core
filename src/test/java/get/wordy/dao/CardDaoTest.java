@@ -176,7 +176,7 @@ public class CardDaoTest extends BaseDaoTest {
     }
 
     private static Dictionary getDictionary(int dictionaryId) {
-        return new Dictionary(dictionaryId, "");
+        return new Dictionary(dictionaryId, "", null);
     }
 
     private void assertCards(Dictionary dictionary) throws DaoException {

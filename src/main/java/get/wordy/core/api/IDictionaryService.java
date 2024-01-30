@@ -12,7 +12,7 @@ public interface IDictionaryService {
 
     List<Dictionary> getDictionaries();
 
-    Dictionary createDictionary(final String dictionaryName);
+    Dictionary createDictionary(final String dictionaryName, String picture);
 
     boolean removeDictionary(final int dictionaryId);
 

@@ -107,7 +107,7 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(connectionMock);
 
-        boolean done = dictionaryService.createDictionary(DICTIONARY_NAME) != null;
+        boolean done = dictionaryService.createDictionary(DICTIONARY_NAME, "http://picture.jpg") != null;
         assertTrue(done);
         assertEquals(DICTIONARY_NAME, dictionaryCapture.getValue().getName());
         verify(connectionMock, dictionaryDaoMock);
@@ -129,7 +129,7 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(connectionMock);
 
-        boolean exceptionHappened = dictionaryService.createDictionary(DICTIONARY_NAME) == null;
+        boolean exceptionHappened = dictionaryService.createDictionary(DICTIONARY_NAME, "http://picture.jpg") == null;
         assertTrue(exceptionHappened);
         assertEquals(DICTIONARY_NAME, dictionaryCapture.getValue().getName());
         verify(connectionMock, dictionaryDaoMock);

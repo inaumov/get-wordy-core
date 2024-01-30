@@ -6,12 +6,15 @@ public class Dictionary {
 
     private String name;
 
+    private String picture;
+
     public Dictionary() {
     }
 
-    public Dictionary(int id, String name) {
+    public Dictionary(int id, String name, String picture) {
         this.id = id;
         this.name = name;
+        this.picture = picture;
     }
 
     public int getId() {
@@ -28,6 +31,14 @@ public class Dictionary {
 
     public void setName(String dictionary) {
         this.name = dictionary;
+    }
+
+    public String getPicture() {
+        return picture;
+    }
+
+    public void setPicture(String picture) {
+        this.picture = picture;
     }
 
 }

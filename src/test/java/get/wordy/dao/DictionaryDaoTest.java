@@ -14,6 +14,7 @@ public class DictionaryDaoTest extends BaseDaoTest {
 
     private static final int PREDEFINED_DICTIONARIES_CNT = 2;
     private static final int EXPECTED_NEW_ID = 3;
+    private static final String LOGO_PNG = "http://logo.png";
 
     private DictionaryDao dictionaryDao;
 
@@ -28,6 +29,7 @@ public class DictionaryDaoTest extends BaseDaoTest {
     public void testInsert() throws DaoException {
         Dictionary dictionary = new Dictionary();
         dictionary.setName("name");
+        dictionary.setPicture(LOGO_PNG);
 
         dictionaryDao.insert(dictionary);
         assertTrue(dictionary.getId() >= EXPECTED_NEW_ID);
@@ -40,6 +42,7 @@ public class DictionaryDaoTest extends BaseDaoTest {
         for (Dictionary actual : dictionaries) {
             if (actual.getId() >= EXPECTED_NEW_ID) {
                 assertEquals(dictionary.getName(), actual.getName());
+                assertEquals(LOGO_PNG, actual.getPicture());
             } else {
                 assertEquals(id, actual.getId());
                 assertEquals("dictionary" + id, actual.getName());
@@ -55,8 +58,8 @@ public class DictionaryDaoTest extends BaseDaoTest {
     public void testUpdate() throws DaoException {
         // update an existed dictionary
         for (int id = 1; id <= PREDEFINED_DICTIONARIES_CNT; id++) {
-            Dictionary word = new Dictionary(id, "name" + id);
-            dictionaryDao.update(word);
+            Dictionary dictionary = new Dictionary(id, "name" + id, LOGO_PNG);
+            dictionaryDao.update(dictionary);
         }
         // count dictionaries after updating
         List<Dictionary> dictionaries = dictionaryDao.selectAll();

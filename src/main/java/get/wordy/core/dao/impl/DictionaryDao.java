@@ -11,9 +11,9 @@ import java.util.List;
 
 public class DictionaryDao extends BaseDao<Dictionary> {
 
-    public static final String INSERT_SQL = "INSERT INTO dictionaries (name) VALUES (?)";
+    public static final String INSERT_SQL = "INSERT INTO dictionaries (name, picture_url) VALUES (?, ?)";
     public static final String DELETE_SQL = "DELETE FROM dictionaries WHERE id = ?";
-    public static final String UPDATE_SQL = "UPDATE dictionaries SET name = ? WHERE id = ?";
+    public static final String UPDATE_NAME_SQL = "UPDATE dictionaries SET name = ? WHERE id = ?";
     public static final String SELECT_ALL_SQL = "SELECT * FROM dictionaries ORDER BY name";
     public static final String COUNT_SQL = "SELECT COUNT(name) FROM dictionaries";
 
@@ -25,6 +25,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
     public Dictionary insert(Dictionary dictionary) throws DaoException {
         try (PreparedStatement statement = prepareInsert(INSERT_SQL)) {
             statement.setString(1, dictionary.getName());
+            statement.setString(2, dictionary.getPicture());
             statement.execute();
             // get last inserted id
             ResultSet keys = statement.getGeneratedKeys();
@@ -50,7 +51,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
 
     @Override
     public Dictionary update(Dictionary dictionary) throws DaoException {
-        try (PreparedStatement statement = prepareInsert(UPDATE_SQL)) {
+        try (PreparedStatement statement = prepareInsert(UPDATE_NAME_SQL)) {
             statement.setString(1, dictionary.getName());
             statement.setInt(2, dictionary.getId());
             statement.execute();
@@ -69,8 +70,9 @@ public class DictionaryDao extends BaseDao<Dictionary> {
             ResultSet resultSet = statement.executeQuery(SELECT_ALL_SQL);
             while (resultSet.next()) {
                 int id = resultSet.getInt(1);
-                String dictionary = resultSet.getString(2);
-                dictionaries.add(new Dictionary(id, dictionary));
+                String name = resultSet.getString(2);
+                String picture = resultSet.getString(3);
+                dictionaries.add(new Dictionary(id, name, picture));
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while retrieving all dictionary entities", ex);

@@ -61,9 +61,10 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public Dictionary createDictionary(String dictionaryName) {
+    public Dictionary createDictionary(String dictionaryName, String picture) {
         Dictionary dictionary = new Dictionary();
         dictionary.setName(dictionaryName);
+        dictionary.setPicture(picture);
         try {
             connection.open();
             dictionaryDao.insert(dictionary);
@@ -86,7 +87,7 @@ public class DictionaryService implements IDictionaryService {
             LOG.log(Level.WARNING, "No dictionary was renamed");
             return false;
         }
-        Dictionary copy = new Dictionary(dictionary.getId(), newDictionaryName);
+        Dictionary copy = new Dictionary(dictionary.getId(), newDictionaryName, null);
         try {
             connection.open();
             dictionaryDao.update(copy);
