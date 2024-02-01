@@ -17,8 +17,8 @@ public class CardDao extends BaseDao<Card> {
     public static final String INSERT_SQL = """
             INSERT INTO cards (status, update_time, dictionary_id, word_id) VALUES (?,?,?,?)
             """;
-    public static final String GENERATE_SQL = """
-            INSERT INTO cards (status, update_time, dictionary_id, word_id) VALUES (?,NOW(),?,?)
+    public static final String GENERATE_EMPTY_CARDS_QUERY = """
+            INSERT INTO cards (dictionary_id, word_id) VALUES (?,?)
             """;
     public static final String DELETE_SQL = "DELETE FROM cards WHERE id=?";
     public static final String UPDATE_SQL = """
@@ -70,25 +70,30 @@ public class CardDao extends BaseDao<Card> {
         return card;
     }
 
-    public boolean generateCardsWithoutDefinitions(Set<Integer> wordIds, int dictionaryId, CardStatus status) throws DaoException {
-        try (PreparedStatement statement = prepareInsert(GENERATE_SQL)) {
+    public Set<Integer> generateEmptyCards(int dictionaryId, Set<Integer> wordIds) throws DaoException {
+        try (PreparedStatement statement = prepareInsert(GENERATE_EMPTY_CARDS_QUERY)) {
             for (Integer wordId : wordIds) {
-                statement.setString(1, status != null ? status.name() : null);
-                statement.setInt(2, dictionaryId);
-                statement.setInt(3, wordId);
+                statement.setInt(1, dictionaryId);
+                statement.setInt(2, wordId);
                 statement.addBatch();
             }
-            return statement.executeBatch().length == wordIds.size();
+            statement.executeBatch();
+            // get last inserted id
+            ResultSet keys = statement.getGeneratedKeys();
+            Set<Integer> ids = new HashSet<>();
+            while (keys.next()) {
+                ids.add(keys.getInt(1));
+            }
+            return ids;
         } catch (SQLException ex) {
-            throw new DaoException("Error while generating card entity", ex);
+            throw new DaoException("Error while generating card entities", ex);
         }
     }
 
-    private void insertContexts(ArrayList<Context> contexts) throws DaoException {
+    private void insertContexts(List<Context> contexts) throws DaoException {
         for (Context context : contexts) {
-            contexts.remove(context);
             Context inserted = insertContext(context);
-            contexts.add(inserted);
+            context.setId(inserted.getId());
         }
     }
 
@@ -117,11 +122,10 @@ public class CardDao extends BaseDao<Card> {
         return context;
     }
 
-    private void insertCollocations(ArrayList<Collocation> collocations) throws DaoException {
+    private void insertCollocations(List<Collocation> collocations) throws DaoException {
         for (Collocation collocation : collocations) {
-            collocations.remove(collocation);
             Collocation inserted = insertCollocation(collocation);
-            collocations.add(inserted);
+            collocation.setId(inserted.getId());
         }
     }
 
@@ -221,8 +225,14 @@ public class CardDao extends BaseDao<Card> {
                 card.setId(resultSet.getInt("id"));
                 card.setStatus(CardStatus.valueOf(resultSet.getString("status")));
                 card.setScore(resultSet.getInt("score"));
-                card.setInsertedAt(resultSet.getTimestamp("create_time").toInstant());
-                card.setUpdatedAt(resultSet.getTimestamp("update_time").toInstant());
+                Timestamp createTime = resultSet.getTimestamp("create_time");
+                if (createTime != null) {
+                    card.setInsertedAt(createTime.toInstant());
+                }
+                Timestamp updateTime = resultSet.getTimestamp("update_time");
+                if (updateTime != null) {
+                    card.setUpdatedAt(updateTime.toInstant());
+                }
                 card.setWordId(resultSet.getInt("word_id"));
                 card.setDictionaryId(resultSet.getInt("dictionary_id"));
                 data.add(card);
@@ -246,8 +256,14 @@ public class CardDao extends BaseDao<Card> {
                 card.setId(resultSet.getInt("id"));
                 card.setStatus(CardStatus.valueOf(resultSet.getString("status")));
                 card.setScore(resultSet.getInt("score"));
-                card.setInsertedAt(resultSet.getTimestamp("create_time").toInstant());
-                card.setUpdatedAt(resultSet.getTimestamp("update_time").toInstant());
+                Timestamp createTime = resultSet.getTimestamp("create_time");
+                if (createTime != null) {
+                    card.setInsertedAt(createTime.toInstant());
+                }
+                Timestamp updateTime = resultSet.getTimestamp("update_time");
+                if (updateTime != null) {
+                    card.setUpdatedAt(updateTime.toInstant());
+                }
                 card.setWordId(resultSet.getInt("word_id"));
                 card.setDictionaryId(resultSet.getInt("dictionary_id"));
                 data.add(card);

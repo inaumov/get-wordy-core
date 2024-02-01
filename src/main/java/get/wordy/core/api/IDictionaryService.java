@@ -22,7 +22,9 @@ public interface IDictionaryService {
 
     List<Card> getCardsForExercise(int dictionaryId, final int amount);
 
-    boolean save(Card card);
+    boolean addCard(int dictionaryId, Card card);
+
+    boolean updateCard(int dictionaryId, Card card);
 
     boolean removeCard(final int cardId);
 
@@ -36,6 +38,6 @@ public interface IDictionaryService {
 
     boolean increaseScoreUp(final int cardId, int repetitions);
 
-    boolean generateCards(int dictionaryId, Set<String> words);
+    List<Card> generateCards(int dictionaryId, Set<String> words);
 
 }

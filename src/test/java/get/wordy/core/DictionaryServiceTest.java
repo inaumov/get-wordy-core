@@ -346,14 +346,23 @@ public class DictionaryServiceTest {
         addDictionaryToCache(dictionaryMock);
 
         Word wordMock = strictMock(Word.class);
-        expect(wordMock.getId()).andReturn(0);
         replay(wordMock);
 
+        Context contextMock = strictMock(Context.class);
+        contextMock.setWordId(1);
+        replay(contextMock);
+
+        Collocation collocationMock = strictMock(Collocation.class);
+        collocationMock.setWordId(1);
+        replay(collocationMock);
+
         Card cardMock = strictMock(Card.class);
-        expect(cardMock.getId()).andReturn(0);
-        expect(cardMock.getWord()).andStubReturn(wordMock);
-        cardMock.setWordId(anyInt());
+        expect(cardMock.getWord()).andReturn(wordMock);
+        cardMock.setDictionaryId(DICTIONARY_ID);
+        cardMock.setWordId(1);
         cardMock.setInsertedAt(anyObject(Instant.class));
+        expect(cardMock.getContexts()).andReturn(List.of(contextMock));
+        expect(cardMock.getCollocations()).andReturn(List.of(collocationMock));
         replay(cardMock);
 
         Word insertedWordMock = strictMock(Word.class);
@@ -376,7 +385,7 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(connectionMock);
 
-        boolean done = dictionaryService.save(cardMock);
+        boolean done = dictionaryService.addCard(DICTIONARY_ID, cardMock);
         assertTrue(done);
         verify(wordDaoMock, cardDaoMock);
         verify(connectionMock);
@@ -400,7 +409,7 @@ public class DictionaryServiceTest {
         replay(wordForUpdMock);
 
         Card cardForUpdMock = strictMock(Card.class);
-        expect(cardForUpdMock.getId()).andReturn(1).times(2);
+        expect(cardForUpdMock.getId()).andReturn(1);
         expect(cardForUpdMock.getWord()).andReturn(wordForUpdMock);
         replay(cardForUpdMock);
 
@@ -416,7 +425,7 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(connectionMock);
 
-        boolean done = dictionaryService.save(cardForUpdMock);
+        boolean done = dictionaryService.updateCard(DICTIONARY_ID, cardForUpdMock);
 
         assertTrue(done);
         verify(wordMock, cardMock);
@@ -647,12 +656,24 @@ public class DictionaryServiceTest {
         replay(dictionaryMock);
         addDictionaryToCache(dictionaryMock);
 
-        Set<String> words = Collections.singleton("generated");
-        Set<Integer> wordIds = Collections.singleton(87);
-        expect(wordDaoMock.generate(words)).andReturn(wordIds).once();
-        expect(cardDaoMock.generateCardsWithoutDefinitions(anyObject(Set.class), anyInt(), anyObject(CardStatus.class)))
-                .andReturn(true).once();
+        Word wordMock42 = strictMock(Word.class);
+        expect(wordMock42.getId()).andReturn(42).times(2);
+        expect(wordMock42.getValue()).andReturn("singleton").anyTimes();
+        replay(wordMock42);
 
+        Word wordMock87 = strictMock(Word.class);
+        expect(wordMock87.getId()).andReturn(87).times(2);
+        expect(wordMock87.getValue()).andReturn("generated").anyTimes();
+        replay(wordMock87);
+
+        Set<String> words = Set.of("singleton", "generated");
+        Set<Integer> wordIds = Set.of(42, 87);
+        expect(wordDaoMock.generate(words)).andReturn(wordIds).once();
+        expect(cardDaoMock.generateEmptyCards(anyInt(), eq(wordIds)))
+                .andReturn(Set.of(15, 16)).once();
+        expect(wordDaoMock.selectAll())
+                .andReturn(List.of(wordMock42, wordMock87));
+        expectLastCall().once();
         replay(wordDaoMock, cardDaoMock);
 
         connectionMock.commit();
@@ -661,8 +682,8 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(connectionMock);
 
-        boolean done = dictionaryService.generateCards(DICTIONARY_ID, words);
-        assertTrue(done);
+        List<Card> done = dictionaryService.generateCards(DICTIONARY_ID, words);
+        assertFalse(done.isEmpty());
         verify(wordDaoMock, cardDaoMock);
         verify(connectionMock);
     }

@@ -7,6 +7,9 @@ public class Word {
     private String transcription;
     private String meaning;
 
+    public Word() {
+    }
+
     public Word(int id, String value, String partOfSpeech, String transcription, String meaning) {
         this.id = id;
         this.value = value;

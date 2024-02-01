@@ -189,19 +189,18 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean save(Card card) {
-        return card.getId() > 0 ? updateCard(card) : createCard(card);
-    }
-
-    private boolean createCard(Card card) {
+    public boolean addCard(int dictionaryId, Card card) {
         try {
             connection.open();
 
             Word insertedWord = wordDao.insert(card.getWord());
             int wordId = insertedWord.getId();
 
+            card.setDictionaryId(dictionaryId);
             card.setWordId(wordId);
             card.setInsertedAt(Instant.now());
+            card.getContexts().forEach(context -> context.setWordId(wordId));
+            card.getCollocations().forEach(collocation -> collocation.setWordId(wordId));
             Card insertedCard = cardDao.insert(card);
 
             connection.commit();
@@ -219,7 +218,8 @@ public class DictionaryService implements IDictionaryService {
         }
     }
 
-    private boolean updateCard(Card card) {
+    @Override
+    public boolean updateCard(int dictionaryId, Card card) {
         int cardId = card.getId();
         Card oldCard = findCardById(cardId);
 
@@ -394,21 +394,50 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean generateCards(int dictionaryId, Set<String> words) {
-        boolean done = false;
-        int defaultId = findDictionary(dictionaryId).getId();
+    public List<Card> generateCards(int dictionaryId, Set<String> words) {
+        int dicId = findDictionary(dictionaryId).getId();
+        int cnt = words.size();
+
         try {
             connection.open();
             Set<Integer> generatedIds = wordDao.generate(words);
-            done = cardDao.generateCardsWithoutDefinitions(generatedIds, defaultId, CardStatus.EDIT);
+            if (generatedIds.size() != cnt) {
+                throw new IllegalStateException();
+            }
+            Set<Integer> cardIds = cardDao.generateEmptyCards(dicId, generatedIds);
+            if (cardIds.size() != cnt) {
+                throw new IllegalStateException();
+            }
+
+            List<Card> result = new ArrayList<>();
+            List<Word> wordList = wordDao.selectAll();
             connection.commit();
+
+            Map<Integer, Word> wordsMap = wordList
+                    .stream()
+                    .collect(Collectors.toMap(Word::getId, Function.identity()));
+
+            Iterator<Integer> wordIds = generatedIds.iterator();
+            for (Integer cardId : cardIds) {
+                Integer wordId = wordIds.next();
+                Card card = new Card();
+                card.setWordId(wordId);
+                card.setWord(wordsMap.get(wordId));
+                card.setDictionaryId(dictionaryId);
+                card.setId(cardId);
+                card.setStatus(CardStatus.DEFAULT_STATUS);
+                card.setInsertedAt(Instant.now());
+                card.setScore(0);
+                result.add(card);
+            }
+            return result;
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while generating cards without definitions", e);
             connection.rollback();
+            return Collections.emptyList();
         } finally {
             connection.close();
         }
-        return done;
     }
 
 }

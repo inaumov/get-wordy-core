@@ -99,19 +99,21 @@ public class WordDaoTest extends BaseDaoTest {
 
     @Test
     public void testGenerateWords() throws Exception {
-        Set<String> strings = Collections.singleton("generated");
+        Set<String> strings = Set.of("singleton", "generated");
         Set<Integer> generated = wordDao.generate(strings);
-        assertEquals(1, generated.size());
+        assertEquals(2, generated.size());
 
         List<Word> words = wordDao.selectAll();
         assertNotNull(words);
-        assertEquals(PREDEFINED_WORDS_CNT + 1, words.size());
+        assertEquals(PREDEFINED_WORDS_CNT + 2, words.size());
 
+        // validate at least one word
         LinkedList<Word> newList = new LinkedList<>(words);
         Word last = newList.getLast();
         assertTrue(last.getId() >= EXPECTED_NEW_ID);
-        assertEquals("generated", last.getValue());
+        assertTrue(strings.contains(last.getValue()));
         assertNull(last.getTranscription());
+        assertNull(last.getMeaning());
     }
 
     private static void assertTestData(List<Word> words, int startFromId) {

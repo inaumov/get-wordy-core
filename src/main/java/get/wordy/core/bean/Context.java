@@ -6,6 +6,9 @@ public class Context {
     private String example;
     private int wordId;
 
+    public Context() {
+    }
+
     public Context(int id, String example, int wordId) {
         this.id = id;
         this.example = example;

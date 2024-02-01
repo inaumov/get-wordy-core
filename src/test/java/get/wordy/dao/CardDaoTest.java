@@ -221,18 +221,22 @@ public class CardDaoTest extends BaseDaoTest {
     @Test
     public void testGenerateCards() throws Exception {
         int dictionaryId = 2;
-        Set<Integer> wordIds = Collections.singleton(87);
-        boolean done = cardDao.generateCardsWithoutDefinitions(wordIds, dictionaryId, CardStatus.EDIT);
+        Set<Integer> wordIds = Set.of(42, 87);
+        Set<Integer> ids = cardDao.generateEmptyCards(dictionaryId, wordIds);
         // assert
-        assertTrue(done);
+        assertFalse(ids.isEmpty());
         List<Card> cards = cardDao.selectCardsForDictionary(getDictionary(dictionaryId));
         assertNotNull(cards);
-        assertEquals(2, cards.size());
-        Card first = cards.get(0);
+        assertEquals(3, cards.size());
+        Iterator<Card> cardIterator = cards.iterator();
+        Card first = cardIterator.next();
         assertEquals(2, first.getId());
-        Card actual = cards.get(1);
-        assertTrue(actual.getId() >= EXPECTED_NEW_ID);
-        assertTrue(first.getInsertedAt().isBefore(actual.getInsertedAt())); // oldest first
+
+        while (cardIterator.hasNext()) {
+            Card actual = cardIterator.next();
+            assertTrue(actual.getId() >= EXPECTED_NEW_ID);
+            assertTrue(first.getInsertedAt().isBefore(actual.getInsertedAt())); // oldest first
+        }
     }
 
     private static void assertStatus(List<Card> cards) {

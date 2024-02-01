@@ -52,7 +52,7 @@ public class WordDao extends BaseDao<Word> {
             // get last inserted id
             ResultSet keys = statement.getGeneratedKeys();
             Set<Integer> ids = new HashSet<>();
-            if (keys.next()) {
+            while (keys.next()) {
                 ids.add(keys.getInt(1));
             }
             return ids;

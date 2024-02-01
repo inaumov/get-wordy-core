@@ -83,14 +83,14 @@ public class Card {
     }
 
     public void setWord(Word word) {
-        if (word.getId() != wordId) {
-            throw new InconsistentDataException("Card and Word objects (wordIds) are not consistent");
+        if (wordId != word.getId()) {
+            throw new InconsistentDataException("Card.wordId and Word.Id are not consistent");
         }
         this.word = word;
     }
 
-    public ArrayList<Context> getContexts() {
-        return new ArrayList<>(contexts);
+    public List<Context> getContexts() {
+        return List.copyOf(contexts);
     }
 
     public void addContext(Context bean) {
@@ -101,8 +101,8 @@ public class Card {
         this.contexts.addAll(beans);
     }
 
-    public ArrayList<Collocation> getCollocations() {
-        return new ArrayList<>(collocations);
+    public List<Collocation> getCollocations() {
+        return List.copyOf(collocations);
     }
 
     public void addCollocation(Collocation bean) {

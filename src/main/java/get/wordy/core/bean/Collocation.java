@@ -5,6 +5,9 @@ public class Collocation {
     private String example;
     private int wordId;
 
+    public Collocation() {
+    }
+
     public Collocation(int id, String example, int wordId) {
         this.id = id;
         this.example = example;
