@@ -125,7 +125,7 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public Set<Card> getCards(int dictionaryId) {
+    public List<Card> getCards(int dictionaryId) {
         List<Card> cardList;
         List<Word> wordList;
         Map<Integer, List<Context>> contextMap = new HashMap<>();
@@ -141,7 +141,7 @@ public class DictionaryService implements IDictionaryService {
             }
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while loading card or word beans", e);
-            return Collections.emptySet();
+            return Collections.emptyList();
         } finally {
             connection.close();
         }
@@ -163,7 +163,7 @@ public class DictionaryService implements IDictionaryService {
         cardsCache.clear();
         cardsCache.putAll(cardsMap);
 
-        return Set.copyOf(cardList);
+        return List.copyOf(cardList);
     }
 
     @Override

@@ -306,7 +306,7 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(connectionMock);
 
-        Set<Card> cards = dictionaryService.getCards(DICTIONARY_ID);
+        List<Card> cards = dictionaryService.getCards(DICTIONARY_ID);
         assertNotNull(cards);
         assertFalse(cards.isEmpty());
         verify(wordDaoMock, cardDaoMock);

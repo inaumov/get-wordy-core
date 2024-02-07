@@ -18,9 +18,9 @@ public interface IDictionaryService {
 
     boolean renameDictionary(final int dictionaryId, final String newDictionaryName);
 
-    Set<Card> getCards(int dictionaryId);
+    List<Card> getCards(int dictionaryId);
 
-    List<Card> getCardsForExercise(int dictionaryId, final int amount);
+    List<Card> getCardsForExercise(int dictionaryId, final int limit);
 
     boolean addCard(int dictionaryId, Card card);
 
