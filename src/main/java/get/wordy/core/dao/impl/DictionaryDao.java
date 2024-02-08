@@ -11,11 +11,17 @@ import java.util.List;
 
 public class DictionaryDao extends BaseDao<Dictionary> {
 
-    public static final String INSERT_SQL = "INSERT INTO dictionaries (name, picture_url) VALUES (?, ?)";
-    public static final String DELETE_SQL = "DELETE FROM dictionaries WHERE id = ?";
-    public static final String UPDATE_NAME_SQL = "UPDATE dictionaries SET name = ? WHERE id = ?";
-    public static final String SELECT_ALL_SQL = "SELECT * FROM dictionaries ORDER BY name";
-    public static final String COUNT_SQL = "SELECT COUNT(name) FROM dictionaries";
+    public static final String INSERT_QUERY = "INSERT INTO dictionaries (name, picture_url) VALUES (?, ?)";
+    public static final String DELETE_QUERY = "DELETE FROM dictionaries WHERE id = ?";
+    public static final String UPDATE_NAME_QUERY = "UPDATE dictionaries SET name = ? WHERE id = ?";
+    public static final String SELECT_ALL_QUERY = "SELECT * FROM dictionaries ORDER BY name";
+    public static final String SELECT_ALL_WITH_CARDS_TOTAL_QUERY = """
+            SELECT d.*, count(c.id) cards_total FROM dictionaries d LEFT OUTER JOIN cards c ON d.id = c.dictionary_id GROUP BY d.id ORDER BY d.name;
+            """;
+    public static final String SELECT_BY_ID_WITH_CARDS_TOTAL_QUERY = """
+            SELECT d.*, count(c.id) cards_total FROM dictionaries d LEFT OUTER JOIN cards c ON d.id = c.dictionary_id  WHERE d.id = ? GROUP BY d.id ORDER BY d.name;
+            """;
+    public static final String COUNT_QUERY = "SELECT COUNT(name) FROM dictionaries";
 
     DictionaryDao(ConnectionWrapper connectionFactory) {
         super(connectionFactory);
@@ -23,7 +29,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
 
     @Override
     public Dictionary insert(Dictionary dictionary) throws DaoException {
-        try (PreparedStatement statement = prepareInsert(INSERT_SQL)) {
+        try (PreparedStatement statement = prepareInsert(INSERT_QUERY)) {
             statement.setString(1, dictionary.getName());
             statement.setString(2, dictionary.getPicture());
             statement.execute();
@@ -41,7 +47,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
 
     @Override
     public void delete(Dictionary dictionary) throws DaoException {
-        try (PreparedStatement statement = prepareInsert(DELETE_SQL)) {
+        try (PreparedStatement statement = prepareInsert(DELETE_QUERY)) {
             statement.setInt(1, dictionary.getId());
             statement.execute();
         } catch (SQLException ex) {
@@ -51,7 +57,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
 
     @Override
     public Dictionary update(Dictionary dictionary) throws DaoException {
-        try (PreparedStatement statement = prepareInsert(UPDATE_NAME_SQL)) {
+        try (PreparedStatement statement = prepareInsert(UPDATE_NAME_QUERY)) {
             statement.setString(1, dictionary.getName());
             statement.setInt(2, dictionary.getId());
             statement.execute();
@@ -67,12 +73,13 @@ public class DictionaryDao extends BaseDao<Dictionary> {
         ArrayList<Dictionary> dictionaries = new ArrayList<>();
         try {
             statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(SELECT_ALL_SQL);
+            ResultSet resultSet = statement.executeQuery(SELECT_ALL_WITH_CARDS_TOTAL_QUERY);
             while (resultSet.next()) {
                 int id = resultSet.getInt(1);
                 String name = resultSet.getString(2);
                 String picture = resultSet.getString(3);
-                dictionaries.add(new Dictionary(id, name, picture));
+                int cardsTotal = resultSet.getInt("cards_total");
+                dictionaries.add(new Dictionary(id, name, picture, cardsTotal));
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while retrieving all dictionary entities", ex);
@@ -88,7 +95,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
         int count = -1;
         try {
             statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(COUNT_SQL);
+            ResultSet resultSet = statement.executeQuery(COUNT_QUERY);
             while (resultSet.next()) {
                 count = resultSet.getInt(1);
             }
@@ -98,6 +105,28 @@ public class DictionaryDao extends BaseDao<Dictionary> {
             CloseUtils.closeQuietly(statement);
         }
         return count;
+    }
+
+    public Dictionary getDictionary(int dictionaryId) throws DaoException {
+        Connection connection = getConnection();
+        PreparedStatement statement = null;
+        try {
+            statement = connection.prepareStatement(SELECT_BY_ID_WITH_CARDS_TOTAL_QUERY);
+            statement.setInt(1, dictionaryId);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                int id = resultSet.getInt(1);
+                String name = resultSet.getString(2);
+                String picture = resultSet.getString(3);
+                int cardsTotal = resultSet.getInt("cards_total");
+                return new Dictionary(id, name, picture, cardsTotal);
+            }
+        } catch (SQLException ex) {
+            throw new DaoException("Error while retrieving a dictionary by id", ex);
+        } finally {
+            CloseUtils.closeQuietly(statement);
+        }
+        return null;
     }
 
 }

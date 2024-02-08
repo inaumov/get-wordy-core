@@ -8,6 +8,8 @@ public class Dictionary {
 
     private String picture;
 
+    private int cardsTotal;
+
     public Dictionary() {
     }
 
@@ -15,6 +17,13 @@ public class Dictionary {
         this.id = id;
         this.name = name;
         this.picture = picture;
+    }
+
+    public Dictionary(int id, String name, String picture, int cardsTotal) {
+        this.id = id;
+        this.name = name;
+        this.picture = picture;
+        this.cardsTotal = cardsTotal;
     }
 
     public int getId() {
@@ -39,6 +48,14 @@ public class Dictionary {
 
     public void setPicture(String picture) {
         this.picture = picture;
+    }
+
+    public int getCardsTotal() {
+        return cardsTotal;
+    }
+
+    public void setCardsTotal(int cardsTotal) {
+        this.cardsTotal = cardsTotal;
     }
 
 }
