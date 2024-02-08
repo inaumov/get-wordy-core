@@ -1,5 +1,6 @@
 package get.wordy.core;
 
+import get.wordy.core.api.exception.DictionaryNotFoundException;
 import get.wordy.core.bean.*;
 import get.wordy.core.bean.Dictionary;
 import get.wordy.core.bean.wrapper.CardStatus;
@@ -165,8 +166,9 @@ public class DictionaryServiceTest {
 
     @Test
     public void testRenameDictionaryWhenNotFound() {
-        boolean done = dictionaryService.renameDictionary(DICTIONARY_ID, "nameUpdated");
-        assertFalse(done);
+        Throwable exception = assertThrows(DictionaryNotFoundException.class,
+                () -> dictionaryService.renameDictionary(DICTIONARY_ID, "nameUpdated"));
+        assertNull(exception.getMessage());
     }
 
     @Test
@@ -224,8 +226,9 @@ public class DictionaryServiceTest {
 
     @Test
     public void testRemoveDictionaryWhenNotFound() {
-        boolean done = dictionaryService.removeDictionary(DICTIONARY_ID);
-        assertFalse(done);
+        Throwable exception = assertThrows(DictionaryNotFoundException.class,
+                () -> dictionaryService.removeDictionary(DICTIONARY_ID));
+        assertNull(exception.getMessage());
     }
 
     @Test
@@ -385,8 +388,9 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(connectionMock);
 
-        boolean done = dictionaryService.addCard(DICTIONARY_ID, cardMock);
-        assertTrue(done);
+        Card done = dictionaryService.addCard(DICTIONARY_ID, cardMock);
+
+        assertNotNull(done);
         verify(wordDaoMock, cardDaoMock);
         verify(connectionMock);
     }
@@ -425,9 +429,9 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(connectionMock);
 
-        boolean done = dictionaryService.updateCard(DICTIONARY_ID, cardForUpdMock);
+        Card done = dictionaryService.updateCard(DICTIONARY_ID, cardForUpdMock);
 
-        assertTrue(done);
+        assertNotNull(done);
         verify(wordMock, cardMock);
         verify(wordDaoMock, cardDaoMock);
         verify(connectionMock);
@@ -537,13 +541,14 @@ public class DictionaryServiceTest {
 
     @Test
     public void testGetScore() throws Exception {
+        Dictionary dictionaryMock = createDictionaryMock();
+        addDictionaryToCache(dictionaryMock);
+        replay(dictionaryMock);
+
         connectionMock.open();
         expectLastCall().once();
 
-        Dictionary dictionaryMock = createDictionaryMock();
-        addDictionaryToCache(dictionaryMock);
-
-        expect(cardDaoMock.getScore(anyObject(Dictionary.class))).andReturn(Map.of("EDIT", 1));
+        expect(cardDaoMock.getScore(DICTIONARY_ID)).andReturn(Map.of("EDIT", 1, "LEARNT", 3));
         replay(cardDaoMock);
 
         connectionMock.close();
@@ -551,11 +556,11 @@ public class DictionaryServiceTest {
         replay(connectionMock);
 
         Score score = dictionaryService.getScore(DICTIONARY_ID);
-        assertEquals(1, score.getTotalCount());
         assertEquals(1, score.getEditCnt());
         assertEquals(0, score.getToLearnCnt());
         assertEquals(0, score.getPostponedCnt());
-        assertEquals(0, score.getLearntCnt());
+        assertEquals(3, score.getLearntCnt());
+        assertEquals(4, score.getTotalCount());
         assertNotNull(score);
         verify(cardDaoMock);
         verify(connectionMock);

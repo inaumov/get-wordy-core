@@ -132,10 +132,7 @@ public class CardDaoTest extends BaseDaoTest {
 
     @Test
     public void testShowStatistic() throws DaoException {
-        Dictionary dictionary = new Dictionary();
-        dictionary.setId(1);
-
-        Map<String, Integer> score = cardDao.getScore(dictionary);
+        Map<String, Integer> score = cardDao.getScore(1);
         assertEquals(1, score.get(CardStatus.EDIT.name()));
     }
 

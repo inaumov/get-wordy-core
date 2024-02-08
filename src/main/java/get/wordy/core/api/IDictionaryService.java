@@ -12,31 +12,31 @@ public interface IDictionaryService {
 
     List<Dictionary> getDictionaries();
 
-    Dictionary createDictionary(final String dictionaryName, String picture);
+    Dictionary createDictionary(String dictionaryName, String picture);
 
-    boolean removeDictionary(final int dictionaryId);
+    boolean removeDictionary(int dictionaryId);
 
-    boolean renameDictionary(final int dictionaryId, final String newDictionaryName);
+    boolean renameDictionary(int dictionaryId, String newDictionaryName);
 
     List<Card> getCards(int dictionaryId);
 
-    List<Card> getCardsForExercise(int dictionaryId, final int limit);
+    List<Card> getCardsForExercise(int dictionaryId, int limit);
 
-    boolean addCard(int dictionaryId, Card card);
+    Card addCard(int dictionaryId, Card card);
 
-    boolean updateCard(int dictionaryId, Card card);
+    Card updateCard(int dictionaryId, Card card);
 
-    boolean removeCard(final int cardId);
+    boolean removeCard(int cardId);
 
-    Card loadCard(final int cardId);
+    Card loadCard(int cardId);
 
-    boolean changeStatus(final int cardId, CardStatus updatedStatus);
+    boolean changeStatus(int cardId, CardStatus updatedStatus);
 
-    Score getScore(final int dictionaryId);
+    Score getScore(int dictionaryId);
 
     boolean resetScore(int dictionaryId);
 
-    boolean increaseScoreUp(final int cardId, int repetitions);
+    boolean increaseScoreUp(int cardId, int repetitions);
 
     List<Card> generateCards(int dictionaryId, Set<String> words);
 

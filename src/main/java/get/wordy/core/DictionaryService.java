@@ -1,6 +1,7 @@
 package get.wordy.core;
 
 import get.wordy.core.api.IDictionaryService;
+import get.wordy.core.api.exception.DictionaryServiceException;
 import get.wordy.core.bean.Dictionary;
 import get.wordy.core.bean.*;
 import get.wordy.core.bean.wrapper.CardStatus;
@@ -9,6 +10,7 @@ import get.wordy.core.dao.impl.CardDao;
 import get.wordy.core.dao.impl.DictionaryDao;
 import get.wordy.core.dao.impl.WordDao;
 import get.wordy.core.db.ConnectionWrapper;
+import get.wordy.core.api.exception.DictionaryNotFoundException;
 import get.wordy.core.wrapper.Score;
 
 import java.time.Instant;
@@ -189,7 +191,7 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean addCard(int dictionaryId, Card card) {
+    public Card addCard(int dictionaryId, Card card) {
         try {
             connection.open();
 
@@ -206,25 +208,28 @@ public class DictionaryService implements IDictionaryService {
             connection.commit();
             int cardId = insertedCard.getId();
 
-            cardsCache.put(cardId, card);
-
-            return wordId > 0 && cardId > 0;
+            if (wordId > 0 && cardId > 0) {
+                cardsCache.put(cardId, card);
+                return insertedCard;
+            } else {
+                throw new DictionaryServiceException();
+            }
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while saving card", e);
             connection.rollback();
-            return false;
+            throw new DictionaryServiceException();
         } finally {
             connection.close();
         }
     }
 
     @Override
-    public boolean updateCard(int dictionaryId, Card card) {
+    public Card updateCard(int dictionaryId, Card card) {
         int cardId = card.getId();
         Card oldCard = findCardById(cardId);
 
         if (card.equals(oldCard)) {
-            return false;
+            return card;
         }
 
         try {
@@ -242,11 +247,11 @@ public class DictionaryService implements IDictionaryService {
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while updating card", e);
             connection.rollback();
-            return false;
+            throw new DictionaryServiceException();
         } finally {
             connection.close();
         }
-        return true;
+        return card;
     }
 
     @Override
@@ -292,7 +297,7 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean changeStatus(final int cardId, CardStatus newStatus) {
+    public boolean changeStatus(int cardId, CardStatus newStatus) {
         Card card = findCardById(cardId);
         if (card == null) {
             return false;
@@ -321,10 +326,11 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public Score getScore(int dictionaryId) {
+        Dictionary dictionary = findDictionary(dictionaryId);
         Score score = new Score();
         try {
             connection.open();
-            Map<String, Integer> result = cardDao.getScore(findDictionary(dictionaryId));
+            Map<String, Integer> result = cardDao.getScore(dictionary.getId());
             result.keySet()
                     .stream()
                     .map(CardStatus::valueOf)
@@ -385,8 +391,22 @@ public class DictionaryService implements IDictionaryService {
     private Dictionary findDictionary(int dictionaryId) {
         return dictionaryList.stream()
                 .filter(dictionary -> dictionary.getId() == dictionaryId)
-                .findFirst()
-                .orElse(null);
+                .findAny()
+                .orElseGet(() -> getDictionaryFromDb(dictionaryId));
+    }
+
+    private Dictionary getDictionaryFromDb(int dictionaryId) {
+        Dictionary dictionary;
+        try {
+            dictionary = dictionaryDao.getDictionary(dictionaryId);
+        } catch (DaoException e) {
+            throw new RuntimeException(e);
+        }
+        if (dictionary == null) {
+            throw new DictionaryNotFoundException();
+        }
+        dictionaryList.add(dictionary);
+        return dictionary;
     }
 
     private Card findCardById(int cardId) {
@@ -395,7 +415,7 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public List<Card> generateCards(int dictionaryId, Set<String> words) {
-        int dicId = findDictionary(dictionaryId).getId();
+        Dictionary dictionary = findDictionary(dictionaryId);
         int cnt = words.size();
 
         try {
@@ -404,7 +424,7 @@ public class DictionaryService implements IDictionaryService {
             if (generatedIds.size() != cnt) {
                 throw new IllegalStateException();
             }
-            Set<Integer> cardIds = cardDao.generateEmptyCards(dicId, generatedIds);
+            Set<Integer> cardIds = cardDao.generateEmptyCards(dictionary.getId(), generatedIds);
             if (cardIds.size() != cnt) {
                 throw new IllegalStateException();
             }

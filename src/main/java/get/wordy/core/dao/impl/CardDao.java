@@ -14,28 +14,28 @@ import java.util.*;
 
 public class CardDao extends BaseDao<Card> {
 
-    public static final String INSERT_SQL = """
+    public static final String INSERT_QUERY = """
             INSERT INTO cards (status, update_time, dictionary_id, word_id) VALUES (?,?,?,?)
             """;
     public static final String GENERATE_EMPTY_CARDS_QUERY = """
             INSERT INTO cards (dictionary_id, word_id) VALUES (?,?)
             """;
-    public static final String DELETE_SQL = "DELETE FROM cards WHERE id=?";
-    public static final String UPDATE_SQL = """
+    public static final String DELETE_QUERY = "DELETE FROM cards WHERE id=?";
+    public static final String UPDATE_QUERY = """
             UPDATE cards SET status=?,score=?,word_id=?,dictionary_id=?,update_time=NOW() WHERE id=?
             """;
     public static final String SELECT_ALL_CARDS = """
             SELECT cards.id, status, score, create_time, update_time, word_id, dictionary_id FROM cards
             JOIN words ON cards.word_id = words.id ORDER BY %s ASC
             """;
-    private static final String RESET_SCORE_SQL = "UPDATE cards SET score=?, status=? WHERE dictionary_id=?";
+    private static final String RESET_SCORE_QUERY = "UPDATE cards SET score=?, status=? WHERE dictionary_id=?";
     private static final String UPDATE_STATUS = """
             UPDATE cards SET status=?,score=?,update_time=NOW() WHERE id=?
             """;
-    private static final String COUNT_SCORE_SQL = """
+    private static final String COUNT_SCORE_QUERY = """
             SELECT status, COUNT(status) FROM cards WHERE dictionary_id=? GROUP BY status
             """;
-    private static final String SELECT_FOR_EXERCISE_SQL = """
+    private static final String SELECT_FOR_EXERCISE_QUERY = """
             SELECT id FROM cards WHERE dictionary_id=? AND status=? ORDER BY create_time LIMIT ?
             """;
     private static final String SELECT_ALL_CARDS_BY_DIC = "SELECT * FROM cards WHERE dictionary_id=? ORDER BY create_time ASC";
@@ -47,7 +47,7 @@ public class CardDao extends BaseDao<Card> {
     @Override
     public Card insert(Card card) throws DaoException {
         ResultSet resultSet = null;
-        try (PreparedStatement statement = prepareInsert(INSERT_SQL)) {
+        try (PreparedStatement statement = prepareInsert(INSERT_QUERY)) {
             CardStatus status = card.getStatus();
             statement.setString(1, status != null ? status.name() : null);
             statement.setTimestamp(2, Timestamp.from(card.getInsertedAt()));
@@ -159,7 +159,7 @@ public class CardDao extends BaseDao<Card> {
         Connection connection = getConnection();
         PreparedStatement statement = null;
         try {
-            statement = connection.prepareStatement(DELETE_SQL);
+            statement = connection.prepareStatement(DELETE_QUERY);
             statement.setInt(1, card.getId());
             statement.execute();
         } catch (SQLException ex) {
@@ -174,7 +174,7 @@ public class CardDao extends BaseDao<Card> {
         Connection connection = getConnection();
         PreparedStatement statement = null;
         try {
-            statement = connection.prepareStatement(UPDATE_SQL);
+            statement = connection.prepareStatement(UPDATE_QUERY);
             statement.setString(1, card.getStatus().name());
             statement.setInt(2, card.getScore());
             statement.setInt(3, card.getWordId());
@@ -195,8 +195,8 @@ public class CardDao extends BaseDao<Card> {
     }
 
     private void deleteFromContexts(Card card) throws DaoException {
-        String SQL = "DELETE FROM " + "context" + " WHERE " + "word_id" + "=?";
-        try (PreparedStatement statement = prepare(SQL)) {
+        String query = "DELETE FROM " + "context" + " WHERE " + "word_id" + "=?";
+        try (PreparedStatement statement = prepare(query)) {
             statement.setInt(1, card.getWordId());
             statement.execute();
         } catch (SQLException ex) {
@@ -205,8 +205,8 @@ public class CardDao extends BaseDao<Card> {
     }
 
     private void deleteFromCollocations(Card card) throws DaoException {
-        String SQL = "DELETE FROM " + "collocations" + " WHERE " + "word_id" + "=?";
-        try (PreparedStatement statement = prepare(SQL)) {
+        String query = "DELETE FROM " + "collocations" + " WHERE " + "word_id" + "=?";
+        try (PreparedStatement statement = prepare(query)) {
             statement.setInt(1, card.getWordId());
             statement.execute();
         } catch (SQLException ex) {
@@ -282,7 +282,7 @@ public class CardDao extends BaseDao<Card> {
         int cnt = 0; // retrieved amount
 
         ResultSet resultSet = null;
-        try (PreparedStatement statement = prepare(SELECT_FOR_EXERCISE_SQL)) {
+        try (PreparedStatement statement = prepare(SELECT_FOR_EXERCISE_QUERY)) {
             statement.setInt(1, dictionaryId);
             statement.setString(2, CardStatus.TO_LEARN.name());
             statement.setInt(3, limit);
@@ -307,10 +307,10 @@ public class CardDao extends BaseDao<Card> {
     }
 
     public List<Context> getContextsFor(Card card) throws DaoException {
-        String SQL = "SELECT * FROM " + "context" + " WHERE " + "word_id" + "=?";
+        String query = "SELECT * FROM " + "context" + " WHERE " + "word_id" + "=?";
         ArrayList<Context> contexts = new ArrayList<>();
         ResultSet resultSet = null;
-        try (PreparedStatement statement = prepare(SQL)) {
+        try (PreparedStatement statement = prepare(query)) {
             statement.setInt(1, card.getWordId());
             resultSet = statement.executeQuery();
             while (resultSet.next()) {
@@ -330,9 +330,9 @@ public class CardDao extends BaseDao<Card> {
 
     public List<Collocation> getCollocationsFor(Card card) throws DaoException {
         ArrayList<Collocation> collocations = new ArrayList<>();
-        String SQL = "SELECT * FROM " + "collocations" + " WHERE " + "word_id" + "=?";
+        String query = "SELECT * FROM " + "collocations" + " WHERE " + "word_id" + "=?";
         ResultSet resultSet = null;
-        try (PreparedStatement statement = prepare(SQL)) {
+        try (PreparedStatement statement = prepare(query)) {
             statement.setInt(1, card.getWordId());
             resultSet = statement.executeQuery();
             while (resultSet.next()) {
@@ -350,11 +350,11 @@ public class CardDao extends BaseDao<Card> {
         return collocations;
     }
 
-    public Map<String, Integer> getScore(Dictionary dictionary) throws DaoException {
+    public Map<String, Integer> getScore(int dictionaryId) throws DaoException {
         ResultSet resultSet = null;
         Map<String, Integer> statuses = new HashMap<>();
-        try (PreparedStatement statement = prepare(COUNT_SCORE_SQL)) {
-            statement.setInt(1, dictionary.getId());
+        try (PreparedStatement statement = prepare(COUNT_SCORE_QUERY)) {
+            statement.setInt(1, dictionaryId);
             resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 String status = resultSet.getString("status");
@@ -370,7 +370,7 @@ public class CardDao extends BaseDao<Card> {
     }
 
     public void resetScore(Dictionary dictionary) throws DaoException {
-        try (PreparedStatement statement = prepare(RESET_SCORE_SQL)) {
+        try (PreparedStatement statement = prepare(RESET_SCORE_QUERY)) {
             statement.setInt(1, 0);
             statement.setString(2, CardStatus.DEFAULT_STATUS.name());
             statement.setInt(3, dictionary.getId());
