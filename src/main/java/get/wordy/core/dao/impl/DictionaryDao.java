@@ -14,6 +14,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
     public static final String INSERT_QUERY = "INSERT INTO dictionaries (name, picture_url) VALUES (?, ?)";
     public static final String DELETE_QUERY = "DELETE FROM dictionaries WHERE id = ?";
     public static final String UPDATE_NAME_QUERY = "UPDATE dictionaries SET name = ? WHERE id = ?";
+    public static final String UPDATE_PIC_QUERY = "UPDATE dictionaries SET picture_url = ? WHERE id = ?";
     public static final String SELECT_ALL_QUERY = "SELECT * FROM dictionaries ORDER BY name";
     public static final String SELECT_ALL_WITH_CARDS_TOTAL_QUERY = """
             SELECT d.*, count(c.id) cards_total FROM dictionaries d LEFT OUTER JOIN cards c ON d.id = c.dictionary_id GROUP BY d.id ORDER BY d.name;
@@ -57,12 +58,21 @@ public class DictionaryDao extends BaseDao<Dictionary> {
 
     @Override
     public Dictionary update(Dictionary dictionary) throws DaoException {
-        try (PreparedStatement statement = prepareInsert(UPDATE_NAME_QUERY)) {
-            statement.setString(1, dictionary.getName());
+        String query = null;
+        String paramValue = null;
+        if (dictionary.getName() != null) {
+            query = UPDATE_NAME_QUERY;
+            paramValue = dictionary.getName();
+        } else if (dictionary.getPicture() != null) {
+            query = UPDATE_PIC_QUERY;
+            paramValue = dictionary.getPicture();
+        }
+        try (PreparedStatement statement = prepareInsert(query)) {
+            statement.setString(1, paramValue);
             statement.setInt(2, dictionary.getId());
             statement.execute();
         } catch (SQLException ex) {
-            throw new DaoException("Error while deleting dictionary entity", ex);
+            throw new DaoException("Error while updating dictionary entity", ex);
         }
         return dictionary;
     }

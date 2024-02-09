@@ -85,17 +85,33 @@ public class DictionaryService implements IDictionaryService {
     @Override
     public boolean renameDictionary(int dictionaryId, String newDictionaryName) {
         Dictionary dictionary = findDictionary(dictionaryId);
-        if (dictionary == null) {
-            LOG.log(Level.WARNING, "No dictionary was renamed");
-            return false;
-        }
-        Dictionary copy = new Dictionary(dictionary.getId(), newDictionaryName, null);
+        Dictionary copy = new Dictionary(dictionaryId, newDictionaryName, null);
         try {
             connection.open();
             dictionaryDao.update(copy);
             connection.commit();
+            dictionary.setName(newDictionaryName);
         } catch (DaoException e) {
             LOG.log(Level.WARNING, "Error while renaming dictionary", e);
+            connection.rollback();
+            return false;
+        } finally {
+            connection.close();
+        }
+        return true;
+    }
+
+    @Override
+    public boolean changeDictionaryPicture(int dictionaryId, String newPictureUrl) {
+        Dictionary dictionary = findDictionary(dictionaryId);
+        Dictionary copy = new Dictionary(dictionaryId, null, newPictureUrl);
+        try {
+            connection.open();
+            dictionaryDao.update(copy);
+            connection.commit();
+            dictionary.setPicture(newPictureUrl);
+        } catch (DaoException e) {
+            LOG.log(Level.WARNING, "Error while changing dictionary picture", e);
             connection.rollback();
             return false;
         } finally {
@@ -330,7 +346,7 @@ public class DictionaryService implements IDictionaryService {
         Score score = new Score();
         try {
             connection.open();
-            Map<String, Integer> result = cardDao.getScore(dictionary.getId());
+            Map<String, Integer> result = cardDao.getScore(dictionaryId);
             result.keySet()
                     .stream()
                     .map(CardStatus::valueOf)
@@ -424,7 +440,7 @@ public class DictionaryService implements IDictionaryService {
             if (generatedIds.size() != cnt) {
                 throw new IllegalStateException();
             }
-            Set<Integer> cardIds = cardDao.generateEmptyCards(dictionary.getId(), generatedIds);
+            Set<Integer> cardIds = cardDao.generateEmptyCards(dictionaryId, generatedIds);
             if (cardIds.size() != cnt) {
                 throw new IllegalStateException();
             }

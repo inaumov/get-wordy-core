@@ -16,7 +16,9 @@ public interface IDictionaryService {
 
     boolean removeDictionary(int dictionaryId);
 
-    boolean renameDictionary(int dictionaryId, String newDictionaryName);
+    boolean renameDictionary(int dictionaryId, String newName);
+
+    boolean changeDictionaryPicture(int dictionaryId, String newPictureUrl);
 
     List<Card> getCards(int dictionaryId);
 

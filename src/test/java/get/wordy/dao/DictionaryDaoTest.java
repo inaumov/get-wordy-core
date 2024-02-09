@@ -70,25 +70,29 @@ public class DictionaryDaoTest extends BaseDaoTest {
     }
 
     @Test
-    public void testUpdate() throws DaoException {
+    public void testUpdateName() throws DaoException {
         // update an existed dictionary
-        for (int id = 1; id <= PREDEFINED_DICTIONARIES_CNT; id++) {
-            Dictionary dictionary = new Dictionary(id, "name" + id, LOGO_PNG);
-            dictionaryDao.update(dictionary);
-        }
-        // count dictionaries after updating
-        List<Dictionary> dictionaries = dictionaryDao.selectAll();
-        assertNotNull(dictionaries);
-        assertEquals(PREDEFINED_DICTIONARIES_CNT, dictionaries.size());
+        Dictionary dictionary = new Dictionary(1, "name_changed_test", LOGO_PNG);
+        dictionaryDao.update(dictionary);
+        // verify after
+        Dictionary actual = dictionaryDao.getDictionary(1);
+        assertNotNull(actual);
+        assertEquals(1, actual.getId());
+        assertEquals("name_changed_test", actual.getName());
+        assertNull(actual.getPicture());
+    }
 
-        int id = 1;
-        for (Dictionary actual : dictionaries) {
-            assertEquals(id, actual.getId());
-            assertEquals("name" + id, actual.getName());
-            id++;
-        }
-        int count = dictionaryDao.count();
-        assertEquals(PREDEFINED_DICTIONARIES_CNT, count);
+    @Test
+    public void testUpdatePictureUrl() throws DaoException {
+        // update an existed dictionary
+        Dictionary dictionary = new Dictionary(1, null, LOGO_PNG);
+        dictionaryDao.update(dictionary);
+        // verify after
+        Dictionary actual = dictionaryDao.getDictionary(1);
+        assertNotNull(actual);
+        assertEquals(1, actual.getId());
+        assertEquals("dictionary1", actual.getName());
+        assertEquals(LOGO_PNG, actual.getPicture());
     }
 
     @Test

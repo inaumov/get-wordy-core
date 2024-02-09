@@ -142,9 +142,9 @@ public class DictionaryServiceTest {
         expectLastCall().once();
 
         Dictionary dictionaryMock = createDictionaryMock();
-        replay(dictionaryMock);
-
+        dictionaryMock.setName("nameUpdated");
         addDictionaryToCache(dictionaryMock);
+        replay(dictionaryMock);
 
         Capture<Dictionary> dictionaryCapture = Capture.newInstance();
         dictionaryDaoMock.update(capture(dictionaryCapture));
@@ -161,6 +161,34 @@ public class DictionaryServiceTest {
         boolean done = dictionaryService.renameDictionary(DICTIONARY_ID, "nameUpdated");
         assertTrue(done);
         assertEquals("nameUpdated", dictionaryCapture.getValue().getName());
+        verify(connectionMock, dictionaryDaoMock);
+    }
+
+    @Test
+    public void testChangeDictionaryPicture() throws Exception {
+        connectionMock.open();
+        expectLastCall().once();
+
+        Dictionary dictionaryMock = createDictionaryMock();
+        dictionaryMock.setPicture("http://example.com");
+        addDictionaryToCache(dictionaryMock);
+        replay(dictionaryMock);
+
+        Capture<Dictionary> dictionaryCapture = Capture.newInstance();
+        dictionaryDaoMock.update(capture(dictionaryCapture));
+        expectLastCall().andReturn(dictionaryMock)
+                .once();
+        replay(dictionaryDaoMock);
+
+        connectionMock.commit();
+        expectLastCall().once();
+        connectionMock.close();
+        expectLastCall().once();
+        replay(connectionMock);
+
+        boolean done = dictionaryService.changeDictionaryPicture(DICTIONARY_ID, "http://example.com");
+        assertTrue(done);
+        assertEquals("http://example.com", dictionaryCapture.getValue().getPicture());
         verify(connectionMock, dictionaryDaoMock);
     }
 
@@ -706,9 +734,9 @@ public class DictionaryServiceTest {
     }
 
     private Dictionary createDictionaryMock() {
-        Dictionary dictionaryMock = strictMock(Dictionary.class);
-        expect(dictionaryMock.getId()).andReturn(DICTIONARY_ID).atLeastOnce();
-        expect(dictionaryMock.getName()).andReturn(DICTIONARY_NAME).atLeastOnce();
+        Dictionary dictionaryMock = mock(Dictionary.class);
+        expect(dictionaryMock.getId()).andReturn(DICTIONARY_ID);
+        expect(dictionaryMock.getName()).andReturn(DICTIONARY_NAME);
         return dictionaryMock;
     }
 
