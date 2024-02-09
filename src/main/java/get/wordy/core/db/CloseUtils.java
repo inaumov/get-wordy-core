@@ -1,11 +1,11 @@
 package get.wordy.core.db;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class CloseUtils {
 
-    private static final Logger LOG = Logger.getLogger(CloseUtils.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(CloseUtils.class);
 
     private CloseUtils() {
     }
@@ -16,7 +16,7 @@ public final class CloseUtils {
                 closeable.close();
             } catch (Exception e) {
                 if (swallowIOException) {
-                    LOG.log(Level.WARNING, "Exception thrown while closing AutoCloseable.", e);
+                    LOG.warn("Exception thrown while closing AutoCloseable.", e);
                 } else {
                     throw e;
                 }
@@ -28,7 +28,7 @@ public final class CloseUtils {
         try {
             close(closeable, true);
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Exception should not have been thrown.", e);
+            LOG.warn("Exception should not have been thrown.", e);
         }
     }
 

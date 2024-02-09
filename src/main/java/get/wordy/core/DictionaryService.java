@@ -12,17 +12,17 @@ import get.wordy.core.dao.impl.WordDao;
 import get.wordy.core.db.ConnectionWrapper;
 import get.wordy.core.api.exception.DictionaryNotFoundException;
 import get.wordy.core.wrapper.Score;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class DictionaryService implements IDictionaryService {
 
-    private static final Logger LOG = Logger.getLogger(DictionaryService.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(DictionaryService.class);
 
     private DictionaryDao dictionaryDao;
     private WordDao wordDao;
@@ -54,7 +54,7 @@ public class DictionaryService implements IDictionaryService {
             dictionaryList.clear();
             dictionaryList.addAll(list);
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while loading dictionaries", e);
+            LOG.error("Error while loading dictionaries", e);
             return Collections.emptyList();
         } finally {
             connection.close();
@@ -73,7 +73,7 @@ public class DictionaryService implements IDictionaryService {
             connection.commit();
             dictionaryList.add(dictionary);
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while creating a new dictionary", e);
+            LOG.error("Error while creating a new dictionary", e);
             connection.rollback();
             return null;
         } finally {
@@ -92,7 +92,7 @@ public class DictionaryService implements IDictionaryService {
             connection.commit();
             dictionary.setName(newDictionaryName);
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while renaming dictionary", e);
+            LOG.error("Error while renaming dictionary", e);
             connection.rollback();
             return false;
         } finally {
@@ -111,7 +111,7 @@ public class DictionaryService implements IDictionaryService {
             connection.commit();
             dictionary.setPicture(newPictureUrl);
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while changing dictionary picture", e);
+            LOG.error("Error while changing dictionary picture", e);
             connection.rollback();
             return false;
         } finally {
@@ -124,7 +124,7 @@ public class DictionaryService implements IDictionaryService {
     public boolean removeDictionary(int dictionaryId) {
         Dictionary dictionary = findDictionary(dictionaryId);
         if (dictionary == null) {
-            LOG.log(Level.WARNING, "No dictionary was removed");
+            LOG.error("No dictionary was removed");
             return false;
         }
         try {
@@ -134,7 +134,7 @@ public class DictionaryService implements IDictionaryService {
             dictionaryList.remove(dictionary);
         } catch (DaoException e) {
             connection.rollback();
-            LOG.log(Level.WARNING, "Error while removing dictionary", e);
+            LOG.error("Error while removing dictionary", e);
             return false;
         } finally {
             connection.close();
@@ -158,7 +158,7 @@ public class DictionaryService implements IDictionaryService {
                 collocationMap.put(wordId, cardDao.getCollocationsFor(card));
             }
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while loading card or word beans", e);
+            LOG.error("Error while loading card or word beans", e);
             return Collections.emptyList();
         } finally {
             connection.close();
@@ -191,7 +191,7 @@ public class DictionaryService implements IDictionaryService {
             connection.open();
             cardIds = cardDao.selectCardIdsForExercise(dictionaryId, limit);
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while loading exercise set", e);
+            LOG.error("Error while loading exercise set", e);
             return Collections.emptyList();
         } finally {
             connection.close();
@@ -231,7 +231,7 @@ public class DictionaryService implements IDictionaryService {
                 throw new DictionaryServiceException();
             }
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while saving card", e);
+            LOG.error("Error while saving card", e);
             connection.rollback();
             throw new DictionaryServiceException();
         } finally {
@@ -261,7 +261,7 @@ public class DictionaryService implements IDictionaryService {
             cardsCache.put(cardId, card);
 
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while updating card", e);
+            LOG.error("Error while updating card", e);
             connection.rollback();
             throw new DictionaryServiceException();
         } finally {
@@ -281,7 +281,7 @@ public class DictionaryService implements IDictionaryService {
             connection.commit();
             cardsCache.remove(cardId);
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while removing card", e);
+            LOG.error("Error while removing card", e);
             connection.rollback();
             return false;
         } finally {
@@ -302,7 +302,7 @@ public class DictionaryService implements IDictionaryService {
                 card.addCollocations(collocations);
             }
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while loading card", e);
+            LOG.error("Error while loading card", e);
             return null;
         } catch (NullPointerException npe) {
             return null;
@@ -331,7 +331,7 @@ public class DictionaryService implements IDictionaryService {
             cardDao.updateStatus(cardId, newStatus, card.getScore());
             connection.commit();
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while changing status", e);
+            LOG.error("Error while changing status", e);
             connection.rollback();
             return false;
         } finally {
@@ -352,7 +352,7 @@ public class DictionaryService implements IDictionaryService {
                     .map(CardStatus::valueOf)
                     .forEach(status -> score.setScoreCount(status, result.get(status.name())));
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while getting score for dictionary", e);
+            LOG.error("Error while getting score for dictionary", e);
             return null;
         } finally {
             connection.close();
@@ -367,7 +367,7 @@ public class DictionaryService implements IDictionaryService {
             cardDao.resetScore(findDictionary(dictionaryId));
             connection.commit();
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while resetting score", e);
+            LOG.error("Error while resetting score", e);
             connection.rollback();
             return false;
         } finally {
@@ -395,7 +395,7 @@ public class DictionaryService implements IDictionaryService {
             cardDao.update(card);
             connection.commit();
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while increasing score up", e);
+            LOG.error("Error while increasing score up", e);
             connection.rollback();
             return false;
         } finally {
@@ -468,7 +468,7 @@ public class DictionaryService implements IDictionaryService {
             }
             return result;
         } catch (DaoException e) {
-            LOG.log(Level.WARNING, "Error while generating cards without definitions", e);
+            LOG.error("Error while generating cards without definitions", e);
             connection.rollback();
             return Collections.emptyList();
         } finally {

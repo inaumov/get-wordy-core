@@ -2,18 +2,18 @@ package get.wordy.core.db;
 
 import get.wordy.core.ServerInfo;
 import get.wordy.core.dao.exception.DaoException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class ConnectionWrapper {
 
-    private static final Logger LOG = Logger.getLogger(ConnectionWrapper.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectionWrapper.class);
 
     private static final ConnectionWrapper INSTANCE = new ConnectionWrapper();
 
@@ -70,7 +70,7 @@ public class ConnectionWrapper {
         try {
             connection.rollback();
         } catch (SQLException ex) {
-            LOG.log(Level.WARNING, "Error while rolling back changes from database", ex);
+            LOG.warn("Error while rolling back changes from database", ex);
         }
     }
 
@@ -80,13 +80,13 @@ public class ConnectionWrapper {
                 CloseUtils.closeQuietly(connection);
             }
         } catch (SQLException ex) {
-            LOG.log(Level.WARNING, "Error while closing connection to database", ex);
+            LOG.warn("Error while closing connection to database", ex);
         }
     }
 
     public Connection get() {
         if (connection == null) {
-            throw new NullPointerException("Connection is not opened right now");
+            throw new NullPointerException("Connection is not established right now");
         }
         return connection;
     }

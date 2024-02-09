@@ -5,13 +5,14 @@ import get.wordy.core.dao.impl.DaoFactory;
 import get.wordy.core.dao.impl.DictionaryDao;
 import get.wordy.core.dao.impl.WordDao;
 import get.wordy.core.db.ConnectionWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.logging.Logger;
 
 public class DictionaryServiceInitializer {
 
-    private static final Logger LOG = Logger.getLogger(DictionaryServiceInitializer.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(DictionaryServiceInitializer.class);
 
     private static final String DEFAULT_URI = "sql/ServerInfo.xml";
 
