@@ -15,22 +15,24 @@ import java.util.*;
 public class CardDao extends BaseDao<Card> {
 
     public static final String INSERT_QUERY = """
-            INSERT INTO cards (status, update_time, dictionary_id, word_id) VALUES (?,?,?,?)
+            INSERT INTO cards (dictionary_id, word_id, status) VALUES (?,?,?)
             """;
     public static final String GENERATE_EMPTY_CARDS_QUERY = """
             INSERT INTO cards (dictionary_id, word_id) VALUES (?,?)
             """;
     public static final String DELETE_QUERY = "DELETE FROM cards WHERE id=?";
     public static final String UPDATE_QUERY = """
-            UPDATE cards SET status=?,score=?,word_id=?,dictionary_id=?,update_time=NOW() WHERE id=?
+            UPDATE cards SET status=?,score=?,word_id=?,dictionary_id=?,last_update_time=NOW() WHERE id=?
             """;
     public static final String SELECT_ALL_CARDS = """
-            SELECT cards.id, status, score, create_time, update_time, word_id, dictionary_id FROM cards
+            SELECT cards.id, status, score, create_time, last_update_time, word_id, dictionary_id FROM cards
             JOIN words ON cards.word_id = words.id ORDER BY %s ASC
             """;
-    private static final String RESET_SCORE_QUERY = "UPDATE cards SET score=?, status=? WHERE id=?";
+    private static final String RESET_SCORE_QUERY = """
+            UPDATE cards SET score=?, status=?, last_update_time=NOW() WHERE id=?
+            """;
     private static final String UPDATE_STATUS = """
-            UPDATE cards SET status=?,score=?,update_time=NOW() WHERE id=?
+            UPDATE cards SET status=?,score=?, last_update_time=NOW() WHERE id=?
             """;
     private static final String SCORE_SUMMARY_QUERY = """
             SELECT status, COUNT(status) FROM cards WHERE dictionary_id=? GROUP BY status
@@ -49,10 +51,9 @@ public class CardDao extends BaseDao<Card> {
         ResultSet resultSet = null;
         try (PreparedStatement statement = prepareInsert(INSERT_QUERY)) {
             CardStatus status = card.getStatus();
-            statement.setString(1, status != null ? status.name() : null);
-            statement.setTimestamp(2, Timestamp.from(card.getInsertedAt()));
-            statement.setInt(3, card.getDictionaryId());
-            statement.setInt(4, card.getWordId());
+            statement.setInt(1, card.getDictionaryId());
+            statement.setInt(2, card.getWordId());
+            statement.setString(3, status != null ? status.name() : null);
             statement.execute();
             // get last inserted id
             resultSet = statement.getGeneratedKeys();
@@ -229,7 +230,7 @@ public class CardDao extends BaseDao<Card> {
                 if (createTime != null) {
                     card.setInsertedAt(createTime.toInstant());
                 }
-                Timestamp updateTime = resultSet.getTimestamp("update_time");
+                Timestamp updateTime = resultSet.getTimestamp("last_update_time");
                 if (updateTime != null) {
                     card.setUpdatedAt(updateTime.toInstant());
                 }
@@ -260,7 +261,7 @@ public class CardDao extends BaseDao<Card> {
                 if (createTime != null) {
                     card.setInsertedAt(createTime.toInstant());
                 }
-                Timestamp updateTime = resultSet.getTimestamp("update_time");
+                Timestamp updateTime = resultSet.getTimestamp("last_update_time");
                 if (updateTime != null) {
                     card.setUpdatedAt(updateTime.toInstant());
                 }

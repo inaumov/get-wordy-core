@@ -603,7 +603,7 @@ public class DictionaryServiceTest {
         replay(dictionaryMock);
         addDictionaryToCache(dictionaryMock);
 
-        cardDaoMock.resetScore(1, CardStatus.DEFAULT_STATUS);
+        cardDaoMock.resetScore(1, CardStatus.TO_LEARN);
         expectLastCall().once();
 
         connectionMock.commit();

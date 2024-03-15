@@ -365,7 +365,7 @@ public class DictionaryService implements IDictionaryService {
         // todo: check permission to dictionary
         try {
             connection.open();
-            cardDao.resetScore(cardId, CardStatus.DEFAULT_STATUS);
+            cardDao.resetScore(cardId, CardStatus.TO_LEARN);
             connection.commit();
         } catch (DaoException e) {
             LOG.error("Error while resetting score", e);

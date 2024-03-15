@@ -1,0 +1,1 @@
+ALTER TABLE cards RENAME COLUMN update_time TO last_update_time;
