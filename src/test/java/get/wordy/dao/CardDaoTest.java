@@ -132,17 +132,15 @@ public class CardDaoTest extends BaseDaoTest {
 
     @Test
     public void testShowStatistic() throws DaoException {
-        Map<String, Integer> score = cardDao.getScore(1);
+        Map<String, Integer> score = cardDao.getScoreSummary(1);
         assertEquals(1, score.get(CardStatus.EDIT.name()));
     }
 
     @Test
     public void testResetStatistics() throws DaoException {
-        Dictionary dictionary = new Dictionary();
-        dictionary.setId(1);
-        cardDao.resetScore(dictionary);
+        cardDao.resetScore(1, CardStatus.DEFAULT_STATUS);
 
-        List<Card> cards = cardDao.selectCardsForDictionary(dictionary);
+        List<Card> cards = cardDao.selectCardsForDictionary(getDictionary(1));
         assertStatus(cards);
     }
 

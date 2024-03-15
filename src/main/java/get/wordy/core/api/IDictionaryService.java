@@ -34,9 +34,9 @@ public interface IDictionaryService {
 
     boolean changeStatus(int cardId, CardStatus updatedStatus);
 
-    Score getScore(int dictionaryId);
+    Score getScoreSummary(int dictionaryId);
 
-    boolean resetScore(int dictionaryId);
+    boolean resetScore(int cardId);
 
     boolean increaseScoreUp(int dictionaryId, int[] cardIds, int repetitions);
 

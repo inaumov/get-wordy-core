@@ -568,7 +568,7 @@ public class DictionaryServiceTest {
     }
 
     @Test
-    public void testGetScore() throws Exception {
+    public void getScoreSummary() throws Exception {
         Dictionary dictionaryMock = createDictionaryMock();
         addDictionaryToCache(dictionaryMock);
         replay(dictionaryMock);
@@ -576,14 +576,14 @@ public class DictionaryServiceTest {
         connectionMock.open();
         expectLastCall().once();
 
-        expect(cardDaoMock.getScore(DICTIONARY_ID)).andReturn(Map.of("EDIT", 1, "LEARNT", 3));
+        expect(cardDaoMock.getScoreSummary(DICTIONARY_ID)).andReturn(Map.of("EDIT", 1, "LEARNT", 3));
         replay(cardDaoMock);
 
         connectionMock.close();
         expectLastCall().once();
         replay(connectionMock);
 
-        Score score = dictionaryService.getScore(DICTIONARY_ID);
+        Score score = dictionaryService.getScoreSummary(DICTIONARY_ID);
         assertEquals(1, score.getEditCnt());
         assertEquals(0, score.getToLearnCnt());
         assertEquals(0, score.getPostponedCnt());
@@ -603,7 +603,7 @@ public class DictionaryServiceTest {
         replay(dictionaryMock);
         addDictionaryToCache(dictionaryMock);
 
-        cardDaoMock.resetScore(dictionaryMock);
+        cardDaoMock.resetScore(1, CardStatus.DEFAULT_STATUS);
         expectLastCall().once();
 
         connectionMock.commit();
@@ -614,7 +614,7 @@ public class DictionaryServiceTest {
 
         replay(cardDaoMock);
 
-        boolean done = dictionaryService.resetScore(DICTIONARY_ID);
+        boolean done = dictionaryService.resetScore(1);
         assertTrue(done);
         verify(cardDaoMock);
         verify(connectionMock);

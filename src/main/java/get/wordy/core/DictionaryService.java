@@ -341,12 +341,12 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public Score getScore(int dictionaryId) {
+    public Score getScoreSummary(int dictionaryId) {
         Dictionary dictionary = findDictionary(dictionaryId);
         Score score = new Score();
         try {
             connection.open();
-            Map<String, Integer> result = cardDao.getScore(dictionaryId);
+            Map<String, Integer> result = cardDao.getScoreSummary(dictionaryId);
             result.keySet()
                     .stream()
                     .map(CardStatus::valueOf)
@@ -361,10 +361,11 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean resetScore(int dictionaryId) {
+    public boolean resetScore(int cardId) {
+        // todo: check permission to dictionary
         try {
             connection.open();
-            cardDao.resetScore(findDictionary(dictionaryId));
+            cardDao.resetScore(cardId, CardStatus.DEFAULT_STATUS);
             connection.commit();
         } catch (DaoException e) {
             LOG.error("Error while resetting score", e);

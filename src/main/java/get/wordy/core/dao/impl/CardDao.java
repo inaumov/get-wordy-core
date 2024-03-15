@@ -28,11 +28,11 @@ public class CardDao extends BaseDao<Card> {
             SELECT cards.id, status, score, create_time, update_time, word_id, dictionary_id FROM cards
             JOIN words ON cards.word_id = words.id ORDER BY %s ASC
             """;
-    private static final String RESET_SCORE_QUERY = "UPDATE cards SET score=?, status=? WHERE dictionary_id=?";
+    private static final String RESET_SCORE_QUERY = "UPDATE cards SET score=?, status=? WHERE id=?";
     private static final String UPDATE_STATUS = """
             UPDATE cards SET status=?,score=?,update_time=NOW() WHERE id=?
             """;
-    private static final String COUNT_SCORE_QUERY = """
+    private static final String SCORE_SUMMARY_QUERY = """
             SELECT status, COUNT(status) FROM cards WHERE dictionary_id=? GROUP BY status
             """;
     private static final String SELECT_FOR_EXERCISE_QUERY = """
@@ -350,10 +350,10 @@ public class CardDao extends BaseDao<Card> {
         return collocations;
     }
 
-    public Map<String, Integer> getScore(int dictionaryId) throws DaoException {
+    public Map<String, Integer> getScoreSummary(int dictionaryId) throws DaoException {
         ResultSet resultSet = null;
         Map<String, Integer> statuses = new HashMap<>();
-        try (PreparedStatement statement = prepare(COUNT_SCORE_QUERY)) {
+        try (PreparedStatement statement = prepare(SCORE_SUMMARY_QUERY)) {
             statement.setInt(1, dictionaryId);
             resultSet = statement.executeQuery();
             while (resultSet.next()) {
@@ -362,21 +362,21 @@ public class CardDao extends BaseDao<Card> {
                 statuses.put(status, count);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving score for dictionary", ex);
+            throw new DaoException("Error while retrieving score summary for dictionary", ex);
         } finally {
             CloseUtils.closeQuietly(resultSet);
         }
         return statuses;
     }
 
-    public void resetScore(Dictionary dictionary) throws DaoException {
+    public void resetScore(int cardId, CardStatus status) throws DaoException {
         try (PreparedStatement statement = prepare(RESET_SCORE_QUERY)) {
             statement.setInt(1, 0);
-            statement.setString(2, CardStatus.DEFAULT_STATUS.name());
-            statement.setInt(3, dictionary.getId());
+            statement.setString(2, status.name());
+            statement.setInt(3, cardId);
             statement.executeUpdate();
         } catch (SQLException ex) {
-            throw new DaoException("Error while resetting score for dictionary", ex);
+            throw new DaoException("Error while resetting score for a card", ex);
         }
     }
 
