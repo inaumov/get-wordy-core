@@ -380,19 +380,33 @@ public class CardDao extends BaseDao<Card> {
         }
     }
 
-    public void updateStatus(int id, CardStatus status, int score) throws DaoException {
+    public void updateStatus(int cardId, CardStatus status, int score) throws DaoException {
         Connection connection = getConnection();
         PreparedStatement statement = null;
         try {
             statement = connection.prepareStatement(UPDATE_STATUS);
             statement.setString(1, status.name());
             statement.setInt(2, score);
-            statement.setInt(3, id);
+            statement.setInt(3, cardId);
             statement.executeUpdate();
         } catch (SQLException ex) {
             throw new DaoException("Error while updating status and score", ex);
         } finally {
             CloseUtils.closeQuietly(statement);
+        }
+    }
+
+    public void batchUpdateScores(List<Card> cards) throws DaoException {
+        try (PreparedStatement statement = prepare(UPDATE_STATUS)) {
+            for (Card card : cards) {
+                statement.setString(1, card.getStatus().name());
+                statement.setInt(2, card.getScore());
+                statement.setInt(3, card.getId());
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        } catch (SQLException ex) {
+            throw new DaoException("Error while updating statuses and scores in batch", ex);
         }
     }
 

@@ -180,7 +180,7 @@ public class CardDaoTest extends BaseDaoTest {
         List<Card> cards = cardDao.selectCardsForDictionary(dictionary);
         assertNotNull(cards);
         assertEquals(1, cards.size());
-        Card actual = cards.get(0);
+        Card actual = cards.getFirst();
         assertNotNull(actual);
         assertEquals(2, actual.getId());
         assertEquals(2, actual.getWordId());
@@ -216,7 +216,7 @@ public class CardDaoTest extends BaseDaoTest {
     }
 
     @Test
-    public void testGenerateCards() throws Exception {
+    public void testGenerateCards() throws DaoException {
         int dictionaryId = 2;
         Set<Integer> wordIds = Set.of(42, 87);
         Set<Integer> ids = cardDao.generateEmptyCards(dictionaryId, wordIds);
@@ -234,6 +234,38 @@ public class CardDaoTest extends BaseDaoTest {
             assertTrue(actual.getId() >= EXPECTED_NEW_ID);
             assertTrue(first.getInsertedAt().isBefore(actual.getInsertedAt())); // oldest first
         }
+    }
+
+    @Test
+    void updateStatus() throws DaoException {
+        cardDao.updateStatus(2, CardStatus.LEARNT, 100);
+        assertCards(getDictionary(2));
+    }
+
+    @Test
+    void batchUpdateScores() throws DaoException {
+        Card card1 = new Card();
+        card1.setId(1); // the last
+        card1.setStatus(CardStatus.TO_LEARN);
+        card1.setScore(25);
+        Card card2 = new Card();
+        card2.setId(2); // the last
+        card2.setStatus(CardStatus.TO_LEARN);
+        card2.setScore(80);
+
+        cardDao.batchUpdateScores(List.of(card1, card2));
+
+        // assert
+        Card actual = cardDao.selectCardsForDictionary(getDictionary(1))
+                .getFirst();
+        assertEquals(1, actual.getId());
+        assertEquals(CardStatus.TO_LEARN, actual.getStatus());
+        assertEquals(25, actual.getScore());
+        actual = cardDao.selectCardsForDictionary(getDictionary(2))
+                .getFirst();
+        assertEquals(2, actual.getId());
+        assertEquals(CardStatus.TO_LEARN, actual.getStatus());
+        assertEquals(80, actual.getScore());
     }
 
     private static void assertStatus(List<Card> cards) {

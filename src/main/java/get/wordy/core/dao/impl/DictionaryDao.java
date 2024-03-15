@@ -4,6 +4,7 @@ import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.bean.Dictionary;
 import get.wordy.core.db.CloseUtils;
 import get.wordy.core.db.ConnectionWrapper;
+import org.flywaydb.core.internal.util.StringUtils;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -48,9 +49,9 @@ public class DictionaryDao extends BaseDao<Dictionary> {
 
     @Override
     public void delete(Dictionary dictionary) throws DaoException {
-        try (PreparedStatement statement = prepareInsert(DELETE_QUERY)) {
+        try (PreparedStatement statement = prepare(DELETE_QUERY)) {
             statement.setInt(1, dictionary.getId());
-            statement.execute();
+            statement.executeUpdate();
         } catch (SQLException ex) {
             throw new DaoException("Error while deleting dictionary entity", ex);
         }
@@ -58,19 +59,19 @@ public class DictionaryDao extends BaseDao<Dictionary> {
 
     @Override
     public Dictionary update(Dictionary dictionary) throws DaoException {
-        String query = null;
-        String paramValue = null;
-        if (dictionary.getName() != null) {
+        String query;
+        String paramValue;
+        if (StringUtils.hasText(dictionary.getName())) {
             query = UPDATE_NAME_QUERY;
             paramValue = dictionary.getName();
-        } else if (dictionary.getPicture() != null) {
+        } else {
             query = UPDATE_PIC_QUERY;
             paramValue = dictionary.getPicture();
         }
-        try (PreparedStatement statement = prepareInsert(query)) {
+        try (PreparedStatement statement = prepare(query)) {
             statement.setString(1, paramValue);
             statement.setInt(2, dictionary.getId());
-            statement.execute();
+            statement.executeUpdate();
         } catch (SQLException ex) {
             throw new DaoException("Error while updating dictionary entity", ex);
         }

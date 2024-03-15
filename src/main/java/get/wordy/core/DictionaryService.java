@@ -377,22 +377,25 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean increaseScoreUp(final int cardId, int repetitions) {
-        Card card = findCardById(cardId);
+    public boolean increaseScoreUp(final int dictionaryId, int[] cardIds, int repetitions) {
+        List<Card> cards = new ArrayList<>();
+        for (int cardId : cardIds) {
+            Card card = findCardById(cardId);
 
-        int diff = 100 / repetitions;
-        int score = card.getScore();
-        score += diff;
+            int diff = 100 / repetitions;
+            int score = card.getScore();
+            score += diff;
 
-        if (score > 99) {
-            score = 100;
-            card.setStatus(CardStatus.LEARNT);
+            if (score > 99) {
+                score = 100;
+                card.setStatus(CardStatus.LEARNT);
+            }
+            card.setScore(score);
+            cards.add(card);
         }
-        card.setScore(score);
-
         try {
             connection.open();
-            cardDao.update(card);
+            cardDao.batchUpdateScores(cards);
             connection.commit();
         } catch (DaoException e) {
             LOG.error("Error while increasing score up", e);
@@ -416,7 +419,7 @@ public class DictionaryService implements IDictionaryService {
         try {
             dictionary = dictionaryDao.getDictionary(dictionaryId);
         } catch (DaoException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e); // todo: throw some other exception
         }
         if (dictionary == null) {
             throw new DictionaryNotFoundException();

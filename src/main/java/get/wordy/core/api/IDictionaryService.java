@@ -38,7 +38,7 @@ public interface IDictionaryService {
 
     boolean resetScore(int dictionaryId);
 
-    boolean increaseScoreUp(int cardId, int repetitions);
+    boolean increaseScoreUp(int dictionaryId, int[] cardIds, int repetitions);
 
     List<Card> generateCards(int dictionaryId, Set<String> words);
 

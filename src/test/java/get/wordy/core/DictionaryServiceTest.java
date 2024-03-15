@@ -621,19 +621,26 @@ public class DictionaryServiceTest {
     }
 
     @Test
-    public void testIncreaseScoreUp() throws Exception {
+    public void testIncreaseScoreUpAndOneReaches100Percents() throws Exception {
         connectionMock.open();
         expectLastCall().once();
 
-        Card cardMock = strictMock(Card.class);
-        expect(cardMock.getScore()).andReturn(10).once();
-        cardMock.setScore(20);
+        Card cardMock1 = strictMock(Card.class);
+        expect(cardMock1.getScore()).andReturn(10).once();
+        cardMock1.setScore(20);
         expectLastCall().once();
-        replay(cardMock);
-        addCardToCache(1, cardMock);
+        Card cardMock2 = strictMock(Card.class);
+        expect(cardMock2.getScore()).andReturn(95).once();
+        cardMock2.setStatus(CardStatus.LEARNT);
+        expectLastCall().once();
+        cardMock2.setScore(100);
+        expectLastCall().once();
+        replay(cardMock1, cardMock2);
+        addCardToCache(1, cardMock1);
+        addCardToCache(2, cardMock2);
 
-        cardDaoMock.update(cardMock);
-        expectLastCall().andReturn(cardMock);
+        cardDaoMock.batchUpdateScores(List.of(cardMock1, cardMock2));
+        expectLastCall().once();
 
         connectionMock.commit();
         expectLastCall().once();
@@ -643,40 +650,9 @@ public class DictionaryServiceTest {
 
         replay(cardDaoMock);
 
-        boolean done = dictionaryService.increaseScoreUp(1, 10);
+        boolean done = dictionaryService.increaseScoreUp(1, new int[]{1, 2}, 10);
         assertTrue(done);
-        verify(cardMock, cardDaoMock);
-        verify(connectionMock);
-    }
-
-    @Test
-    public void testIncreaseScoreUpWhenReach100Percents() throws Exception {
-        connectionMock.open();
-        expectLastCall().once();
-
-        Card cardMock = strictMock(Card.class);
-        expect(cardMock.getScore()).andReturn(90).once();
-        cardMock.setStatus(CardStatus.LEARNT);
-        expectLastCall().once();
-        cardMock.setScore(100);
-        expectLastCall().once();
-        replay(cardMock);
-        addCardToCache(1, cardMock);
-
-        cardDaoMock.update(cardMock);
-        expectLastCall().andReturn(cardMock);
-
-        connectionMock.commit();
-        expectLastCall().once();
-        connectionMock.close();
-        expectLastCall().once();
-        replay(connectionMock);
-
-        replay(cardDaoMock);
-
-        boolean done = dictionaryService.increaseScoreUp(1, 10);
-        assertTrue(done);
-        verify(cardMock, cardDaoMock);
+        verify(cardMock1, cardDaoMock);
         verify(connectionMock);
     }
 
