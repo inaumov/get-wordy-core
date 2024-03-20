@@ -1,10 +1,10 @@
 package get.wordy.core.dao.impl;
 
-import get.wordy.core.bean.Card;
-import get.wordy.core.bean.Collocation;
-import get.wordy.core.bean.Context;
-import get.wordy.core.bean.Dictionary;
-import get.wordy.core.bean.wrapper.CardStatus;
+import get.wordy.core.api.bean.Card;
+import get.wordy.core.api.bean.Collocation;
+import get.wordy.core.api.bean.Context;
+import get.wordy.core.api.bean.Dictionary;
+import get.wordy.core.api.bean.CardStatus;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.db.LocalTxManager;
 

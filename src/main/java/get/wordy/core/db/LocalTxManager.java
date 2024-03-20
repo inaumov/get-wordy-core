@@ -1,6 +1,5 @@
 package get.wordy.core.db;
 
-import get.wordy.core.ServerInfo;
 import get.wordy.core.dao.exception.DaoException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

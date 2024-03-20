@@ -1,4 +1,4 @@
-package get.wordy.core;
+package get.wordy.core.db;
 
 import java.util.Properties;
 

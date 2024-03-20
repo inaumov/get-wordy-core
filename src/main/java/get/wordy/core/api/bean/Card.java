@@ -1,10 +1,8 @@
-package get.wordy.core.bean;
+package get.wordy.core.api.bean;
 
-import get.wordy.core.bean.wrapper.CardStatus;
 import get.wordy.core.dao.exception.InconsistentDataException;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;

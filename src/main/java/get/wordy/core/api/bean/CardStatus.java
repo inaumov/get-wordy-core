@@ -1,4 +1,4 @@
-package get.wordy.core.bean.wrapper;
+package get.wordy.core.api.bean;
 
 public enum CardStatus {
 

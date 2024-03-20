@@ -1,7 +1,7 @@
 package get.wordy.core.dao.impl;
 
 import get.wordy.core.dao.exception.DaoException;
-import get.wordy.core.bean.Word;
+import get.wordy.core.api.bean.Word;
 import get.wordy.core.db.LocalTxManager;
 
 import java.sql.*;

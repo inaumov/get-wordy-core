@@ -1,15 +1,14 @@
 package get.wordy.core;
 
+import get.wordy.core.api.bean.*;
+import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.api.exception.DictionaryNotFoundException;
-import get.wordy.core.bean.*;
-import get.wordy.core.bean.Dictionary;
-import get.wordy.core.bean.wrapper.CardStatus;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.CardDao;
 import get.wordy.core.dao.impl.DictionaryDao;
 import get.wordy.core.dao.impl.WordDao;
 import get.wordy.core.db.LocalTxManager;
-import get.wordy.core.wrapper.Score;
+import get.wordy.core.api.bean.wrapper.Score;
 import org.easymock.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

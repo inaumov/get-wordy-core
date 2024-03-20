@@ -1,7 +1,7 @@
 package get.wordy.core.dao.impl;
 
 import get.wordy.core.dao.exception.DaoException;
-import get.wordy.core.bean.Dictionary;
+import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.db.LocalTxManager;
 import org.flywaydb.core.internal.util.StringUtils;
 

@@ -1,4 +1,4 @@
-package get.wordy.core.bean;
+package get.wordy.core.api.bean;
 
 public class Collocation {
     private int id;

@@ -1,7 +1,7 @@
 package get.wordy.dao;
 
 import get.wordy.core.dao.exception.DaoException;
-import get.wordy.core.bean.Word;
+import get.wordy.core.api.bean.Word;
 import get.wordy.core.dao.impl.WordDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

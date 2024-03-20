@@ -1,6 +1,6 @@
-package get.wordy.core.wrapper;
+package get.wordy.core.api.bean.wrapper;
 
-import get.wordy.core.bean.wrapper.CardStatus;
+import get.wordy.core.api.bean.CardStatus;
 
 public class Score {
 

@@ -1,9 +1,9 @@
 package get.wordy.core.api;
 
-import get.wordy.core.bean.Card;
-import get.wordy.core.bean.Dictionary;
-import get.wordy.core.bean.wrapper.CardStatus;
-import get.wordy.core.wrapper.Score;
+import get.wordy.core.api.bean.Card;
+import get.wordy.core.api.bean.Dictionary;
+import get.wordy.core.api.bean.CardStatus;
+import get.wordy.core.api.bean.wrapper.Score;
 
 import java.util.List;
 import java.util.Set;

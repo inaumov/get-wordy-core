@@ -1,6 +1,6 @@
 package get.wordy.dao;
 
-import get.wordy.core.ServerInfo;
+import get.wordy.core.db.ServerInfo;
 import get.wordy.core.dao.impl.DaoFactory;
 import get.wordy.core.db.LocalTxManager;
 import org.junit.jupiter.api.AfterEach;
