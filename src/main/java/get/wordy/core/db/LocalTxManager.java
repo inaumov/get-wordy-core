@@ -9,21 +9,21 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class ConnectionWrapper {
+public class LocalTxManager {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ConnectionWrapper.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LocalTxManager.class);
 
-    private static final ConnectionWrapper INSTANCE = new ConnectionWrapper();
+    private static final LocalTxManager INSTANCE = new LocalTxManager();
 
     private Connection connection;
     private ServerInfo info;
 
-    private ConnectionWrapper() {
+    private LocalTxManager() {
         // default
     }
 
-    public static ConnectionWrapper getInstance() {
-        return ConnectionWrapper.INSTANCE;
+    public static LocalTxManager getInstance() {
+        return LocalTxManager.INSTANCE;
     }
 
     public void open() throws DaoException {

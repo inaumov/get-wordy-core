@@ -7,7 +7,7 @@ import get.wordy.core.bean.Dictionary;
 import get.wordy.core.bean.wrapper.CardStatus;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.db.CloseUtils;
-import get.wordy.core.db.ConnectionWrapper;
+import get.wordy.core.db.LocalTxManager;
 
 import java.sql.*;
 import java.util.*;
@@ -50,8 +50,8 @@ public class CardDao extends BaseDao<Card> {
     private static final String DELETE_CONTEXT_QUERY = "DELETE FROM context WHERE word_id=?";
     private static final String DELETE_COLLOCATIONS_QUERY = "DELETE FROM collocations WHERE word_id=?";
 
-    CardDao(ConnectionWrapper connectionFactory) {
-        super(connectionFactory);
+    CardDao(LocalTxManager txManager) {
+        super(txManager);
     }
 
     @Override

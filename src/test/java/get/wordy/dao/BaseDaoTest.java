@@ -2,7 +2,7 @@ package get.wordy.dao;
 
 import get.wordy.core.ServerInfo;
 import get.wordy.core.dao.impl.DaoFactory;
-import get.wordy.core.db.ConnectionWrapper;
+import get.wordy.core.db.LocalTxManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -11,7 +11,7 @@ import java.sql.DatabaseMetaData;
 
 public abstract class BaseDaoTest {
 
-    protected ConnectionWrapper connect;
+    protected LocalTxManager connect;
     protected static DaoFactory daoFactory;
 
     @BeforeEach
@@ -26,7 +26,7 @@ public abstract class BaseDaoTest {
         serverInfo.getCredentials().setProperty("password", System.getenv("get.wordy.jdbc.password"));
         daoFactory = DaoFactory.getFactory();
 
-        connect = ConnectionWrapper.getInstance();
+        connect = LocalTxManager.getInstance();
         connect.setServerInfo(serverInfo);
         connect.open();
 

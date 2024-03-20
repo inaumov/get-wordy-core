@@ -9,7 +9,7 @@ import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.CardDao;
 import get.wordy.core.dao.impl.DictionaryDao;
 import get.wordy.core.dao.impl.WordDao;
-import get.wordy.core.db.ConnectionWrapper;
+import get.wordy.core.db.LocalTxManager;
 import get.wordy.core.api.exception.DictionaryNotFoundException;
 import get.wordy.core.wrapper.Score;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ public class DictionaryService implements IDictionaryService {
     private DictionaryDao dictionaryDao;
     private WordDao wordDao;
     private CardDao cardDao;
-    private ConnectionWrapper connection;
+    private LocalTxManager connection;
     private final List<Dictionary> dictionaryList = new ArrayList<>();
     private final Map<Integer, Card> cardsCache = new HashMap<>();
 
@@ -39,7 +39,7 @@ public class DictionaryService implements IDictionaryService {
     public DictionaryService(DictionaryDao dictionaryDao,
                              WordDao wordDao,
                              CardDao cardDao,
-                             ConnectionWrapper connection
+                             LocalTxManager connection
     ) {
         this.dictionaryDao = dictionaryDao;
         this.wordDao = wordDao;
@@ -53,6 +53,7 @@ public class DictionaryService implements IDictionaryService {
         try {
             connection.open();
             list = dictionaryDao.selectAll();
+            connection.commit();
             dictionaryList.clear();
             dictionaryList.addAll(list);
         } catch (DaoException e) {
@@ -86,9 +87,9 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public boolean renameDictionary(int dictionaryId, String newDictionaryName) {
-        Dictionary dictionary = findDictionary(dictionaryId);
-        Dictionary copy = new Dictionary(dictionaryId, newDictionaryName, null);
         try {
+            Dictionary dictionary = findDictionary(dictionaryId);
+            Dictionary copy = new Dictionary(dictionaryId, newDictionaryName, null);
             connection.open();
             dictionaryDao.update(copy);
             connection.commit();
@@ -105,9 +106,9 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public boolean changeDictionaryPicture(int dictionaryId, String newPictureUrl) {
-        Dictionary dictionary = findDictionary(dictionaryId);
-        Dictionary copy = new Dictionary(dictionaryId, null, newPictureUrl);
         try {
+            Dictionary dictionary = findDictionary(dictionaryId);
+            Dictionary copy = new Dictionary(dictionaryId, null, newPictureUrl);
             connection.open();
             dictionaryDao.update(copy);
             connection.commit();
@@ -124,12 +125,8 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public boolean removeDictionary(int dictionaryId) {
-        Dictionary dictionary = findDictionary(dictionaryId);
-        if (dictionary == null) {
-            LOG.error("No dictionary was removed");
-            return false;
-        }
         try {
+            Dictionary dictionary = findDictionary(dictionaryId);
             connection.open();
             dictionaryDao.delete(dictionary);
             connection.commit();
@@ -159,6 +156,7 @@ public class DictionaryService implements IDictionaryService {
                 contextMap.put(wordId, cardDao.getContextsFor(card));
                 collocationMap.put(wordId, cardDao.getCollocationsFor(card));
             }
+            connection.commit();
         } catch (DaoException e) {
             LOG.error("Error while loading card or word beans", e);
             return Collections.emptyList();
@@ -192,6 +190,7 @@ public class DictionaryService implements IDictionaryService {
         try {
             connection.open();
             cardIds = cardDao.selectCardIdsForExercise(dictionaryId, limit);
+            connection.commit();
         } catch (DaoException e) {
             LOG.error("Error while loading exercise set", e);
             return Collections.emptyList();
@@ -303,6 +302,7 @@ public class DictionaryService implements IDictionaryService {
                 card.addContexts(contexts);
                 card.addCollocations(collocations);
             }
+            connection.commit();
         } catch (DaoException e) {
             LOG.error("Error while loading card", e);
             return null;
@@ -342,22 +342,23 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public Score getScoreSummary(int dictionaryId) {
-        Dictionary dictionary = findDictionary(dictionaryId);
-        Score score = new Score();
         try {
+            Dictionary dictionary = findDictionary(dictionaryId);
+            Score score = new Score();
             connection.open();
-            Map<String, Integer> result = cardDao.getScoreSummary(dictionaryId);
-            result.keySet()
-                    .stream()
-                    .map(CardStatus::valueOf)
-                    .forEach(status -> score.setScoreCount(status, result.get(status.name())));
+            Map<String, Integer> result = cardDao.getScoreSummary(dictionary.getId());
+            connection.commit();
+            Set<String> statuses = result.keySet();
+            for (String status : statuses) {
+                score.setScoreCount(CardStatus.valueOf(status), result.get(status));
+            }
+            return score;
         } catch (DaoException e) {
             LOG.error("Error while getting score for dictionary", e);
             return null;
         } finally {
             connection.close();
         }
-        return score;
     }
 
     @Override
@@ -418,9 +419,11 @@ public class DictionaryService implements IDictionaryService {
     private Dictionary getDictionaryFromDb(int dictionaryId) {
         Dictionary dictionary;
         try {
+            connection.open();
             dictionary = dictionaryDao.getDictionary(dictionaryId);
+            connection.commit();
         } catch (DaoException e) {
-            throw new RuntimeException(e); // todo: throw some other exception
+            throw new DictionaryServiceException();
         }
         if (dictionary == null) {
             throw new DictionaryNotFoundException();
@@ -435,21 +438,19 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public List<Card> generateCards(int dictionaryId, Set<String> words) {
-        Dictionary dictionary = findDictionary(dictionaryId);
-        int cnt = words.size();
-
         try {
+            Dictionary dictionary = findDictionary(dictionaryId);
+            int cnt = words.size();
             connection.open();
             Set<Integer> generatedIds = wordDao.generate(words);
             if (generatedIds.size() != cnt) {
                 throw new IllegalStateException();
             }
-            Set<Integer> cardIds = cardDao.generateEmptyCards(dictionaryId, generatedIds);
+            Set<Integer> cardIds = cardDao.generateEmptyCards(dictionary.getId(), generatedIds);
             if (cardIds.size() != cnt) {
                 throw new IllegalStateException();
             }
 
-            List<Card> result = new ArrayList<>();
             List<Word> wordList = wordDao.selectAll();
             connection.commit();
 
@@ -458,6 +459,8 @@ public class DictionaryService implements IDictionaryService {
                     .collect(Collectors.toMap(Word::getId, Function.identity()));
 
             Iterator<Integer> wordIds = generatedIds.iterator();
+
+            List<Card> result = new ArrayList<>();
             for (Integer cardId : cardIds) {
                 Integer wordId = wordIds.next();
                 Card card = new Card();

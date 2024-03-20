@@ -3,7 +3,7 @@ package get.wordy.core.dao.impl;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.bean.Dictionary;
 import get.wordy.core.db.CloseUtils;
-import get.wordy.core.db.ConnectionWrapper;
+import get.wordy.core.db.LocalTxManager;
 import org.flywaydb.core.internal.util.StringUtils;
 
 import java.sql.*;
@@ -25,8 +25,8 @@ public class DictionaryDao extends BaseDao<Dictionary> {
             """;
     public static final String COUNT_QUERY = "SELECT COUNT(name) FROM dictionaries";
 
-    DictionaryDao(ConnectionWrapper connectionFactory) {
-        super(connectionFactory);
+    DictionaryDao(LocalTxManager txManager) {
+        super(txManager);
     }
 
     @Override

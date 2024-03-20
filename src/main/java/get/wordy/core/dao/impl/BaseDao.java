@@ -1,7 +1,7 @@
 package get.wordy.core.dao.impl;
 
 import get.wordy.core.dao.exception.DaoException;
-import get.wordy.core.db.ConnectionWrapper;
+import get.wordy.core.db.LocalTxManager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -10,14 +10,14 @@ import java.sql.Statement;
 
 public abstract class BaseDao<T> {
 
-    private final ConnectionWrapper connectionFactory;
+    private final LocalTxManager txManager;
 
-    BaseDao(ConnectionWrapper connectionFactory) {
-        this.connectionFactory = connectionFactory;
+    BaseDao(LocalTxManager txManager) {
+        this.txManager = txManager;
     }
 
     Connection getConnection() {
-        return connectionFactory.get();
+        return txManager.get();
     }
 
     PreparedStatement prepare(String sql) throws SQLException {

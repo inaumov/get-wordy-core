@@ -3,7 +3,7 @@ package get.wordy.core.dao.impl;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.bean.Word;
 import get.wordy.core.db.CloseUtils;
-import get.wordy.core.db.ConnectionWrapper;
+import get.wordy.core.db.LocalTxManager;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -19,8 +19,8 @@ public class WordDao extends BaseDao<Word> {
     public static final String SELECT_ALL_SQL = "SELECT * FROM words ORDER BY id";
     public static final String INSERT_WORD_BATCH_QUERY = "INSERT INTO words (word) VALUES (?)";
 
-    WordDao(ConnectionWrapper connectionFactory) {
-        super(connectionFactory);
+    WordDao(LocalTxManager txManager) {
+        super(txManager);
     }
 
     @Override
