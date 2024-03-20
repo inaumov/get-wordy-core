@@ -20,12 +20,12 @@ public abstract class BaseDao<T> {
         return txManager.get();
     }
 
-    PreparedStatement prepare(String sql) throws SQLException {
-        return getConnection().prepareStatement(sql);
+    PreparedStatement prepareStatement(String query) throws SQLException {
+        return getConnection().prepareStatement(query);
     }
 
-    PreparedStatement prepareInsert(String sql) throws SQLException {
-        return getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+    PreparedStatement prepareStatementForInsert(String query) throws SQLException {
+        return getConnection().prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
     }
 
     public abstract T insert(T record) throws DaoException;

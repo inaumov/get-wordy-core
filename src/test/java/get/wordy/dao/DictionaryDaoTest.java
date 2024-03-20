@@ -27,7 +27,7 @@ public class DictionaryDaoTest extends BaseDaoTest {
 
     @Test
     void testGetDictionary() throws DaoException {
-        Dictionary dictionary = dictionaryDao.getDictionary(1);
+        Dictionary dictionary = dictionaryDao.selectById(1);
         assertNotNull(dictionary);
         assertEquals(1, dictionary.getId());
         assertEquals("dictionary1", dictionary.getName());
@@ -36,7 +36,7 @@ public class DictionaryDaoTest extends BaseDaoTest {
 
     @Test
     void testGetDictionaryNotExists() throws DaoException {
-        Dictionary dictionary = dictionaryDao.getDictionary(100);
+        Dictionary dictionary = dictionaryDao.selectById(100);
         assertNull(dictionary);
     }
 
@@ -75,7 +75,7 @@ public class DictionaryDaoTest extends BaseDaoTest {
         Dictionary dictionary = new Dictionary(1, "name_changed_test", LOGO_PNG);
         dictionaryDao.update(dictionary);
         // verify after
-        Dictionary actual = dictionaryDao.getDictionary(1);
+        Dictionary actual = dictionaryDao.selectById(1);
         assertNotNull(actual);
         assertEquals(1, actual.getId());
         assertEquals("name_changed_test", actual.getName());
@@ -88,7 +88,7 @@ public class DictionaryDaoTest extends BaseDaoTest {
         Dictionary dictionary = new Dictionary(1, null, LOGO_PNG);
         dictionaryDao.update(dictionary);
         // verify after
-        Dictionary actual = dictionaryDao.getDictionary(1);
+        Dictionary actual = dictionaryDao.selectById(1);
         assertNotNull(actual);
         assertEquals(1, actual.getId());
         assertEquals("dictionary1", actual.getName());

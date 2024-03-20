@@ -2,7 +2,6 @@ package get.wordy.core.dao.impl;
 
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.bean.Word;
-import get.wordy.core.db.CloseUtils;
 import get.wordy.core.db.LocalTxManager;
 
 import java.sql.*;
@@ -25,7 +24,7 @@ public class WordDao extends BaseDao<Word> {
 
     @Override
     public Word insert(Word word) throws DaoException {
-        try (PreparedStatement statement = prepareInsert(INSERT_SQL)) {
+        try (var statement = prepareStatementForInsert(INSERT_SQL)) {
             statement.setString(1, word.getValue());
             statement.setString(2, word.getPartOfSpeech());
             statement.setString(3, word.getTranscription());
@@ -44,7 +43,7 @@ public class WordDao extends BaseDao<Word> {
     }
 
     public Set<Integer> generate(Set<String> words) throws DaoException {
-        try (PreparedStatement statement = prepareInsert(INSERT_WORD_BATCH_QUERY)) {
+        try (var statement = prepareStatementForInsert(INSERT_WORD_BATCH_QUERY)) {
             for (String word : words) {
                 statement.setString(1, word);
                 statement.addBatch();
@@ -64,7 +63,7 @@ public class WordDao extends BaseDao<Word> {
 
     @Override
     public void delete(Word word) throws DaoException {
-        try (PreparedStatement statement = prepare(DELETE_SQL)) {
+        try (var statement = prepareStatement(DELETE_SQL)) {
             statement.setInt(1, word.getId());
             statement.execute();
         } catch (SQLException ex) {
@@ -74,7 +73,7 @@ public class WordDao extends BaseDao<Word> {
 
     @Override
     public Word update(Word word) throws DaoException {
-        try (PreparedStatement statement = prepare(UPDATE_SQL)) {
+        try (var statement = prepareStatement(UPDATE_SQL)) {
             statement.setString(1, word.getValue());
             statement.setString(2, word.getPartOfSpeech());
             statement.setString(3, word.getTranscription());
@@ -88,11 +87,8 @@ public class WordDao extends BaseDao<Word> {
     }
 
     public List<Word> selectAll() throws DaoException {
-        Connection connection = getConnection();
-        Statement statement = null;
         List<Word> words = new ArrayList<>();
-        try {
-            statement = connection.createStatement();
+        try (var statement = getConnection().createStatement()) {
             ResultSet resultSet = statement.executeQuery(SELECT_ALL_SQL);
             while (resultSet.next()) {
                 int id = resultSet.getInt(1);
@@ -104,8 +100,6 @@ public class WordDao extends BaseDao<Word> {
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while retrieving all word entities", ex);
-        } finally {
-            CloseUtils.closeQuietly(statement);
         }
         return words;
     }

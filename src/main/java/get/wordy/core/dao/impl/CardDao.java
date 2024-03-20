@@ -6,7 +6,6 @@ import get.wordy.core.bean.Context;
 import get.wordy.core.bean.Dictionary;
 import get.wordy.core.bean.wrapper.CardStatus;
 import get.wordy.core.dao.exception.DaoException;
-import get.wordy.core.db.CloseUtils;
 import get.wordy.core.db.LocalTxManager;
 
 import java.sql.*;
@@ -57,15 +56,14 @@ public class CardDao extends BaseDao<Card> {
 
     @Override
     public Card insert(Card card) throws DaoException {
-        ResultSet resultSet = null;
-        try (PreparedStatement statement = prepareInsert(INSERT_CARD_QUERY)) {
+        try (var statement = prepareStatementForInsert(INSERT_CARD_QUERY)) {
             CardStatus status = card.getStatus();
             statement.setInt(1, card.getDictionaryId());
             statement.setInt(2, card.getWordId());
             statement.setString(3, status != null ? status.name() : null);
             statement.execute();
             // get last inserted id
-            resultSet = statement.getGeneratedKeys();
+            ResultSet resultSet = statement.getGeneratedKeys();
             if (resultSet.next()) {
                 int cardId = resultSet.getInt(1);
                 insertContexts(card.getContexts());
@@ -74,14 +72,12 @@ public class CardDao extends BaseDao<Card> {
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while inserting card entity", ex);
-        } finally {
-            CloseUtils.closeQuietly(resultSet);
         }
         return card;
     }
 
     public Set<Integer> generateEmptyCards(int dictionaryId, Set<Integer> wordIds) throws DaoException {
-        try (PreparedStatement statement = prepareInsert(GENERATE_EMPTY_CARDS_QUERY)) {
+        try (var statement = prepareStatementForInsert(GENERATE_EMPTY_CARDS_QUERY)) {
             for (Integer wordId : wordIds) {
                 statement.setInt(1, dictionaryId);
                 statement.setInt(2, wordId);
@@ -108,21 +104,18 @@ public class CardDao extends BaseDao<Card> {
     }
 
     private Context insertContext(Context context) throws DaoException {
-        ResultSet resultSet = null;
-        try (PreparedStatement statement = prepareInsert(INSERT_CONTEXT_QUERY)) {
+        try (var statement = prepareStatementForInsert(INSERT_CONTEXT_QUERY)) {
             statement.setInt(1, context.getWordId());
             statement.setString(2, context.getExample());
             statement.execute();
             // get last inserted id
-            resultSet = statement.getGeneratedKeys();
+            ResultSet resultSet = statement.getGeneratedKeys();
             if (resultSet.next()) {
                 int contextId = resultSet.getInt(1);
                 return context.withId(contextId);
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while inserting context entity", ex);
-        } finally {
-            CloseUtils.closeQuietly(resultSet);
         }
         return context;
     }
@@ -135,46 +128,35 @@ public class CardDao extends BaseDao<Card> {
     }
 
     private Collocation insertCollocation(Collocation collocation) throws DaoException {
-        ResultSet resultSet = null;
-        try (PreparedStatement statement = prepareInsert(INSERT_COLLOCATIONS_QUERY)) {
+        try (var statement = prepareStatementForInsert(INSERT_COLLOCATIONS_QUERY)) {
             statement.setInt(1, collocation.getWordId());
             statement.setString(2, collocation.getExample());
             statement.execute();
             // get last inserted id
-            resultSet = statement.getGeneratedKeys();
+            ResultSet resultSet = statement.getGeneratedKeys();
             if (resultSet.next()) {
                 int collocationId = resultSet.getInt(1);
                 return collocation.withId(collocationId);
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while inserting collocation entity", ex);
-        } finally {
-            CloseUtils.closeQuietly(resultSet);
         }
         return collocation;
     }
 
     @Override
     public void delete(Card card) throws DaoException {
-        Connection connection = getConnection();
-        PreparedStatement statement = null;
-        try {
-            statement = connection.prepareStatement(DELETE_CARD_QUERY);
+        try (var statement = prepareStatement(DELETE_CARD_QUERY)) {
             statement.setInt(1, card.getId());
             statement.execute();
         } catch (SQLException ex) {
             throw new DaoException("Error while deleting card entity", ex);
-        } finally {
-            CloseUtils.closeQuietly(statement);
         }
     }
 
     @Override
     public Card update(Card card) throws DaoException {
-        Connection connection = getConnection();
-        PreparedStatement statement = null;
-        try {
-            statement = connection.prepareStatement(UPDATE_CARD_QUERY);
+        try (var statement = prepareStatement(UPDATE_CARD_QUERY)) {
             statement.setString(1, card.getStatus().name());
             statement.setInt(2, card.getScore());
             statement.setInt(3, card.getWordId());
@@ -183,8 +165,6 @@ public class CardDao extends BaseDao<Card> {
             statement.executeUpdate();
         } catch (SQLException ex) {
             throw new DaoException("Error while updating card entity", ex);
-        } finally {
-            CloseUtils.closeQuietly(statement);
         }
 
         deleteFromContexts(card);
@@ -195,7 +175,7 @@ public class CardDao extends BaseDao<Card> {
     }
 
     private void deleteFromContexts(Card card) throws DaoException {
-        try (PreparedStatement statement = prepare(DELETE_CONTEXT_QUERY)) {
+        try (var statement = prepareStatement(DELETE_CONTEXT_QUERY)) {
             statement.setInt(1, card.getWordId());
             statement.execute();
         } catch (SQLException ex) {
@@ -204,7 +184,7 @@ public class CardDao extends BaseDao<Card> {
     }
 
     private void deleteFromCollocations(Card card) throws DaoException {
-        try (PreparedStatement statement = prepare(DELETE_COLLOCATIONS_QUERY)) {
+        try (var statement = prepareStatement(DELETE_COLLOCATIONS_QUERY)) {
             statement.setInt(1, card.getWordId());
             statement.execute();
         } catch (SQLException ex) {
@@ -214,7 +194,7 @@ public class CardDao extends BaseDao<Card> {
 
     public List<Card> selectCardsForDictionary(Dictionary dictionary) throws DaoException {
         ArrayList<Card> data = new ArrayList<>();
-        try (PreparedStatement statement = prepare(SELECT_ALL_CARDS_BY_DIC)) {
+        try (var statement = prepareStatement(SELECT_ALL_CARDS_BY_DIC)) {
             statement.setInt(1, dictionary.getId());
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
@@ -229,7 +209,7 @@ public class CardDao extends BaseDao<Card> {
     }
 
     public Card selectById(int cardId) throws DaoException {
-        try (PreparedStatement statement = prepare(SELECT_CARD_QUERY)) {
+        try (var statement = prepareStatement(SELECT_CARD_QUERY)) {
             statement.setInt(1, cardId);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
@@ -264,12 +244,11 @@ public class CardDao extends BaseDao<Card> {
         int[] buffer = new int[limit]; // initial array with the largest possible capacity;
         int cnt = 0; // retrieved amount
 
-        ResultSet resultSet = null;
-        try (PreparedStatement statement = prepare(SELECT_FOR_EXERCISE_QUERY)) {
+        try (var statement = prepareStatement(SELECT_FOR_EXERCISE_QUERY)) {
             statement.setInt(1, dictionaryId);
             statement.setString(2, CardStatus.TO_LEARN.name());
             statement.setInt(3, limit);
-            resultSet = statement.executeQuery();
+            ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 int id = resultSet.getInt("id");
                 buffer[cnt] = id;
@@ -277,8 +256,6 @@ public class CardDao extends BaseDao<Card> {
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while retrieving card entities for exercise", ex);
-        } finally {
-            CloseUtils.closeQuietly(resultSet);
         }
         // downsize the array if retrieved amount is less than the limit
         if (cnt < limit) {
@@ -291,10 +268,9 @@ public class CardDao extends BaseDao<Card> {
 
     public List<Context> getContextsFor(Card card) throws DaoException {
         ArrayList<Context> contexts = new ArrayList<>();
-        ResultSet resultSet = null;
-        try (PreparedStatement statement = prepare(SELECT_CONTEXT_QUERY)) {
+        try (var statement = prepareStatement(SELECT_CONTEXT_QUERY)) {
             statement.setInt(1, card.getWordId());
-            resultSet = statement.executeQuery();
+            ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 int id = resultSet.getInt(1);
                 String example = resultSet.getString(2);
@@ -304,18 +280,15 @@ public class CardDao extends BaseDao<Card> {
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while retrieving context entities for word=" + card.getWordId(), ex);
-        } finally {
-            CloseUtils.closeQuietly(resultSet);
         }
         return contexts;
     }
 
     public List<Collocation> getCollocationsFor(Card card) throws DaoException {
         ArrayList<Collocation> collocations = new ArrayList<>();
-        ResultSet resultSet = null;
-        try (PreparedStatement statement = prepare(SELECT_COLLOCATIONS_QUERY)) {
+        try (var statement = prepareStatement(SELECT_COLLOCATIONS_QUERY)) {
             statement.setInt(1, card.getWordId());
-            resultSet = statement.executeQuery();
+            ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 int id = resultSet.getInt(1);
                 String example = resultSet.getString(2);
@@ -325,18 +298,15 @@ public class CardDao extends BaseDao<Card> {
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while selecting collocation entities for word=" + card.getWordId(), ex);
-        } finally {
-            CloseUtils.closeQuietly(resultSet);
         }
         return collocations;
     }
 
     public Map<String, Integer> getScoreSummary(int dictionaryId) throws DaoException {
-        ResultSet resultSet = null;
         Map<String, Integer> statuses = new HashMap<>();
-        try (PreparedStatement statement = prepare(SCORE_SUMMARY_QUERY)) {
+        try (var statement = prepareStatement(SCORE_SUMMARY_QUERY)) {
             statement.setInt(1, dictionaryId);
-            resultSet = statement.executeQuery();
+            ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 String status = resultSet.getString("status");
                 int count = resultSet.getInt(2);
@@ -344,14 +314,12 @@ public class CardDao extends BaseDao<Card> {
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while retrieving score summary for dictionary", ex);
-        } finally {
-            CloseUtils.closeQuietly(resultSet);
         }
         return statuses;
     }
 
     public void resetScore(int cardId, CardStatus status) throws DaoException {
-        try (PreparedStatement statement = prepare(RESET_SCORE_QUERY)) {
+        try (var statement = prepareStatement(RESET_SCORE_QUERY)) {
             statement.setInt(1, 0);
             statement.setString(2, status.name());
             statement.setInt(3, cardId);
@@ -362,23 +330,18 @@ public class CardDao extends BaseDao<Card> {
     }
 
     public void updateStatus(int cardId, CardStatus status, int score) throws DaoException {
-        Connection connection = getConnection();
-        PreparedStatement statement = null;
-        try {
-            statement = connection.prepareStatement(UPDATE_STATUS_QUERY);
+        try (var statement = prepareStatement(UPDATE_STATUS_QUERY)) {
             statement.setString(1, status.name());
             statement.setInt(2, score);
             statement.setInt(3, cardId);
             statement.executeUpdate();
         } catch (SQLException ex) {
             throw new DaoException("Error while updating status and score", ex);
-        } finally {
-            CloseUtils.closeQuietly(statement);
         }
     }
 
     public void batchUpdateScores(List<Card> cards) throws DaoException {
-        try (PreparedStatement statement = prepare(UPDATE_STATUS_QUERY)) {
+        try (var statement = prepareStatement(UPDATE_STATUS_QUERY)) {
             for (Card card : cards) {
                 statement.setString(1, card.getStatus().name());
                 statement.setInt(2, card.getScore());
