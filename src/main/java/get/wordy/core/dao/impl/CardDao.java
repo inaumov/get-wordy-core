@@ -20,7 +20,7 @@ public class CardDao extends BaseDao<Card> {
     public static final String GENERATE_EMPTY_CARDS_QUERY = """
             INSERT INTO cards (dictionary_id, word_id) VALUES (?,?)
             """;
-    public static final String DELETE_QUERY = "DELETE FROM cards WHERE id=?";
+    public static final String DELETE_CARD_QUERY = "DELETE FROM cards WHERE id=?";
     public static final String UPDATE_QUERY = """
             UPDATE cards SET status=?,score=?,word_id=?,dictionary_id=?,last_update_time=NOW() WHERE id=?
             """;
@@ -41,6 +41,14 @@ public class CardDao extends BaseDao<Card> {
             SELECT id FROM cards WHERE dictionary_id=? AND status=? ORDER BY create_time LIMIT ?
             """;
     private static final String SELECT_ALL_CARDS_BY_DIC = "SELECT * FROM cards WHERE dictionary_id=? ORDER BY create_time ASC";
+
+    // context and collocations
+    private static final String INSERT_CONTEXT_QUERY = "INSERT INTO context (word_id, example) VALUES (?,?)";
+    private static final String INSERT_COLLOCATIONS_QUERY = "INSERT INTO collocations (word_id, example) VALUES (?,?)";
+    private static final String SELECT_CONTEXT_QUERY = "SELECT * FROM context WHERE word_id=?";
+    private static final String SELECT_COLLOCATIONS_QUERY = "SELECT * FROM collocations WHERE word_id=?";
+    private static final String DELETE_CONTEXT_QUERY = "DELETE FROM context WHERE word_id=?";
+    private static final String DELETE_COLLOCATIONS_QUERY = "DELETE FROM collocations WHERE word_id=?";
 
     CardDao(ConnectionWrapper connectionFactory) {
         super(connectionFactory);
@@ -99,13 +107,8 @@ public class CardDao extends BaseDao<Card> {
     }
 
     private Context insertContext(Context context) throws DaoException {
-        String INSERT = "INSERT INTO "
-                + "context" + " ("
-                + "word_id" + ", "
-                + "example"
-                + ") VALUES (?,?)";
         ResultSet resultSet = null;
-        try (PreparedStatement statement = prepareInsert(INSERT)) {
+        try (PreparedStatement statement = prepareInsert(INSERT_CONTEXT_QUERY)) {
             statement.setInt(1, context.getWordId());
             statement.setString(2, context.getExample());
             statement.execute();
@@ -131,13 +134,8 @@ public class CardDao extends BaseDao<Card> {
     }
 
     private Collocation insertCollocation(Collocation collocation) throws DaoException {
-        String INSERT = "INSERT INTO "
-                + "collocations" + " ("
-                + "word_id" + ", "
-                + "example"
-                + ") VALUES (?,?)";
         ResultSet resultSet = null;
-        try (PreparedStatement statement = prepareInsert(INSERT)) {
+        try (PreparedStatement statement = prepareInsert(INSERT_COLLOCATIONS_QUERY)) {
             statement.setInt(1, collocation.getWordId());
             statement.setString(2, collocation.getExample());
             statement.execute();
@@ -160,7 +158,7 @@ public class CardDao extends BaseDao<Card> {
         Connection connection = getConnection();
         PreparedStatement statement = null;
         try {
-            statement = connection.prepareStatement(DELETE_QUERY);
+            statement = connection.prepareStatement(DELETE_CARD_QUERY);
             statement.setInt(1, card.getId());
             statement.execute();
         } catch (SQLException ex) {
@@ -196,8 +194,7 @@ public class CardDao extends BaseDao<Card> {
     }
 
     private void deleteFromContexts(Card card) throws DaoException {
-        String query = "DELETE FROM " + "context" + " WHERE " + "word_id" + "=?";
-        try (PreparedStatement statement = prepare(query)) {
+        try (PreparedStatement statement = prepare(DELETE_CONTEXT_QUERY)) {
             statement.setInt(1, card.getWordId());
             statement.execute();
         } catch (SQLException ex) {
@@ -206,8 +203,7 @@ public class CardDao extends BaseDao<Card> {
     }
 
     private void deleteFromCollocations(Card card) throws DaoException {
-        String query = "DELETE FROM " + "collocations" + " WHERE " + "word_id" + "=?";
-        try (PreparedStatement statement = prepare(query)) {
+        try (PreparedStatement statement = prepare(DELETE_COLLOCATIONS_QUERY)) {
             statement.setInt(1, card.getWordId());
             statement.execute();
         } catch (SQLException ex) {
@@ -308,10 +304,9 @@ public class CardDao extends BaseDao<Card> {
     }
 
     public List<Context> getContextsFor(Card card) throws DaoException {
-        String query = "SELECT * FROM " + "context" + " WHERE " + "word_id" + "=?";
         ArrayList<Context> contexts = new ArrayList<>();
         ResultSet resultSet = null;
-        try (PreparedStatement statement = prepare(query)) {
+        try (PreparedStatement statement = prepare(SELECT_CONTEXT_QUERY)) {
             statement.setInt(1, card.getWordId());
             resultSet = statement.executeQuery();
             while (resultSet.next()) {
@@ -331,9 +326,8 @@ public class CardDao extends BaseDao<Card> {
 
     public List<Collocation> getCollocationsFor(Card card) throws DaoException {
         ArrayList<Collocation> collocations = new ArrayList<>();
-        String query = "SELECT * FROM " + "collocations" + " WHERE " + "word_id" + "=?";
         ResultSet resultSet = null;
-        try (PreparedStatement statement = prepare(query)) {
+        try (PreparedStatement statement = prepare(SELECT_COLLOCATIONS_QUERY)) {
             statement.setInt(1, card.getWordId());
             resultSet = statement.executeQuery();
             while (resultSet.next()) {

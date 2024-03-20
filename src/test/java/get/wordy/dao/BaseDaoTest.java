@@ -1,8 +1,6 @@
 package get.wordy.dao;
 
 import get.wordy.core.ServerInfo;
-import get.wordy.core.bean.Collocation;
-import get.wordy.core.bean.Context;
 import get.wordy.core.dao.impl.DaoFactory;
 import get.wordy.core.db.ConnectionWrapper;
 import org.junit.jupiter.api.AfterEach;
@@ -41,16 +39,6 @@ public abstract class BaseDaoTest {
     @AfterEach
     public void tearDown() {
         connect.rollback();
-    }
-
-    Context prepareContext(int wordId, int contextId) {
-        String d = "example" + contextId;
-        return new Context(contextId, d, wordId);
-    }
-
-    Collocation prepareCollocation(int wordId, int collocationId) {
-        String e = "example" + collocationId;
-        return new Collocation(collocationId, e, wordId);
     }
 
 }

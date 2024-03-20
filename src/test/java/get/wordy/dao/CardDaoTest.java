@@ -279,4 +279,14 @@ public class CardDaoTest extends BaseDaoTest {
         }
     }
 
+    private Context prepareContext(int wordId, int contextId) {
+        String d = "example" + contextId;
+        return new Context(contextId, d, wordId);
+    }
+
+    private Collocation prepareCollocation(int wordId, int collocationId) {
+        String e = "example" + collocationId;
+        return new Collocation(collocationId, e, wordId);
+    }
+
 }

@@ -17,6 +17,7 @@ public class WordDao extends BaseDao<Word> {
     public static final String DELETE_SQL = "DELETE FROM words WHERE id = ?";
     public static final String UPDATE_SQL = "UPDATE words SET word = ?, part_of_speech = ?, transcription = ?, meaning = ? WHERE id = ?";
     public static final String SELECT_ALL_SQL = "SELECT * FROM words ORDER BY id";
+    public static final String INSERT_WORD_BATCH_QUERY = "INSERT INTO words (word) VALUES (?)";
 
     WordDao(ConnectionWrapper connectionFactory) {
         super(connectionFactory);
@@ -43,7 +44,7 @@ public class WordDao extends BaseDao<Word> {
     }
 
     public Set<Integer> generate(Set<String> words) throws DaoException {
-        try (PreparedStatement statement = prepareInsert("INSERT INTO words (word) VALUES (?)")) {
+        try (PreparedStatement statement = prepareInsert(INSERT_WORD_BATCH_QUERY)) {
             for (String word : words) {
                 statement.setString(1, word);
                 statement.addBatch();
