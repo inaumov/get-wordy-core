@@ -1,6 +1,7 @@
 package get.wordy.core;
 
 import get.wordy.core.api.IDictionaryService;
+import get.wordy.core.api.exception.CardNotFoundException;
 import get.wordy.core.api.exception.DictionaryServiceException;
 import get.wordy.core.bean.Dictionary;
 import get.wordy.core.bean.*;
@@ -420,7 +421,7 @@ public class DictionaryService implements IDictionaryService {
         Dictionary dictionary;
         try {
             connection.open();
-            dictionary = dictionaryDao.getDictionary(dictionaryId);
+            dictionary = dictionaryDao.selectById(dictionaryId);
             connection.commit();
         } catch (DaoException e) {
             throw new DictionaryServiceException();
@@ -433,7 +434,24 @@ public class DictionaryService implements IDictionaryService {
     }
 
     private Card findCardById(int cardId) {
-        return cardsCache.get(cardId);
+        return Optional.ofNullable(cardsCache.get(cardId))
+                .orElseGet(() -> loadCardHeadlineFromDb(cardId));
+    }
+
+    private Card loadCardHeadlineFromDb(int cardId) {
+        Card card;
+        try {
+            connection.open();
+            card = cardDao.selectById(cardId);
+            connection.commit();
+        } catch (DaoException e) {
+            throw new DictionaryServiceException();
+        }
+        if (card == null) {
+            throw new CardNotFoundException();
+        }
+        cardsCache.put(cardId, card);
+        return card;
     }
 
     @Override

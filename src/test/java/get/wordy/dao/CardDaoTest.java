@@ -97,18 +97,16 @@ public class CardDaoTest extends BaseDaoTest {
     }
 
     @Test
-    public void testSelectAllSortedByInsertTimeNewCardsFirst() throws DaoException {
-        List<Card> cards = cardDao.selectAllCardsSortedBy("create_time");
-        assertNotNull(cards);
-        assertFalse(cards.isEmpty());
-
-        Card first = cards.getFirst();
+    public void testLoadCardHeadline() throws DaoException {
+        Card first = cardDao.selectById(1);
+        assertNotNull(first);
         assertEquals(1, first.getId());
         assertEquals(1, first.getWordId());
         assertEquals(1, first.getDictionaryId());
         assertEquals(CardStatus.EDIT, first.getStatus());
 
-        Card second = cards.get(1);
+        Card second = cardDao.selectById(2);
+        assertNotNull(second);
         assertEquals(2, second.getId());
         assertEquals(2, second.getWordId());
         assertEquals(2, second.getDictionaryId());

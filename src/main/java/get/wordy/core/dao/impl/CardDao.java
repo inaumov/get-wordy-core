@@ -14,24 +14,23 @@ import java.util.*;
 
 public class CardDao extends BaseDao<Card> {
 
-    public static final String INSERT_QUERY = """
+    public static final String INSERT_CARD_QUERY = """
             INSERT INTO cards (dictionary_id, word_id, status) VALUES (?,?,?)
             """;
     public static final String GENERATE_EMPTY_CARDS_QUERY = """
             INSERT INTO cards (dictionary_id, word_id) VALUES (?,?)
             """;
     public static final String DELETE_CARD_QUERY = "DELETE FROM cards WHERE id=?";
-    public static final String UPDATE_QUERY = """
+    public static final String UPDATE_CARD_QUERY = """
             UPDATE cards SET status=?,score=?,word_id=?,dictionary_id=?,last_update_time=NOW() WHERE id=?
             """;
-    public static final String SELECT_ALL_CARDS = """
-            SELECT cards.id, status, score, create_time, last_update_time, word_id, dictionary_id FROM cards
-            JOIN words ON cards.word_id = words.id ORDER BY %s ASC
+    public static final String SELECT_CARD_QUERY = """
+            SELECT id, status, score, create_time, last_update_time, word_id, dictionary_id FROM cards WHERE id=?
             """;
     private static final String RESET_SCORE_QUERY = """
             UPDATE cards SET score=?, status=?, last_update_time=NOW() WHERE id=?
             """;
-    private static final String UPDATE_STATUS = """
+    private static final String UPDATE_STATUS_QUERY = """
             UPDATE cards SET status=?,score=?, last_update_time=NOW() WHERE id=?
             """;
     private static final String SCORE_SUMMARY_QUERY = """
@@ -40,7 +39,9 @@ public class CardDao extends BaseDao<Card> {
     private static final String SELECT_FOR_EXERCISE_QUERY = """
             SELECT id FROM cards WHERE dictionary_id=? AND status=? ORDER BY create_time LIMIT ?
             """;
-    private static final String SELECT_ALL_CARDS_BY_DIC = "SELECT * FROM cards WHERE dictionary_id=? ORDER BY create_time ASC";
+    private static final String SELECT_ALL_CARDS_BY_DIC = """
+            SELECT * FROM cards WHERE dictionary_id=? ORDER BY create_time ASC
+            """;
 
     // context and collocations
     private static final String INSERT_CONTEXT_QUERY = "INSERT INTO context (word_id, example) VALUES (?,?)";
@@ -57,7 +58,7 @@ public class CardDao extends BaseDao<Card> {
     @Override
     public Card insert(Card card) throws DaoException {
         ResultSet resultSet = null;
-        try (PreparedStatement statement = prepareInsert(INSERT_QUERY)) {
+        try (PreparedStatement statement = prepareInsert(INSERT_CARD_QUERY)) {
             CardStatus status = card.getStatus();
             statement.setInt(1, card.getDictionaryId());
             statement.setInt(2, card.getWordId());
@@ -173,7 +174,7 @@ public class CardDao extends BaseDao<Card> {
         Connection connection = getConnection();
         PreparedStatement statement = null;
         try {
-            statement = connection.prepareStatement(UPDATE_QUERY);
+            statement = connection.prepareStatement(UPDATE_CARD_QUERY);
             statement.setString(1, card.getStatus().name());
             statement.setInt(2, card.getScore());
             statement.setInt(3, card.getWordId());
@@ -212,65 +213,50 @@ public class CardDao extends BaseDao<Card> {
     }
 
     public List<Card> selectCardsForDictionary(Dictionary dictionary) throws DaoException {
-        ResultSet resultSet = null;
         ArrayList<Card> data = new ArrayList<>();
         try (PreparedStatement statement = prepare(SELECT_ALL_CARDS_BY_DIC)) {
             statement.setInt(1, dictionary.getId());
-            resultSet = statement.executeQuery();
+            ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 Card card = new Card();
-                card.setId(resultSet.getInt("id"));
-                card.setStatus(CardStatus.valueOf(resultSet.getString("status")));
-                card.setScore(resultSet.getInt("score"));
-                Timestamp createTime = resultSet.getTimestamp("create_time");
-                if (createTime != null) {
-                    card.setInsertedAt(createTime.toInstant());
-                }
-                Timestamp updateTime = resultSet.getTimestamp("last_update_time");
-                if (updateTime != null) {
-                    card.setUpdatedAt(updateTime.toInstant());
-                }
-                card.setWordId(resultSet.getInt("word_id"));
-                card.setDictionaryId(resultSet.getInt("dictionary_id"));
+                mapResultSetToCardEntity(resultSet, card);
                 data.add(card);
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while retrieving card entities for current dictionary", ex);
-        } finally {
-            CloseUtils.closeQuietly(resultSet);
         }
         return data;
     }
 
-    public List<Card> selectAllCardsSortedBy(String fieldName) throws DaoException {
-        ResultSet resultSet = null;
-        ArrayList<Card> data = new ArrayList<>();
-        String query = String.format(SELECT_ALL_CARDS, fieldName);
-        try (PreparedStatement statement = prepare(query)) {
-            resultSet = statement.executeQuery();
-            while (resultSet.next()) {
+    public Card selectById(int cardId) throws DaoException {
+        try (PreparedStatement statement = prepare(SELECT_CARD_QUERY)) {
+            statement.setInt(1, cardId);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
                 Card card = new Card();
-                card.setId(resultSet.getInt("id"));
-                card.setStatus(CardStatus.valueOf(resultSet.getString("status")));
-                card.setScore(resultSet.getInt("score"));
-                Timestamp createTime = resultSet.getTimestamp("create_time");
-                if (createTime != null) {
-                    card.setInsertedAt(createTime.toInstant());
-                }
-                Timestamp updateTime = resultSet.getTimestamp("last_update_time");
-                if (updateTime != null) {
-                    card.setUpdatedAt(updateTime.toInstant());
-                }
-                card.setWordId(resultSet.getInt("word_id"));
-                card.setDictionaryId(resultSet.getInt("dictionary_id"));
-                data.add(card);
+                mapResultSetToCardEntity(resultSet, card);
+                return card;
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving card entities sorted by", ex);
-        } finally {
-            CloseUtils.closeQuietly(resultSet);
+            throw new DaoException("Error while retrieving card headline", ex);
         }
-        return data;
+        return null;
+    }
+
+    private void mapResultSetToCardEntity(ResultSet resultSet, Card destination) throws SQLException {
+        destination.setId(resultSet.getInt("id"));
+        destination.setStatus(CardStatus.valueOf(resultSet.getString("status")));
+        destination.setScore(resultSet.getInt("score"));
+        Timestamp createTime = resultSet.getTimestamp("create_time");
+        if (createTime != null) {
+            destination.setInsertedAt(createTime.toInstant());
+        }
+        Timestamp updateTime = resultSet.getTimestamp("last_update_time");
+        if (updateTime != null) {
+            destination.setUpdatedAt(updateTime.toInstant());
+        }
+        destination.setWordId(resultSet.getInt("word_id"));
+        destination.setDictionaryId(resultSet.getInt("dictionary_id"));
     }
 
     public int[] selectCardIdsForExercise(int dictionaryId, int limit) throws DaoException {
@@ -379,7 +365,7 @@ public class CardDao extends BaseDao<Card> {
         Connection connection = getConnection();
         PreparedStatement statement = null;
         try {
-            statement = connection.prepareStatement(UPDATE_STATUS);
+            statement = connection.prepareStatement(UPDATE_STATUS_QUERY);
             statement.setString(1, status.name());
             statement.setInt(2, score);
             statement.setInt(3, cardId);
@@ -392,7 +378,7 @@ public class CardDao extends BaseDao<Card> {
     }
 
     public void batchUpdateScores(List<Card> cards) throws DaoException {
-        try (PreparedStatement statement = prepare(UPDATE_STATUS)) {
+        try (PreparedStatement statement = prepare(UPDATE_STATUS_QUERY)) {
             for (Card card : cards) {
                 statement.setString(1, card.getStatus().name());
                 statement.setInt(2, card.getScore());
