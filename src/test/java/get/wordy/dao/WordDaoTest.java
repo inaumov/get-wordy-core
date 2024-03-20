@@ -20,7 +20,7 @@ public class WordDaoTest extends BaseDaoTest {
     @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
-        wordDao = factory.getWordDao();
+        wordDao = daoFactory.getWordDao();
         assertNotNull(wordDao);
     }
 
@@ -36,9 +36,7 @@ public class WordDaoTest extends BaseDaoTest {
         assertEquals(PREDEFINED_WORDS_CNT + 1, words.size());
 
         int id = 1;
-        Iterator<Word> iterator = words.iterator();
-        while (iterator.hasNext()) {
-            Word actual = iterator.next();
+        for (Word actual : words) {
             if (actual.getId() >= EXPECTED_NEW_ID) {
                 assertEquals(word.getValue(), actual.getValue());
                 assertEquals("transcription", actual.getTranscription());

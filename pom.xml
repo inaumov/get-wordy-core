@@ -161,7 +161,6 @@
                         <configuration>
                             <environmentVariables>
                                 <get.wordy.jdbc.url>${gw.jdbc.test-url}</get.wordy.jdbc.url>
-                                <get.wordy.jdbc.database>${gw.jdbc.test-database}</get.wordy.jdbc.database>
                                 <get.wordy.jdbc.user>${gw.jdbc.test-user}</get.wordy.jdbc.user>
                                 <get.wordy.jdbc.password>${gw.jdbc.test-password}</get.wordy.jdbc.password>
                             </environmentVariables>

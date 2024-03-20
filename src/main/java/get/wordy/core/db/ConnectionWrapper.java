@@ -8,8 +8,6 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Iterator;
-import java.util.Set;
 
 public class ConnectionWrapper {
 
@@ -29,33 +27,15 @@ public class ConnectionWrapper {
     }
 
     public void open() throws DaoException {
-        String database = info.getDatabase();
-        String host = info.getHost();
-        String url = host + "/" + database + getParameters();
+        String url = info.getUrl();
         try {
             if (connection == null || connection.isClosed()) {
-                connection = DriverManager.getConnection(url, info.getAccount());
+                connection = DriverManager.getConnection(url, info.getCredentials());
                 connection.setAutoCommit(false);
             }
         } catch (SQLException ex) {
             throw new DaoException("Error while creating connection to database", ex);
         }
-    }
-
-    private String getParameters() {
-        Set<String> parameters = info.getParameters();
-        if (parameters.isEmpty()) {
-            return "";
-        }
-        String str = "?";
-        Iterator<String> iterator = parameters.iterator();
-        while (iterator.hasNext()) {
-            str = str.concat(iterator.next());
-            if (iterator.hasNext()) {
-                str = str.concat("&");
-            }
-        }
-        return str;
     }
 
     public void commit() throws DaoException {

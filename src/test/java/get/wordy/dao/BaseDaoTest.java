@@ -14,7 +14,7 @@ import java.sql.DatabaseMetaData;
 public abstract class BaseDaoTest {
 
     protected ConnectionWrapper connect;
-    protected static DaoFactory factory;
+    protected static DaoFactory daoFactory;
 
     @BeforeEach
     public void setUp() throws Exception {
@@ -23,11 +23,10 @@ public abstract class BaseDaoTest {
             return;
         }
         ServerInfo serverInfo = new ServerInfo();
-        serverInfo.setHost(System.getenv("get.wordy.jdbc.url"));
-        serverInfo.setDatabase(System.getenv("get.wordy.jdbc.database"));
-        serverInfo.getAccount().setProperty("user", System.getenv("get.wordy.jdbc.user"));
-        serverInfo.getAccount().setProperty("password", System.getenv("get.wordy.jdbc.password"));
-        factory = DaoFactory.getFactory();
+        serverInfo.setUrl(System.getenv("get.wordy.jdbc.url"));
+        serverInfo.getCredentials().setProperty("user", System.getenv("get.wordy.jdbc.user"));
+        serverInfo.getCredentials().setProperty("password", System.getenv("get.wordy.jdbc.password"));
+        daoFactory = DaoFactory.getFactory();
 
         connect = ConnectionWrapper.getInstance();
         connect.setServerInfo(serverInfo);

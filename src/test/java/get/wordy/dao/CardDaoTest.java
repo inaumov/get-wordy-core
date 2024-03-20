@@ -27,7 +27,7 @@ public class CardDaoTest extends BaseDaoTest {
     @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
-        cardDao = factory.getCardDao();
+        cardDao = daoFactory.getCardDao();
         assertNotNull(cardDao);
     }
 
@@ -87,7 +87,7 @@ public class CardDaoTest extends BaseDaoTest {
             assertNotNull(cards);
             assertEquals(1, cards.size());
             // remove first
-            Card toRemove = cards.iterator().next();
+            Card toRemove = cards.getFirst();
             cardDao.delete(toRemove);
             // update list
             cards = cardDao.selectCardsForDictionary(getDictionary(id));
@@ -102,7 +102,7 @@ public class CardDaoTest extends BaseDaoTest {
         assertNotNull(cards);
         assertFalse(cards.isEmpty());
 
-        Card first = cards.get(0);
+        Card first = cards.getFirst();
         assertEquals(1, first.getId());
         assertEquals(1, first.getWordId());
         assertEquals(1, first.getDictionaryId());

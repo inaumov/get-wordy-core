@@ -31,9 +31,11 @@ public class DictionaryService implements IDictionaryService {
     private final List<Dictionary> dictionaryList = new ArrayList<>();
     private final Map<Integer, Card> cardsCache = new HashMap<>();
 
+    @SuppressWarnings("unused")
     public DictionaryService() {
     }
 
+    @SuppressWarnings("unused")
     public DictionaryService(DictionaryDao dictionaryDao,
                              WordDao wordDao,
                              CardDao cardDao,
@@ -47,7 +49,7 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public List<Dictionary> getDictionaries() {
-        List<Dictionary> list = null;
+        List<Dictionary> list;
         try {
             connection.open();
             list = dictionaryDao.selectAll();
@@ -303,8 +305,6 @@ public class DictionaryService implements IDictionaryService {
             }
         } catch (DaoException e) {
             LOG.error("Error while loading card", e);
-            return null;
-        } catch (NullPointerException npe) {
             return null;
         } finally {
             connection.close();

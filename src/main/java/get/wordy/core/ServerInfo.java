@@ -1,51 +1,31 @@
 package get.wordy.core;
 
-import java.util.HashSet;
 import java.util.Properties;
-import java.util.Set;
 
 public class ServerInfo {
 
-    private String host;
-    private String database;
-    private Properties account;
-    private Set<String> parameters = new HashSet<>();
+    private String url;
+    private Properties credentials;
 
     public ServerInfo() {
-        account = new Properties();
+        credentials = new Properties();
     }
 
-    public String getHost() {
-        return host;
+    public String getUrl() {
+        return url;
     }
 
-    public void setHost(String host) {
-        this.host = host;
+    public void setUrl(String host) {
+        this.url = host;
     }
 
-    public Properties getAccount() {
-        return account;
+    public Properties getCredentials() {
+        return credentials;
     }
 
-    public void setAccount(Properties account) {
-        this.account.clear();
-        this.account.putAll(account);
-    }
-
-    public String getDatabase() {
-        return database;
-    }
-
-    public void setDatabase(String database) {
-        this.database = database;
-    }
-
-    public Set<String> getParameters() {
-        return parameters;
-    }
-
-    public void addParameter(String parameter) {
-        parameters.add(parameter);
+    public void setCredentials(Properties credentials) {
+        this.credentials.clear();
+        this.credentials.putAll(credentials);
     }
 
 }

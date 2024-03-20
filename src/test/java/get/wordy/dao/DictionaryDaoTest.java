@@ -21,7 +21,7 @@ public class DictionaryDaoTest extends BaseDaoTest {
     @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
-        dictionaryDao = factory.getDictionaryDao();
+        dictionaryDao = daoFactory.getDictionaryDao();
         assertNotNull(dictionaryDao);
     }
 
