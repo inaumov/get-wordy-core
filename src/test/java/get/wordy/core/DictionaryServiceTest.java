@@ -44,7 +44,7 @@ public class DictionaryServiceTest {
     private DictionaryService dictionaryService;
 
     @BeforeEach
-    public void setUp() throws DaoException {
+    public void setUp() {
         EasyMockSupport.injectMocks(this);
     }
 
@@ -56,7 +56,7 @@ public class DictionaryServiceTest {
     // test dictionary section
 
     @Test
-    public void testGetDictionaries() throws DaoException {
+    public void testGetDictionaries() throws Exception {
         replayTxCommited();
 
         Dictionary dictionaryMock = createDictionaryMock();
@@ -72,18 +72,18 @@ public class DictionaryServiceTest {
         verify(dictionaryDaoMock);
     }
 
-    private void replayTxCommited() throws DaoException {
+    private void replayTxCommited() throws Exception {
         connectionMock.open();
-        expectLastCall().once();
+        expectLastCall().atLeastOnce();
         connectionMock.close();
         expectLastCall().once();
         connectionMock.commit();
-        expectLastCall().once();
+        expectLastCall().atLeastOnce();
 
         replay(connectionMock);
     }
 
-    private void replayTxWhenException() throws DaoException {
+    private void replayTxWhenException() throws Exception {
         connectionMock.open();
         expectLastCall().once();
         connectionMock.close();
@@ -92,7 +92,7 @@ public class DictionaryServiceTest {
         replay(connectionMock);
     }
 
-    private void replayTxRollback() throws DaoException {
+    private void replayTxRollback() throws Exception {
         connectionMock.open();
         expectLastCall().once();
         connectionMock.rollback();
@@ -104,7 +104,7 @@ public class DictionaryServiceTest {
     }
 
     @Test
-    public void testGetDictionariesWhenDaoException() throws DaoException {
+    public void testGetDictionariesWhenDaoException() throws Exception {
         replayTxWhenException();
 
         expect(dictionaryDaoMock.selectAll()).andStubThrow(new DaoException("selectAll", null));
@@ -117,7 +117,7 @@ public class DictionaryServiceTest {
     }
 
     @Test
-    public void testCreateDictionary() throws DaoException {
+    public void testCreateDictionary() throws Exception {
         replayTxCommited();
 
         Dictionary dictionaryMock = createDictionaryMock();
@@ -136,7 +136,7 @@ public class DictionaryServiceTest {
     }
 
     @Test
-    public void testCreateDictionaryWhenDaoException() throws DaoException {
+    public void testCreateDictionaryWhenDaoException() throws Exception {
         replayTxRollback();
 
         Capture<Dictionary> dictionaryCapture = Capture.newInstance();
@@ -197,7 +197,10 @@ public class DictionaryServiceTest {
 
     @Test
     public void testRenameDictionaryWhenNotFound() throws Exception {
-        replayTxCommited();
+        // expect commit when get a dictionary
+        connectionMock.commit();
+        expectLastCall().atLeastOnce();
+        replayTxWhenException();
 
         Throwable exception = assertThrows(DictionaryNotFoundException.class,
                 () -> dictionaryService.renameDictionary(DICTIONARY_ID, "nameUpdated"));
@@ -245,7 +248,11 @@ public class DictionaryServiceTest {
 
     @Test
     public void testRemoveDictionaryWhenNotFound() throws Exception {
-        replayTxCommited();
+        // expect commit when get a dictionary
+        connectionMock.commit();
+        expectLastCall().atLeastOnce();
+        replayTxWhenException();
+
         Throwable exception = assertThrows(DictionaryNotFoundException.class,
                 () -> dictionaryService.removeDictionary(DICTIONARY_ID));
         assertNull(exception.getMessage());
@@ -347,6 +354,43 @@ public class DictionaryServiceTest {
 
         List<Card> cards = dictionaryService.getCardsForExercise(1, 6);
         assertEquals(3, cards.size());
+    }
+
+    @Test
+    void loadCardFullData() throws Exception {
+        replayTxCommited();
+
+        int wordId = 1;
+        int cardId = 1;
+
+        Word wordMock = niceMock(Word.class);
+        expect(wordMock.getId()).andReturn(wordId);
+        replay(wordMock);
+
+        Card cardMock = niceMock(Card.class);
+        expect(cardMock.getId()).andReturn(cardId).anyTimes();
+        expect(cardMock.getWord()).andReturn(null);
+        expect(cardMock.getWordId()).andReturn(wordId);
+        cardMock.setWord(wordMock);
+        expect(cardMock.getContexts()).andReturn(Collections.emptyList());
+        expect(cardMock.getCollocations()).andReturn(Collections.emptyList());
+        replay(cardMock);
+
+        wordDaoMock.selectById(wordId);
+        expectLastCall().andAnswer(() -> wordMock);
+        cardDaoMock.selectById(cardId);
+        expectLastCall().andAnswer(() -> cardMock);
+        cardDaoMock.getContextsFor(cardMock);
+        expectLastCall().andAnswer(() -> List.of(new Context()));
+        cardDaoMock.getCollocationsFor(cardMock);
+        expectLastCall().andAnswer(() -> List.of(new Collocation()));
+        replay(wordDaoMock, cardDaoMock);
+
+        Card card = dictionaryService.loadCard(cardId);
+        assertNotNull(card);
+
+        verify(cardMock);
+        verify(wordDaoMock, cardDaoMock);
     }
 
     @Test
@@ -498,7 +542,7 @@ public class DictionaryServiceTest {
         doChangeStatusTest(1, cardStatus, score);
     }
 
-    private void doChangeStatusTest(int cardId, CardStatus status, int score) throws DaoException {
+    private void doChangeStatusTest(int cardId, CardStatus status, int score) throws Exception {
         replayTxCommited();
 
         cardDaoMock.updateStatus(cardId, status, score);

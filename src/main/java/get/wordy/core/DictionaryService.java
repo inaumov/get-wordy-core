@@ -149,6 +149,7 @@ public class DictionaryService implements IDictionaryService {
         Map<Integer, List<Collocation>> collocationMap = new HashMap<>();
         try {
             connection.open();
+            // todo: optimize
             cardList = cardDao.selectCardsForDictionary(findDictionary(dictionaryId));
             wordList = wordDao.selectAll();
             for (Card card : cardList) {
@@ -296,20 +297,27 @@ public class DictionaryService implements IDictionaryService {
         Card card = findCardById(cardId);
         try {
             connection.open();
+            // todo: optimize
+            if (card.getWord() == null) {
+                Word word = wordDao.selectById(card.getWordId());
+                card.setWord(word);
+            }
             if (card.getContexts().isEmpty()) {
                 List<Context> contexts = cardDao.getContextsFor(card);
-                List<Collocation> collocations = cardDao.getCollocationsFor(card);
                 card.addContexts(contexts);
+            }
+            if (card.getCollocations().isEmpty()) {
+                List<Collocation> collocations = cardDao.getCollocationsFor(card);
                 card.addCollocations(collocations);
             }
             connection.commit();
+            return card;
         } catch (DaoException e) {
-            LOG.error("Error while loading card", e);
+            LOG.error("Error while loading card with id = {}", cardId, e);
             return null;
         } finally {
             connection.close();
         }
-        return card;
     }
 
     @Override
