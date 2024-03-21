@@ -212,21 +212,15 @@ public class DictionaryService implements IDictionaryService {
     public Card addCard(int dictionaryId, Card card) {
         try {
             connection.open();
-
-            Word insertedWord = wordDao.insert(card.getWord());
-            int wordId = insertedWord.getId();
-
+            Word word = wordDao.insert(card.getWord());
             card.setDictionaryId(dictionaryId);
-            card.setWordId(wordId);
+            card.setWordId(word.getId());
             card.setInsertedAt(Instant.now());
-            card.getContexts().forEach(context -> context.setWordId(wordId));
-            card.getCollocations().forEach(collocation -> collocation.setWordId(wordId));
             Card insertedCard = cardDao.insert(card);
 
             connection.commit();
             int cardId = insertedCard.getId();
-
-            if (wordId > 0 && cardId > 0) {
+            if (cardId > 0) {
                 cardsCache.put(cardId, card);
                 return insertedCard;
             } else {

@@ -21,15 +21,16 @@ CREATE TABLE cards (
   update_time   TIMESTAMP,
   dictionary_id BIGINT UNSIGNED                                   NOT NULL,
   word_id       BIGINT UNSIGNED                                   NOT NULL,
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  FOREIGN KEY (word_id) REFERENCES words (id)
 );
 
 CREATE TABLE context (
   id               SERIAL,
   example          VARCHAR(255),
-  word_id          BIGINT UNSIGNED                                                                          NOT NULL,
+  card_id          BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (id),
-  FOREIGN KEY (word_id) REFERENCES words (id)
+  FOREIGN KEY (card_id) REFERENCES cards (id)
     ON delete CASCADE
     ON update CASCADE
 );
@@ -37,9 +38,9 @@ CREATE TABLE context (
 CREATE TABLE collocations (
   id            SERIAL,
   example       VARCHAR(255),
-  word_id       BIGINT UNSIGNED,
+  card_id       BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (id),
-  FOREIGN KEY (word_id) REFERENCES words (id)
+  FOREIGN KEY (card_id) REFERENCES cards (id)
     ON delete CASCADE
     ON update CASCADE
 );

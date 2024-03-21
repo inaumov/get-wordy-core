@@ -43,12 +43,12 @@ public class CardDao extends BaseDao<Card> {
             """;
 
     // context and collocations
-    private static final String INSERT_CONTEXT_QUERY = "INSERT INTO context (word_id, example) VALUES (?,?)";
-    private static final String INSERT_COLLOCATIONS_QUERY = "INSERT INTO collocations (word_id, example) VALUES (?,?)";
-    private static final String SELECT_CONTEXT_QUERY = "SELECT * FROM context WHERE word_id=?";
-    private static final String SELECT_COLLOCATIONS_QUERY = "SELECT * FROM collocations WHERE word_id=?";
-    private static final String DELETE_CONTEXT_QUERY = "DELETE FROM context WHERE word_id=?";
-    private static final String DELETE_COLLOCATIONS_QUERY = "DELETE FROM collocations WHERE word_id=?";
+    private static final String INSERT_CONTEXT_QUERY = "INSERT INTO context (card_id, example) VALUES (?,?)";
+    private static final String INSERT_COLLOCATIONS_QUERY = "INSERT INTO collocations (card_id, example) VALUES (?,?)";
+    private static final String SELECT_CONTEXT_QUERY = "SELECT * FROM context WHERE card_id=?";
+    private static final String SELECT_COLLOCATIONS_QUERY = "SELECT * FROM collocations WHERE card_id=?";
+    private static final String DELETE_CONTEXT_QUERY = "DELETE FROM context WHERE card_id=?";
+    private static final String DELETE_COLLOCATIONS_QUERY = "DELETE FROM collocations WHERE card_id=?";
 
     CardDao(LocalTxManager txManager) {
         super(txManager);
@@ -66,8 +66,8 @@ public class CardDao extends BaseDao<Card> {
             ResultSet resultSet = statement.getGeneratedKeys();
             if (resultSet.next()) {
                 int cardId = resultSet.getInt(1);
-                insertContexts(card.getContexts());
-                insertCollocations(card.getCollocations());
+                insertContexts(cardId, card.getContexts());
+                insertCollocations(cardId, card.getCollocations());
                 card.setId(cardId);
             }
         } catch (SQLException ex) {
@@ -96,16 +96,16 @@ public class CardDao extends BaseDao<Card> {
         }
     }
 
-    private void insertContexts(List<Context> contexts) throws DaoException {
+    private void insertContexts(int cardId, List<Context> contexts) throws DaoException {
         for (Context context : contexts) {
-            Context inserted = insertContext(context);
-            context.setId(inserted.getId());
+            Context inserted = insertContext(cardId, context);
+            inserted.setCardId(cardId);
         }
     }
 
-    private Context insertContext(Context context) throws DaoException {
+    private Context insertContext(int cardId, Context context) throws DaoException {
         try (var statement = prepareStatementForInsert(INSERT_CONTEXT_QUERY)) {
-            statement.setInt(1, context.getWordId());
+            statement.setInt(1, cardId);
             statement.setString(2, context.getExample());
             statement.execute();
             // get last inserted id
@@ -120,16 +120,16 @@ public class CardDao extends BaseDao<Card> {
         return context;
     }
 
-    private void insertCollocations(List<Collocation> collocations) throws DaoException {
+    private void insertCollocations(int cardId, List<Collocation> collocations) throws DaoException {
         for (Collocation collocation : collocations) {
-            Collocation inserted = insertCollocation(collocation);
-            collocation.setId(inserted.getId());
+            Collocation inserted = insertCollocation(cardId, collocation);
+            inserted.setCardId(cardId);
         }
     }
 
-    private Collocation insertCollocation(Collocation collocation) throws DaoException {
+    private Collocation insertCollocation(int cardId, Collocation collocation) throws DaoException {
         try (var statement = prepareStatementForInsert(INSERT_COLLOCATIONS_QUERY)) {
-            statement.setInt(1, collocation.getWordId());
+            statement.setInt(1, cardId);
             statement.setString(2, collocation.getExample());
             statement.execute();
             // get last inserted id
@@ -167,25 +167,25 @@ public class CardDao extends BaseDao<Card> {
             throw new DaoException("Error while updating card entity", ex);
         }
 
-        deleteFromContexts(card);
-        deleteFromCollocations(card);
-        insertContexts(card.getContexts());
-        insertCollocations(card.getCollocations());
+        deleteFromContexts(card.getId());
+        deleteFromCollocations(card.getId());
+        insertContexts(card.getId(), card.getContexts());
+        insertCollocations(card.getId(), card.getCollocations());
         return card;
     }
 
-    private void deleteFromContexts(Card card) throws DaoException {
+    private void deleteFromContexts(int cardId) throws DaoException {
         try (var statement = prepareStatement(DELETE_CONTEXT_QUERY)) {
-            statement.setInt(1, card.getWordId());
+            statement.setInt(1, cardId);
             statement.execute();
         } catch (SQLException ex) {
             throw new DaoException("Error while deleting context entity", ex);
         }
     }
 
-    private void deleteFromCollocations(Card card) throws DaoException {
+    private void deleteFromCollocations(int cardId) throws DaoException {
         try (var statement = prepareStatement(DELETE_COLLOCATIONS_QUERY)) {
-            statement.setInt(1, card.getWordId());
+            statement.setInt(1, cardId);
             statement.execute();
         } catch (SQLException ex) {
             throw new DaoException("Error while deleting collocation entity", ex);
@@ -269,7 +269,7 @@ public class CardDao extends BaseDao<Card> {
     public List<Context> getContextsFor(Card card) throws DaoException {
         ArrayList<Context> contexts = new ArrayList<>();
         try (var statement = prepareStatement(SELECT_CONTEXT_QUERY)) {
-            statement.setInt(1, card.getWordId());
+            statement.setInt(1, card.getId());
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 int id = resultSet.getInt(1);
@@ -279,7 +279,7 @@ public class CardDao extends BaseDao<Card> {
                 contexts.add(context);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving context entities for word=" + card.getWordId(), ex);
+            throw new DaoException("Error while retrieving context examples for card with id =" + card.getId(), ex);
         }
         return contexts;
     }
@@ -287,7 +287,7 @@ public class CardDao extends BaseDao<Card> {
     public List<Collocation> getCollocationsFor(Card card) throws DaoException {
         ArrayList<Collocation> collocations = new ArrayList<>();
         try (var statement = prepareStatement(SELECT_COLLOCATIONS_QUERY)) {
-            statement.setInt(1, card.getWordId());
+            statement.setInt(1, card.getId());
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 int id = resultSet.getInt(1);
@@ -297,7 +297,7 @@ public class CardDao extends BaseDao<Card> {
                 collocations.add(collocation);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while selecting collocation entities for word=" + card.getWordId(), ex);
+            throw new DaoException("Error while selecting collocations for card with id = " + card.getId(), ex);
         }
         return collocations;
     }

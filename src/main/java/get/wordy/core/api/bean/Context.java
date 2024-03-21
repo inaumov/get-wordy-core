@@ -4,15 +4,15 @@ public class Context {
 
     private int id;
     private String example;
-    private int wordId;
+    private int cardId;
 
     public Context() {
     }
 
-    public Context(int id, String example, int wordId) {
+    public Context(int id, String example, int cardId) {
         this.id = id;
         this.example = example;
-        this.wordId = wordId;
+        this.cardId = cardId;
     }
 
     public int getId() {
@@ -31,16 +31,16 @@ public class Context {
         this.example = example;
     }
 
-    public int getWordId() {
-        return wordId;
+    public int getCardId() {
+        return cardId;
     }
 
-    public void setWordId(int wordId) {
-        this.wordId = wordId;
+    public void setCardId(int cardId) {
+        this.cardId = cardId;
     }
 
     public Context withId(int id) {
-        return new Context(id, example, wordId);
+        return new Context(id, example, cardId);
     }
 
 }

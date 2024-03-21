@@ -405,11 +405,11 @@ public class DictionaryServiceTest {
         replay(wordMock);
 
         Context contextMock = strictMock(Context.class);
-        contextMock.setWordId(1);
+        contextMock.setCardId(1);
         replay(contextMock);
 
         Collocation collocationMock = strictMock(Collocation.class);
-        collocationMock.setWordId(1);
+        collocationMock.setCardId(1);
         replay(collocationMock);
 
         Card cardMock = strictMock(Card.class);

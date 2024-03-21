@@ -34,14 +34,12 @@ public class CardDaoTest extends BaseDaoTest {
     @Test
     public void testInsert() throws DaoException {
         Card newCard = new Card();
-        int nextCardId = 3;
-        newCard.setId(nextCardId);
         newCard.setWordId(3);
         newCard.setDictionaryId(2);
         newCard.setScore(10);
         newCard.setStatus(CardStatus.POSTPONED);
-        newCard.addContext(prepareContext(newCard.getWordId(), 3));
-        newCard.addCollocation(prepareCollocation(newCard.getWordId(), 3));
+        newCard.addContext(prepareContext());
+        newCard.addCollocation(prepareCollocation());
         newCard.setInsertedAt(Instant.now());
 
         // insert
@@ -51,8 +49,8 @@ public class CardDaoTest extends BaseDaoTest {
         List<Card> cards = cardDao.selectCardsForDictionary(getDictionary(2));
         assertNotNull(cards);
         assertEquals(2, cards.size());
-        assertEquals(2, cards.get(0).getId());
-        Card actual = cards.get(1);
+        assertEquals(2, cards.getFirst().getId());
+        Card actual = cards.getLast();
         assertNotNull(actual);
         assertTrue(actual.getId() >= EXPECTED_NEW_ID);
         assertEquals(3, actual.getWordId());
@@ -71,8 +69,8 @@ public class CardDaoTest extends BaseDaoTest {
         updatedCard.setStatus(CardStatus.LEARNT);
         updatedCard.setScore(100);
         updatedCard.setUpdatedAt(Instant.now());
-        updatedCard.addContext(prepareContext(2, updatedCard.getWordId()));
-        updatedCard.addCollocation(prepareCollocation(2, updatedCard.getWordId()));
+        updatedCard.addContext(prepareContext());
+        updatedCard.addCollocation(prepareCollocation());
         updatedCard.setInsertedAt(Instant.now());
 
         cardDao.update(updatedCard);
@@ -193,9 +191,9 @@ public class CardDaoTest extends BaseDaoTest {
         for (int i = 0; i < expectedDefinitions.size(); i++) {
             Context expected = expectedDefinitions.get(i);
             Context actual = actualContexts.get(i);
-            assertTrue(expected.getId() <= actual.getId(), "actual: " + actual.getId());
+            assertTrue(actual.getId() > 2, "actual: " + actual.getId());
             assertEquals(expected.getExample(), actual.getExample());
-            assertEquals(expected.getWordId(), actual.getWordId());
+            assertTrue(actual.getCardId() > 2, "actual: " + actual.getCardId());
         }
     }
 
@@ -205,31 +203,29 @@ public class CardDaoTest extends BaseDaoTest {
         for (int i = 0; i < meaningsExpected.size(); i++) {
             Collocation expected = meaningsExpected.get(i);
             Collocation actual = actualCollocations.get(i);
-            assertTrue(expected.getId() <= actual.getId(), "actual: " + actual.getId());
+            assertTrue(actual.getId() > 2, "actual: " + actual.getId());
             assertEquals(expected.getExample(), actual.getExample());
-            assertEquals(expected.getWordId(), actual.getWordId());
+            assertTrue(actual.getCardId() > 2, "actual: " + actual.getCardId());
         }
     }
 
     @Test
     public void testGenerateCards() throws DaoException {
         int dictionaryId = 2;
-        Set<Integer> wordIds = Set.of(42, 87);
-        Set<Integer> ids = cardDao.generateEmptyCards(dictionaryId, wordIds);
+        Set<Integer> wordIds = Set.of(3); // abandoned word IDs
+        Set<Integer> cardIds = cardDao.generateEmptyCards(dictionaryId, wordIds);
         // assert
-        assertFalse(ids.isEmpty());
+        assertFalse(cardIds.isEmpty());
         List<Card> cards = cardDao.selectCardsForDictionary(getDictionary(dictionaryId));
         assertNotNull(cards);
-        assertEquals(3, cards.size());
-        Iterator<Card> cardIterator = cards.iterator();
-        Card first = cardIterator.next();
+        assertEquals(2, cards.size());
+
+        Card first = cards.getFirst();
         assertEquals(2, first.getId());
 
-        while (cardIterator.hasNext()) {
-            Card actual = cardIterator.next();
-            assertTrue(actual.getId() >= EXPECTED_NEW_ID);
-            assertTrue(first.getInsertedAt().isBefore(actual.getInsertedAt())); // oldest first
-        }
+        Card actual = cards.getLast();
+        assertTrue(actual.getId() >= EXPECTED_NEW_ID);
+        assertTrue(first.getInsertedAt().isBefore(actual.getInsertedAt())); // oldest first
     }
 
     @Test
@@ -277,14 +273,14 @@ public class CardDaoTest extends BaseDaoTest {
         }
     }
 
-    private Context prepareContext(int wordId, int contextId) {
-        String d = "example" + contextId;
-        return new Context(contextId, d, wordId);
+    private Context prepareContext() {
+        String str = "context_example";
+        return new Context(0, str, 0);
     }
 
-    private Collocation prepareCollocation(int wordId, int collocationId) {
-        String e = "example" + collocationId;
-        return new Collocation(collocationId, e, wordId);
+    private Collocation prepareCollocation() {
+        String str = "collocation_example";
+        return new Collocation(0, str, 0);
     }
 
 }

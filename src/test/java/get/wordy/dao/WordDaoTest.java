@@ -1,6 +1,5 @@
 package get.wordy.dao;
 
-import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.api.bean.Word;
 import get.wordy.core.dao.impl.WordDao;
@@ -27,7 +26,7 @@ public class WordDaoTest extends BaseDaoTest {
 
     @Test
     public void testInsert() throws DaoException {
-        Word word = new Word(0, "apple", null, "transcription", null);
+        Word word = new Word(0, "apple", "noun", "transcription", "Some text");
 
         Word inserted = wordDao.insert(word);
         assertTrue(inserted.getId() >= EXPECTED_NEW_ID);
@@ -40,7 +39,9 @@ public class WordDaoTest extends BaseDaoTest {
         for (Word actual : words) {
             if (actual.getId() >= EXPECTED_NEW_ID) {
                 assertEquals(word.getValue(), actual.getValue());
+                assertEquals("noun", actual.getPartOfSpeech());
                 assertEquals("transcription", actual.getTranscription());
+                assertEquals("Some text", actual.getMeaning());
             } else {
                 assertEquals(id, actual.getId());
                 assertEquals("example" + id, actual.getValue());
@@ -72,20 +73,24 @@ public class WordDaoTest extends BaseDaoTest {
     }
 
     @Test
-    public void testDelete() throws DaoException {
-        List<Word> wordsAll = wordDao.selectAll();
-        assertNotNull(wordsAll);
-        int cnt = wordsAll.size();
-        assertEquals(PREDEFINED_WORDS_CNT, cnt);
+    public void testDeleteAbandonedWord() throws DaoException {
+        int abandonedWordId = 3;
+        Word toRemove = new Word();
+        wordDao.delete(toRemove.withId(abandonedWordId));
+        List<Word> wordsAfter = wordDao.selectAll();
+        assertNotNull(wordsAfter);
+        assertEquals(PREDEFINED_WORDS_CNT - 1, wordsAfter.size());
+        assertTestData(wordsAfter, 1);
+    }
 
-        for (int i = 0, id = 1; i < PREDEFINED_WORDS_CNT; i++, id++) {
-            Word toRemove = wordsAll.get(i);
-            wordDao.delete(toRemove);
-            List<Word> wordsAfter = wordDao.selectAll();
-            assertNotNull(wordsAfter);
-            assertEquals(--cnt, wordsAfter.size());
-            assertTestData(wordsAfter, id + 1);
-        }
+    @Test
+    public void testDeleteWordViolationException() throws DaoException {
+        int wordIdReferenced = 1;
+        Word toRemove = new Word();
+        DaoException daoException = assertThrows(DaoException.class,
+                () -> wordDao.delete(toRemove.withId(wordIdReferenced))
+        );
+        assertEquals("Error while deleting word entity", daoException.getMessage());
     }
 
     @Test
