@@ -1,5 +1,6 @@
 package get.wordy.dao;
 
+import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.api.bean.Word;
 import get.wordy.core.dao.impl.WordDao;
@@ -123,6 +124,23 @@ public class WordDaoTest extends BaseDaoTest {
             assertEquals("noun", next.getPartOfSpeech().toLowerCase());
             assertNotNull(next.getMeaning());
         }
+    }
+
+    @Test
+    void testGetWord() throws DaoException {
+        var word = wordDao.selectById(1);
+        assertNotNull(word);
+        assertEquals(1, word.getId());
+        assertEquals("example1", word.getValue());
+        assertTrue(word.getMeaning().contains("a word"));
+        assertEquals("noun", word.getPartOfSpeech());
+        assertNotNull(word.getTranscription());
+    }
+
+    @Test
+    void testGetWordNotExists() throws DaoException {
+        var word = wordDao.selectById(100);
+        assertNull(word);
     }
 
 }

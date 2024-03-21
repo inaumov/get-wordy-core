@@ -15,7 +15,6 @@ public class DictionaryDao extends BaseDao<Dictionary> {
     public static final String DELETE_QUERY = "DELETE FROM dictionaries WHERE id = ?";
     public static final String UPDATE_NAME_QUERY = "UPDATE dictionaries SET name = ? WHERE id = ?";
     public static final String UPDATE_PIC_QUERY = "UPDATE dictionaries SET picture_url = ? WHERE id = ?";
-    public static final String SELECT_ALL_QUERY = "SELECT * FROM dictionaries ORDER BY name";
     public static final String SELECT_ALL_WITH_CARDS_TOTAL_QUERY = """
             SELECT d.*, count(c.id) cards_total FROM dictionaries d LEFT OUTER JOIN cards c ON d.id = c.dictionary_id GROUP BY d.id ORDER BY d.name;
             """;
@@ -108,7 +107,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
     }
 
     public Dictionary selectById(int dictionaryId) throws DaoException {
-        try (PreparedStatement statement = prepareStatement(SELECT_BY_ID_WITH_CARDS_TOTAL_QUERY)) {
+        try (var statement = prepareStatement(SELECT_BY_ID_WITH_CARDS_TOTAL_QUERY)) {
             statement.setInt(1, dictionaryId);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {

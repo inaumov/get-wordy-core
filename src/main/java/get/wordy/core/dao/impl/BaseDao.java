@@ -28,7 +28,11 @@ public abstract class BaseDao<T> {
         return getConnection().prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
     }
 
+    // crud
+
     public abstract T insert(T record) throws DaoException;
+
+    public abstract T selectById(int id) throws DaoException;
 
     public abstract T update(T record) throws DaoException;
 
