@@ -1,10 +1,8 @@
-SET FOREIGN_KEY_CHECKS = 0;
 truncate table context;
 truncate table collocations;
-truncate table words;
-truncate table cards;
-truncate table dictionaries;
-SET FOREIGN_KEY_CHECKS = 1;
+truncate table cards cascade;
+truncate table words cascade;
+truncate table dictionaries cascade;
 
 insert into dictionaries (id, name) values (1, 'dictionary1');
 insert into dictionaries (id, name) values (2, 'dictionary2');
