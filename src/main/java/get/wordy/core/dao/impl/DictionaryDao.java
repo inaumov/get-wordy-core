@@ -16,10 +16,10 @@ public class DictionaryDao extends BaseDao<Dictionary> {
     public static final String UPDATE_NAME_QUERY = "UPDATE dictionaries SET name = ? WHERE id = ?";
     public static final String UPDATE_PIC_QUERY = "UPDATE dictionaries SET picture_url = ? WHERE id = ?";
     public static final String SELECT_ALL_WITH_CARDS_TOTAL_QUERY = """
-            SELECT d.*, count(c.id) cards_total FROM dictionaries d LEFT OUTER JOIN cards c ON d.id = c.dictionary_id GROUP BY d.id ORDER BY d.name;
+            SELECT d.*, count(c.id) cards_total FROM dictionaries d LEFT OUTER JOIN cards c ON d.id = c.dictionary_id GROUP BY d.id, d.name ORDER BY d.name;
             """;
     public static final String SELECT_BY_ID_WITH_CARDS_TOTAL_QUERY = """
-            SELECT d.*, count(c.id) cards_total FROM dictionaries d LEFT OUTER JOIN cards c ON d.id = c.dictionary_id  WHERE d.id = ? GROUP BY d.id ORDER BY d.name;
+            SELECT d.*, count(c.id) cards_total FROM dictionaries d LEFT OUTER JOIN cards c ON d.id = c.dictionary_id  WHERE d.id = ? GROUP BY d.id, d.name ORDER BY d.name;
             """;
     public static final String COUNT_QUERY = "SELECT COUNT(name) FROM dictionaries";
 
