@@ -300,9 +300,9 @@ public class DictionaryServiceTest {
         Card cardMock = strictMock(Card.class);
         expect(cardMock.getWordId()).andReturn(1).times(2);
         cardMock.setWord(wordMock);
-        cardMock.addContexts(List.of(contextMock));
+        cardMock.setContexts(List.of(contextMock));
         expectLastCall().anyTimes();
-        cardMock.addCollocations(List.of(collocationMock));
+        cardMock.setCollocations(List.of(collocationMock));
         expectLastCall().anyTimes();
         expect(cardMock.getId()).andReturn(1);
         replay(cardMock);

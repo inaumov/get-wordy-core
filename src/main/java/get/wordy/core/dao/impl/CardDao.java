@@ -66,12 +66,14 @@ public class CardDao extends BaseDao<Card> {
             ResultSet resultSet = statement.getGeneratedKeys();
             if (resultSet.next()) {
                 int cardId = resultSet.getInt(1);
-                insertContexts(cardId, card.getContexts());
-                insertCollocations(cardId, card.getCollocations());
+                List<Context> contexts = insertContexts(cardId, card.getContexts());
+                List<Collocation> collocations = insertCollocations(cardId, card.getCollocations());
+                card.setContexts(contexts);
+                card.setCollocations(collocations);
                 card.setId(cardId);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while inserting card entity", ex);
+            throw new DaoException("Error while inserting card headline", ex);
         }
         return card;
     }
@@ -96,11 +98,14 @@ public class CardDao extends BaseDao<Card> {
         }
     }
 
-    private void insertContexts(int cardId, List<Context> contexts) throws DaoException {
+    private List<Context> insertContexts(int cardId, List<Context> contexts) throws DaoException {
+        List<Context> copy = new ArrayList<>(contexts.size());
         for (Context context : contexts) {
             Context inserted = insertContext(cardId, context);
             inserted.setCardId(cardId);
+            copy.add(inserted);
         }
+        return copy;
     }
 
     private Context insertContext(int cardId, Context context) throws DaoException {
@@ -120,11 +125,14 @@ public class CardDao extends BaseDao<Card> {
         return context;
     }
 
-    private void insertCollocations(int cardId, List<Collocation> collocations) throws DaoException {
+    private List<Collocation> insertCollocations(int cardId, List<Collocation> collocations) throws DaoException {
+        List<Collocation> copy = new ArrayList<>(collocations.size());
         for (Collocation collocation : collocations) {
             Collocation inserted = insertCollocation(cardId, collocation);
             inserted.setCardId(cardId);
+            copy.add(inserted);
         }
+        return copy;
     }
 
     private Collocation insertCollocation(int cardId, Collocation collocation) throws DaoException {
@@ -164,13 +172,15 @@ public class CardDao extends BaseDao<Card> {
             statement.setInt(5, card.getId());
             statement.executeUpdate();
         } catch (SQLException ex) {
-            throw new DaoException("Error while updating card entity", ex);
+            throw new DaoException("Error while updating card headline", ex);
         }
 
         deleteFromContexts(card.getId());
         deleteFromCollocations(card.getId());
-        insertContexts(card.getId(), card.getContexts());
-        insertCollocations(card.getId(), card.getCollocations());
+        List<Context> contexts = insertContexts(card.getId(), card.getContexts());
+        List<Collocation> collocations = insertCollocations(card.getId(), card.getCollocations());
+        card.setContexts(contexts);
+        card.setCollocations(collocations);
         return card;
     }
 
@@ -279,7 +289,7 @@ public class CardDao extends BaseDao<Card> {
                 contexts.add(context);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving context examples for card with id =" + card.getId(), ex);
+            throw new DaoException("Error while retrieving context examples for card with id = " + card.getId(), ex);
         }
         return contexts;
     }

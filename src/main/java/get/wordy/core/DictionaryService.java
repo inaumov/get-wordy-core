@@ -174,8 +174,8 @@ public class DictionaryService implements IDictionaryService {
         for (Card card : cardList) {
             int wordId = card.getWordId();
             card.setWord(wordsMap.get(wordId));
-            card.addContexts(contextMap.get(wordId));
-            card.addCollocations(collocationMap.get(wordId));
+            card.setContexts(contextMap.get(wordId));
+            card.setCollocations(collocationMap.get(wordId));
             cardsMap.put(card.getId(), card);
         }
 
@@ -298,11 +298,11 @@ public class DictionaryService implements IDictionaryService {
             }
             if (card.getContexts().isEmpty()) {
                 List<Context> contexts = cardDao.getContextsFor(card);
-                card.addContexts(contexts);
+                card.setContexts(contexts);
             }
             if (card.getCollocations().isEmpty()) {
                 List<Collocation> collocations = cardDao.getCollocationsFor(card);
-                card.addCollocations(collocations);
+                card.setCollocations(collocations);
             }
             connection.commit();
             return card;
