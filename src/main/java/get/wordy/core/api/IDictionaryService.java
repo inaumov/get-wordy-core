@@ -14,11 +14,11 @@ public interface IDictionaryService {
 
     Dictionary createDictionary(String dictionaryName, String picture);
 
-    boolean removeDictionary(int dictionaryId);
-
     boolean renameDictionary(int dictionaryId, String newName);
 
     boolean changeDictionaryPicture(int dictionaryId, String newPictureUrl);
+
+    boolean deleteDictionary(int dictionaryId);
 
     List<Card> getCards(int dictionaryId);
 
@@ -28,18 +28,18 @@ public interface IDictionaryService {
 
     Card updateCard(int dictionaryId, Card card);
 
-    boolean removeCard(int cardId);
-
     Card loadCard(int cardId);
 
-    boolean changeStatus(int cardId, CardStatus updatedStatus);
+    boolean deleteCard(int cardId);
 
-    Score getScoreSummary(int dictionaryId);
+    boolean changeStatus(int cardId, CardStatus updatedStatus);
 
     boolean resetScore(int cardId);
 
     boolean increaseScoreUp(int dictionaryId, int[] cardIds, int repetitions);
 
     List<Card> generateCards(int dictionaryId, Set<String> words);
+
+    Score getScoreSummary(int dictionaryId);
 
 }

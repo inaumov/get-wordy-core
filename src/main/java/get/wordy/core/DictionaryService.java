@@ -124,7 +124,7 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean removeDictionary(int dictionaryId) {
+    public boolean deleteDictionary(int dictionaryId) {
         try {
             Dictionary dictionary = findDictionary(dictionaryId);
             connection.open();
@@ -267,7 +267,7 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean removeCard(int cardId) {
+    public boolean deleteCard(int cardId) {
         Card card = findCardById(cardId);
         try {
             connection.open();

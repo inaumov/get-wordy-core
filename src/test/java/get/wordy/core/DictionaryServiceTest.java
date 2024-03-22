@@ -229,7 +229,7 @@ public class DictionaryServiceTest {
     }
 
     @Test
-    public void testRemoveDictionary() throws Exception {
+    public void testDeleteDictionary() throws Exception {
         replayTxCommited();
 
         Dictionary dictionaryMock = createDictionaryMock();
@@ -240,26 +240,26 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.removeDictionary(DICTIONARY_ID);
+        boolean done = dictionaryService.deleteDictionary(DICTIONARY_ID);
         assertTrue(done);
 
         verify(dictionaryDaoMock);
     }
 
     @Test
-    public void testRemoveDictionaryWhenNotFound() throws Exception {
+    public void testDeleteDictionaryWhenNotFound() throws Exception {
         // expect commit when get a dictionary
         connectionMock.commit();
         expectLastCall().atLeastOnce();
         replayTxWhenException();
 
         Throwable exception = assertThrows(DictionaryNotFoundException.class,
-                () -> dictionaryService.removeDictionary(DICTIONARY_ID));
+                () -> dictionaryService.deleteDictionary(DICTIONARY_ID));
         assertNull(exception.getMessage());
     }
 
     @Test
-    public void testRemoveDictionaryWhenDaoException() throws Exception {
+    public void testDeleteDictionaryWhenDaoException() throws Exception {
         replayTxRollback();
 
         Dictionary dictionaryMock = createDictionaryMock();
@@ -270,7 +270,7 @@ public class DictionaryServiceTest {
         expectLastCall().andStubThrow(new DaoException("insert", null));
         replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.removeDictionary(DICTIONARY_ID);
+        boolean done = dictionaryService.deleteDictionary(DICTIONARY_ID);
         assertFalse(done);
 
         verify(dictionaryDaoMock);
@@ -476,7 +476,7 @@ public class DictionaryServiceTest {
     }
 
     @Test
-    public void testRemoveCard() throws Exception {
+    public void testDeleteCard() throws Exception {
         replayTxCommited();
 
         Card cardMock = strictMock(Card.class);
@@ -490,7 +490,7 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(cardDaoMock);
 
-        boolean done = dictionaryService.removeCard(1);
+        boolean done = dictionaryService.deleteCard(1);
         assertTrue(done);
 
         verify(cardMock, wordMock);
