@@ -4,7 +4,7 @@
 
     <groupId>get.wordy</groupId>
     <artifactId>core</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>2.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Get Wordy :: Backend</name>
@@ -24,16 +24,13 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <mysql.connector.version>8.0.32</mysql.connector.version>
+        <postgresql.version>42.6.1</postgresql.version>
         <junit.version>5.10.1</junit.version>
         <easymock.version>5.2.0</easymock.version>
         <flyway.version>9.22.3</flyway.version>
-        <gw.jdbc.test-url>
-            jdbc:mysql://localhost:3306/get_wordy_test?useUnicode=yes,characterEncoding=utf8,connectionCollation=utf8_general_ci,sql_mode=STRICT_TRANS_TABLES
-        </gw.jdbc.test-url>
-        <gw.jdbc.test-database>get_wordy_test</gw.jdbc.test-database>
-        <gw.jdbc.test-user>root</gw.jdbc.test-user>
-        <gw.jdbc.test-password>root</gw.jdbc.test-password>
+        <gw.jdbc.test-url>jdbc:postgresql://localhost:5432/get_wordy_test?schema=public</gw.jdbc.test-url>
+        <gw.jdbc.test-user>postgres</gw.jdbc.test-user>
+        <gw.jdbc.test-password>postgres</gw.jdbc.test-password>
     </properties>
 
     <dependencyManagement>
@@ -61,16 +58,15 @@
             <version>2.0.11</version>
             <scope>provided</scope>
         </dependency>
-
         <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>${mysql.connector.version}</version>
-            <scope>runtime</scope>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.6.1</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-mysql</artifactId>
+            <artifactId>flyway-core</artifactId>
             <version>${flyway.version}</version>
             <scope>compile</scope>
         </dependency>
@@ -142,12 +138,12 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>${flyway.version}</version>
                 <configuration>
-                    <driver>com.mysql.cj.jdbc.Driver</driver>
+                    <driver>org.postgresql.Driver</driver>
                     <url>${gw.jdbc.test-url}</url>
                     <user>${gw.jdbc.test-user}</user>
                     <password>${gw.jdbc.test-password}</password>
                     <schemas>
-                        <schema>${gw.jdbc.test-database}</schema>
+                        <schema>public</schema>
                     </schemas>
                     <createSchemas>true</createSchemas>
                     <table>schema_history</table>
