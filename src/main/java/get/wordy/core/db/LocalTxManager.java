@@ -3,33 +3,33 @@ package get.wordy.core.db;
 import get.wordy.core.dao.exception.DaoException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class LocalTxManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalTxManager.class);
 
-    private static final LocalTxManager INSTANCE = new LocalTxManager();
+    private final DataSource dataSource;
 
     private Connection connection;
-    private ServerInfo info;
 
-    private LocalTxManager() {
+    private LocalTxManager(DataSource dataSource) {
         // default
+        this.dataSource = dataSource;
     }
 
-    public static LocalTxManager getInstance() {
-        return LocalTxManager.INSTANCE;
+    public static LocalTxManager withDataSource(DataSource dataSource) {
+        return new LocalTxManager(dataSource);
     }
 
     public void open() throws DaoException {
-        String url = info.getUrl();
         try {
             if (connection == null || connection.isClosed()) {
-                connection = DriverManager.getConnection(url, info.getCredentials());
+                connection = DataSourceUtils.getConnection(dataSource);
                 connection.setAutoCommit(false);
             }
         } catch (SQLException ex) {
@@ -54,24 +54,16 @@ public class LocalTxManager {
     }
 
     public void close() {
-        try {
-            if (connection != null && !connection.isClosed()) {
-                CloseUtils.closeQuietly(connection);
-            }
-        } catch (SQLException ex) {
-            LOG.warn("Error while closing connection to database", ex);
+        if (connection != null) {
+            DataSourceUtils.releaseConnection(connection, dataSource);
         }
     }
 
     public Connection get() {
         if (connection == null) {
-            throw new NullPointerException("Connection is not established right now");
+            throw new RuntimeException("Connection is not established right now");
         }
         return connection;
-    }
-
-    public void setServerInfo(ServerInfo serverInfo) {
-        this.info = serverInfo;
     }
 
 }

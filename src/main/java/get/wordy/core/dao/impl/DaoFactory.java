@@ -4,10 +4,14 @@ import get.wordy.core.db.LocalTxManager;
 
 public class DaoFactory {
 
-    protected final LocalTxManager txManager = LocalTxManager.getInstance();
+    private final LocalTxManager txManager;
 
-    public static DaoFactory getFactory() {
-        return new DaoFactory();
+    private DaoFactory(LocalTxManager txManager) {
+        this.txManager = txManager;
+    }
+
+    public static DaoFactory withTxManager(LocalTxManager txManager) {
+        return new DaoFactory(txManager);
     }
 
     public DictionaryDao getDictionaryDao() {
