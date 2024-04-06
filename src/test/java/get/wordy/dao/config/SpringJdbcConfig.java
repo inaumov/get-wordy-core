@@ -1,5 +1,7 @@
 package get.wordy.dao.config;
 
+import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -33,4 +35,14 @@ public class SpringJdbcConfig {
     public PlatformTransactionManager platformTransactionManager(DataSource dataSource) {
         return new DataSourceTransactionManager(dataSource);
     }
+
+    @Bean
+    public Flyway flyway(DataSource dataSource) {
+        FluentConfiguration configuration = Flyway.configure()
+                .dataSource(dataSource)
+                .locations("/db/migration")
+                .table("schema_history");
+        return new Flyway(configuration);
+    }
+
 }

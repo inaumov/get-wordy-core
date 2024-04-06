@@ -7,6 +7,7 @@ import get.wordy.core.api.exception.CardNotFoundException;
 import get.wordy.core.api.exception.DictionaryServiceException;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.CardDao;
+import get.wordy.core.dao.impl.CardHeadlineDao;
 import get.wordy.core.dao.impl.DictionaryDao;
 import get.wordy.core.dao.impl.WordDao;
 import get.wordy.core.db.LocalTxManager;
@@ -27,6 +28,7 @@ public class DictionaryService implements IDictionaryService {
     private DictionaryDao dictionaryDao;
     private WordDao wordDao;
     private CardDao cardDao;
+    private CardHeadlineDao cardHeadlineDao;
     private LocalTxManager connection;
     private final List<Dictionary> dictionaryList = new ArrayList<>();
     private final Map<Integer, Card> cardsCache = new HashMap<>();
@@ -39,11 +41,13 @@ public class DictionaryService implements IDictionaryService {
     public DictionaryService(DictionaryDao dictionaryDao,
                              WordDao wordDao,
                              CardDao cardDao,
+                             CardHeadlineDao cardHeadlineDao,
                              LocalTxManager connection
     ) {
         this.dictionaryDao = dictionaryDao;
         this.wordDao = wordDao;
         this.cardDao = cardDao;
+        this.cardHeadlineDao = cardHeadlineDao;
         this.connection = connection;
     }
 
@@ -143,20 +147,10 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public List<Card> getCards(int dictionaryId) {
-        List<Card> cardList;
-        List<Word> wordList;
-        Map<Integer, List<Context>> contextMap = new HashMap<>();
-        Map<Integer, List<Collocation>> collocationMap = new HashMap<>();
+        List<Card> cardListFull;
         try {
             connection.open();
-            // todo: optimize
-            cardList = cardDao.selectCardsForDictionary(findDictionary(dictionaryId));
-            wordList = wordDao.selectAll();
-            for (Card card : cardList) {
-                int wordId = card.getWordId();
-                contextMap.put(wordId, cardDao.getContextsFor(card));
-                collocationMap.put(wordId, cardDao.getCollocationsFor(card));
-            }
+            cardListFull = cardHeadlineDao.getCardsForDictionary(findDictionary(dictionaryId).getId());
             connection.commit();
         } catch (DaoException e) {
             LOG.error("Error while loading all cards in dictionary by id = {}", dictionaryId, e);
@@ -165,24 +159,14 @@ public class DictionaryService implements IDictionaryService {
             connection.close();
         }
 
-        Map<Integer, Word> wordsMap = wordList
+        Map<Integer, Card> cardsMap = cardListFull
                 .stream()
-                .collect(Collectors.toMap(Word::getId, Function.identity()));
-
-        HashMap<Integer, Card> cardsMap = new HashMap<>();
-
-        for (Card card : cardList) {
-            int wordId = card.getWordId();
-            card.setWord(wordsMap.get(wordId));
-            card.setContexts(contextMap.get(wordId));
-            card.setCollocations(collocationMap.get(wordId));
-            cardsMap.put(card.getId(), card);
-        }
+                .collect(Collectors.toMap(Card::getId, Function.identity()));
 
         cardsCache.clear();
         cardsCache.putAll(cardsMap);
 
-        return List.copyOf(cardList);
+        return List.copyOf(cardListFull);
     }
 
     @Override

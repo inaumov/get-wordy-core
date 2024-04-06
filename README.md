@@ -2,7 +2,7 @@
 
 ## Core module for Get Wordy App
 
-MySql8 database is used as a data storage.
+Since version 1.1.x the Postgres database is used as a data storage instead of mysql.
 Integration tests are executed against real database.
 
 [flyway-maven-plugin](https://documentation.red-gate.com/flyway/flyway-cli-and-api/usage/maven-goal) is configured to
@@ -23,9 +23,9 @@ run schema upgrades automatically on [test] phase
                    <activeByDefault>true</activeByDefault>
                </activation>
                <properties>
-                   <get.wordy.jdbc.url>jdbc:mysql://localhost:3306/get_wordy_test?useUnicode=yes,characterEncoding=utf8,connectionCollation=utf8_general_ci,sql_mode=STRICT_TRANS_TABLES</get.wordy.jdbc.url>
-                   <get.wordy.jdbc.username>user</get.wordy.jdbc.username>
-                   <get.wordy.jdbc.password>password</get.wordy.jdbc.password>
+                   <get.wordy.jdbc.url>jdbc:postgresql://localhost:5432/get_wordy_test?schema=public</get.wordy.jdbc.url>
+                   <get.wordy.jdbc.user>postgres</get.wordy.jdbc.user>
+                   <get.wordy.jdbc.password>postgres</get.wordy.jdbc.password>
                </properties>
            </profile>
            ...

@@ -284,8 +284,8 @@ public class CardDao extends BaseDao<Card> {
             while (resultSet.next()) {
                 int id = resultSet.getInt(1);
                 String example = resultSet.getString(2);
-                int wordId = resultSet.getInt(3);
-                Context context = new Context(id, example, wordId);
+                int cardId = resultSet.getInt(3);
+                Context context = new Context(id, example, cardId);
                 contexts.add(context);
             }
         } catch (SQLException ex) {
@@ -302,8 +302,8 @@ public class CardDao extends BaseDao<Card> {
             while (resultSet.next()) {
                 int id = resultSet.getInt(1);
                 String example = resultSet.getString(2);
-                int wordId = resultSet.getInt(3);
-                Collocation collocation = new Collocation(id, example, wordId);
+                int cardId = resultSet.getInt(3);
+                Collocation collocation = new Collocation(id, example, cardId);
                 collocations.add(collocation);
             }
         } catch (SQLException ex) {
