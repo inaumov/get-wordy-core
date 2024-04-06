@@ -5,6 +5,7 @@ import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.api.exception.DictionaryNotFoundException;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.CardDao;
+import get.wordy.core.dao.impl.CardHeadlineDao;
 import get.wordy.core.dao.impl.DictionaryDao;
 import get.wordy.core.dao.impl.WordDao;
 import get.wordy.core.db.LocalTxManager;
@@ -37,6 +38,9 @@ public class DictionaryServiceTest {
     private CardDao cardDaoMock;
     @Mock(name = "wordDao")
     private WordDao wordDaoMock;
+    @Mock
+    private CardHeadlineDao headlineDaoMock;
+
     @Mock(name = "connection")
     private LocalTxManager connectionMock;
 
@@ -284,51 +288,20 @@ public class DictionaryServiceTest {
         replay(dictionaryMock);
         addDictionaryToCache(dictionaryMock);
 
-        Word wordMock = strictMock(Word.class);
-        expect(wordMock.getId()).andReturn(1);
-        expect(wordMock.getValue()).andReturn("word");
-        replay(wordMock);
-
-        Context contextMock = niceMock(Context.class);
-        expect(contextMock.getId()).andReturn(1);
-        replay(contextMock);
-
-        Collocation collocationMock = niceMock(Collocation.class);
-        expect(collocationMock.getId()).andReturn(1);
-        replay(collocationMock);
-
         Card cardMock = strictMock(Card.class);
-        expect(cardMock.getWordId()).andReturn(1).times(2);
-        cardMock.setWord(wordMock);
-        cardMock.setContexts(List.of(contextMock));
-        expectLastCall().anyTimes();
-        cardMock.setCollocations(List.of(collocationMock));
-        expectLastCall().anyTimes();
         expect(cardMock.getId()).andReturn(1);
         replay(cardMock);
 
-        expect(cardDaoMock.selectCardsForDictionary(anyObject(Dictionary.class)))
+        expect(headlineDaoMock.getCardsForDictionary(DICTIONARY_ID))
                 .andReturn(Collections.singletonList(cardMock));
         expectLastCall().once();
-        expect(cardDaoMock.getContextsFor(cardMock))
-                .andReturn(Collections.singletonList(contextMock));
-        expectLastCall().once();
-        expect(cardDaoMock.getCollocationsFor(cardMock))
-                .andReturn(Collections.singletonList(collocationMock));
-        expectLastCall().once();
-
-        replay(cardDaoMock);
-
-        expect(wordDaoMock.selectAll())
-                .andReturn(Collections.singletonList(wordMock));
-        expectLastCall().once();
-        replay(wordDaoMock);
+        replay(headlineDaoMock);
 
         List<Card> cards = dictionaryService.getCards(DICTIONARY_ID);
         assertNotNull(cards);
-        assertFalse(cards.isEmpty());
+        assertEquals(1, cards.size());
 
-        verify(wordDaoMock, cardDaoMock);
+        verify(headlineDaoMock);
     }
 
     @Test

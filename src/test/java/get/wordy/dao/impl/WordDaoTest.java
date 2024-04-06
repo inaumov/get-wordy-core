@@ -1,4 +1,4 @@
-package get.wordy.dao;
+package get.wordy.dao.impl;
 
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.api.bean.Word;
