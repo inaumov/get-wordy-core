@@ -43,6 +43,34 @@ public class CardHeadlineDao {
                 cards.id, words.id
             """;
 
+    private static final String GET_CARD_HEADLINE = """
+            SELECT
+                cards.id AS card_id,
+                cards.status,
+                cards.score,
+                cards.create_time,
+                cards.last_update_time,
+                words.id AS word_id,
+                words.word,
+                words.part_of_speech,
+                words.transcription,
+                words.meaning,
+                array_remove(array_agg(DISTINCT context.example), NULL) AS card_sentences,
+                array_remove(array_agg(DISTINCT collocations.example), NULL) AS card_collocations
+            FROM
+                cards
+            JOIN
+                words ON cards.word_id = words.id
+            LEFT JOIN
+                context ON cards.id = context.card_id
+            LEFT JOIN
+                collocations ON cards.id = collocations.card_id
+            WHERE
+                cards.id = ? -- Specify the card ID to retrieve
+            GROUP BY
+                cards.id, words.id
+            """;
+
     private final JdbcTemplate jdbcTemplate;
 
     @Autowired
@@ -51,10 +79,14 @@ public class CardHeadlineDao {
     }
 
     public List<Card> getCardsForDictionary(int dictionaryId) {
-        return jdbcTemplate.query(ALL_JOINS_QUERY, new CardDataRowMapper(), dictionaryId);
+        return jdbcTemplate.query(ALL_JOINS_QUERY, new FullCardRowMapper(), dictionaryId);
     }
 
-    public static class CardDataRowMapper implements RowMapper<Card> {
+    public Card getCardById(int cardId) {
+        return jdbcTemplate.queryForObject(GET_CARD_HEADLINE, new FullCardRowMapper(), cardId);
+    }
+
+    public static class FullCardRowMapper implements RowMapper<Card> {
 
         @Override
         public Card mapRow(ResultSet rs, int rowNum) throws SQLException {

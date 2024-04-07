@@ -271,36 +271,27 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public Card loadCard(int cardId) {
-        Card card = findCardById(cardId);
+        return Optional.ofNullable(cardsCache.get(cardId))
+                .orElseGet(() -> loadFullCardHeadlineFromDb(cardId));
+    }
+
+    private Card loadFullCardHeadlineFromDb(int cardId) {
+        Card card;
         try {
             connection.open();
-            // todo: optimize
-            if (card.getWord() == null) {
-                Word word = wordDao.selectById(card.getWordId());
-                card.setWord(word);
-            }
-            if (card.getSentences().isEmpty()) {
-                List<String> sentences = cardDao.getSentencesFor(cardId)
-                        .stream()
-                        .map(Sentence::getExample)
-                        .toList();
-                card.setSentences(sentences);
-            }
-            if (card.getCollocations().isEmpty()) {
-                List<String> collocations = cardDao.getCollocationsFor(cardId)
-                        .stream()
-                        .map(Collocation::getExample)
-                        .toList();
-                card.setCollocations(collocations);
-            }
+            card = cardHeadlineDao.getCardById(cardId);
             connection.commit();
-            return card;
         } catch (DaoException e) {
-            LOG.error("Error while loading card with id = {}", cardId, e);
-            return null;
+            LOG.error("Error while loading a card headline with id = {}", cardId, e);
+            throw new DictionaryServiceException();
         } finally {
             connection.close();
         }
+        if (card == null) {
+            throw new CardNotFoundException();
+        }
+        cardsCache.put(cardId, card);
+        return card;
     }
 
     @Override
@@ -425,22 +416,22 @@ public class DictionaryService implements IDictionaryService {
 
     private Card findCardById(int cardId) {
         return Optional.ofNullable(cardsCache.get(cardId))
-                .orElseGet(() -> loadCardHeadlineFromDb(cardId));
+                .orElseGet(() -> loadCardFromDb(cardId));
     }
 
-    private Card loadCardHeadlineFromDb(int cardId) {
+    private Card loadCardFromDb(int cardId) {
         Card card;
         try {
             connection.open();
             card = cardDao.selectById(cardId);
             connection.commit();
         } catch (DaoException e) {
+            LOG.error("Error while loading a card with id = {}", cardId, e);
             throw new DictionaryServiceException();
         }
         if (card == null) {
             throw new CardNotFoundException();
         }
-        cardsCache.put(cardId, card);
         return card;
     }
 
