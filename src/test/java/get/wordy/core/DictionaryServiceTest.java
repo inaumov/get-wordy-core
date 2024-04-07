@@ -333,37 +333,20 @@ public class DictionaryServiceTest {
     void loadCardFullData() throws Exception {
         replayTxCommited();
 
-        int wordId = 1;
         int cardId = 1;
 
-        Word wordMock = niceMock(Word.class);
-        expect(wordMock.getId()).andReturn(wordId);
-        replay(wordMock);
-
         Card cardMock = niceMock(Card.class);
-        expect(cardMock.getId()).andReturn(cardId).anyTimes();
-        expect(cardMock.getWord()).andReturn(null);
-        expect(cardMock.getWordId()).andReturn(wordId);
-        cardMock.setWord(wordMock);
-        expect(cardMock.getSentences()).andReturn(Collections.emptyList());
-        expect(cardMock.getCollocations()).andReturn(Collections.emptyList());
         replay(cardMock);
 
-        wordDaoMock.selectById(wordId);
-        expectLastCall().andAnswer(() -> wordMock);
-        cardDaoMock.selectById(cardId);
+        headlineDaoMock.getCardById(cardId);
         expectLastCall().andAnswer(() -> cardMock);
-        cardDaoMock.getSentencesFor(cardId);
-        expectLastCall().andAnswer(() -> List.of(new Sentence(1, "Test sentence", 1)));
-        cardDaoMock.getCollocationsFor(cardId);
-        expectLastCall().andAnswer(() -> List.of(new Collocation(1, "Test collocation", 1)));
-        replay(wordDaoMock, cardDaoMock);
+        replay(headlineDaoMock);
 
         Card card = dictionaryService.loadCard(cardId);
         assertNotNull(card);
 
         verify(cardMock);
-        verify(wordDaoMock, cardDaoMock);
+        verify(headlineDaoMock);
     }
 
     @Test
