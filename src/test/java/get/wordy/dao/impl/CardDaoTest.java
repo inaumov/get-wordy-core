@@ -3,7 +3,6 @@ package get.wordy.dao.impl;
 import get.wordy.core.api.bean.Card;
 import get.wordy.core.api.bean.Collocation;
 import get.wordy.core.api.bean.Sentence;
-import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.api.bean.CardStatus;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.CardDao;
@@ -46,7 +45,7 @@ public class CardDaoTest extends BaseDaoTest {
         cardDao.insert(newCard);
 
         // assert
-        List<Card> cards = cardDao.selectCardsForDictionary(getDictionary(2));
+        List<Card> cards = cardDao.selectCardsForDictionary(2);
         assertNotNull(cards);
         assertEquals(2, cards.size());
         assertEquals(2, cards.getFirst().getId());
@@ -75,23 +74,16 @@ public class CardDaoTest extends BaseDaoTest {
 
         cardDao.update(updatedCard);
 
-        assertCards(getDictionary(2));
+        assertCards(2);
     }
 
     @Test
     public void testDelete() throws DaoException {
-        for (int i = 0, id = 1; i < PREDEFINED_CARDS_CNT; i++, id++) {
-            List<Card> cards = cardDao.selectCardsForDictionary(getDictionary(id));
-            assertNotNull(cards);
-            assertEquals(1, cards.size());
-            // remove first
-            Card toRemove = cards.getFirst();
-            cardDao.delete(toRemove);
-            // update list
-            cards = cardDao.selectCardsForDictionary(getDictionary(id));
-            assertNotNull(cards);
-            assertEquals(0, cards.size());
-        }
+        cardDao.delete(2);
+        // update list
+        List<Card> cards = cardDao.selectCardsForDictionary(2);
+        assertNotNull(cards);
+        assertEquals(0, cards.size());
     }
 
     @Test
@@ -136,7 +128,7 @@ public class CardDaoTest extends BaseDaoTest {
     public void testResetStatistics() throws DaoException {
         cardDao.resetScore(1, CardStatus.DEFAULT_STATUS);
 
-        List<Card> cards = cardDao.selectCardsForDictionary(getDictionary(1));
+        List<Card> cards = cardDao.selectCardsForDictionary(1);
         assertStatus(cards);
     }
 
@@ -149,9 +141,7 @@ public class CardDaoTest extends BaseDaoTest {
         while (iterator.hasNext()) {
             int id = iterator.nextInt();
             // check names of all dictionaries before insertion
-            Dictionary dictionary = new Dictionary();
-            dictionary.setId(id);
-            Collection<Card> cards = cardDao.selectCardsForDictionary(dictionary);
+            Collection<Card> cards = cardDao.selectCardsForDictionary(id);
             assertNotNull(cards);
             assertEquals(1, cards.size());
 
@@ -166,12 +156,8 @@ public class CardDaoTest extends BaseDaoTest {
         assertTrue(expectedStatuses.isEmpty());
     }
 
-    private static Dictionary getDictionary(int dictionaryId) {
-        return new Dictionary(dictionaryId, "", null);
-    }
-
-    private void assertCards(Dictionary dictionary) throws DaoException {
-        List<Card> cards = cardDao.selectCardsForDictionary(dictionary);
+    private void assertCards(int dictionaryId) throws DaoException {
+        List<Card> cards = cardDao.selectCardsForDictionary(dictionaryId);
         assertNotNull(cards);
         assertEquals(1, cards.size());
         Card actual = cards.getFirst();
@@ -216,7 +202,7 @@ public class CardDaoTest extends BaseDaoTest {
         Set<Integer> cardIds = cardDao.generateEmptyCards(dictionaryId, wordIds);
         // assert
         assertFalse(cardIds.isEmpty());
-        List<Card> cards = cardDao.selectCardsForDictionary(getDictionary(dictionaryId));
+        List<Card> cards = cardDao.selectCardsForDictionary(dictionaryId);
         assertNotNull(cards);
         assertEquals(2, cards.size());
 
@@ -231,7 +217,7 @@ public class CardDaoTest extends BaseDaoTest {
     @Test
     void updateStatus() throws DaoException {
         cardDao.updateStatus(2, CardStatus.LEARNT, 100);
-        assertCards(getDictionary(2));
+        assertCards(2);
     }
 
     @Test
@@ -248,12 +234,12 @@ public class CardDaoTest extends BaseDaoTest {
         cardDao.batchUpdateScores(List.of(card1, card2));
 
         // assert
-        Card actual = cardDao.selectCardsForDictionary(getDictionary(1))
+        Card actual = cardDao.selectCardsForDictionary(1)
                 .getFirst();
         assertEquals(1, actual.getId());
         assertEquals(CardStatus.TO_LEARN, actual.getStatus());
         assertEquals(25, actual.getScore());
-        actual = cardDao.selectCardsForDictionary(getDictionary(2))
+        actual = cardDao.selectCardsForDictionary(2)
                 .getFirst();
         assertEquals(2, actual.getId());
         assertEquals(CardStatus.TO_LEARN, actual.getStatus());

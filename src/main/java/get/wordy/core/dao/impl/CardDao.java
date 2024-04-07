@@ -69,7 +69,7 @@ public class CardDao extends BaseDao<Card> {
                 card.setId(cardId);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while inserting card record", ex);
+            throw new DaoException("Error while inserting a card record", ex);
         }
         return card;
     }
@@ -135,12 +135,12 @@ public class CardDao extends BaseDao<Card> {
     }
 
     @Override
-    public void delete(Card card) throws DaoException {
+    public void delete(int cardId) throws DaoException {
         try (var statement = prepareStatement(DELETE_CARD_QUERY)) {
-            statement.setInt(1, card.getId());
+            statement.setInt(1, cardId);
             statement.execute();
         } catch (SQLException ex) {
-            throw new DaoException("Error while deleting card record", ex);
+            throw new DaoException("Error while deleting a card record", ex);
         }
     }
 
@@ -154,7 +154,7 @@ public class CardDao extends BaseDao<Card> {
             statement.setInt(5, card.getId());
             statement.executeUpdate();
         } catch (SQLException ex) {
-            throw new DaoException("Error while updating card headline", ex);
+            throw new DaoException("Error while updating card record", ex);
         }
 
         deleteFromContext(card.getId());
@@ -184,10 +184,10 @@ public class CardDao extends BaseDao<Card> {
         }
     }
 
-    public List<Card> selectCardsForDictionary(Dictionary dictionary) throws DaoException {
+    public List<Card> selectCardsForDictionary(int dictionaryId) throws DaoException {
         ArrayList<Card> data = new ArrayList<>();
         try (var statement = prepareStatement(SELECT_ALL_CARDS_BY_DIC)) {
-            statement.setInt(1, dictionary.getId());
+            statement.setInt(1, dictionaryId);
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 Card card = new Card();
@@ -195,7 +195,7 @@ public class CardDao extends BaseDao<Card> {
                 data.add(card);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving card records for current dictionary", ex);
+            throw new DaoException("Error while retrieving card records for dictionary id", ex);
         }
         return data;
     }
@@ -210,7 +210,7 @@ public class CardDao extends BaseDao<Card> {
                 return card;
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving card record", ex);
+            throw new DaoException("Error while retrieving a card record", ex);
         }
         return null;
     }

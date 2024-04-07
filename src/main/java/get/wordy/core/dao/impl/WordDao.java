@@ -38,7 +38,7 @@ public class WordDao extends BaseDao<Word> {
                 return word.withId(id);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while inserting word record", ex);
+            throw new DaoException("Error while inserting a word record", ex);
         }
         return word;
     }
@@ -58,17 +58,17 @@ public class WordDao extends BaseDao<Word> {
             }
             return ids;
         } catch (SQLException ex) {
-            throw new DaoException("Error while generating word record", ex);
+            throw new DaoException("Error while generating word records", ex);
         }
     }
 
     @Override
-    public void delete(Word word) throws DaoException {
+    public void delete(int wordId) throws DaoException {
         try (var statement = prepareStatement(DELETE_QUERY)) {
-            statement.setInt(1, word.getId());
+            statement.setInt(1, wordId);
             statement.execute();
         } catch (SQLException ex) {
-            throw new DaoException("Error while deleting word record", ex);
+            throw new DaoException("Error while deleting a word record", ex);
         }
     }
 
@@ -82,7 +82,7 @@ public class WordDao extends BaseDao<Word> {
             statement.setInt(5, word.getId());
             statement.execute();
         } catch (SQLException ex) {
-            throw new DaoException("Error while updating word record", ex);
+            throw new DaoException("Error while updating a word record", ex);
         }
         return word;
     }
@@ -109,7 +109,7 @@ public class WordDao extends BaseDao<Word> {
                 return mapResultSetToWordEntity(resultSet);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving a word record by id", ex);
+            throw new DaoException("Error while retrieving a word record", ex);
         }
         return null;
     }

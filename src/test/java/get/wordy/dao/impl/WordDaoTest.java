@@ -75,8 +75,7 @@ public class WordDaoTest extends BaseDaoTest {
     @Test
     public void testDeleteAbandonedWord() throws DaoException {
         int abandonedWordId = 3;
-        Word toRemove = new Word();
-        wordDao.delete(toRemove.withId(abandonedWordId));
+        wordDao.delete(abandonedWordId);
         List<Word> wordsAfter = wordDao.selectAll();
         assertNotNull(wordsAfter);
         assertEquals(PREDEFINED_WORDS_CNT - 1, wordsAfter.size());
@@ -86,11 +85,10 @@ public class WordDaoTest extends BaseDaoTest {
     @Test
     public void testDeleteWordViolationException() throws DaoException {
         int wordIdReferenced = 1;
-        Word toRemove = new Word();
         DaoException daoException = assertThrows(DaoException.class,
-                () -> wordDao.delete(toRemove.withId(wordIdReferenced))
+                () -> wordDao.delete(wordIdReferenced)
         );
-        assertEquals("Error while deleting word entity", daoException.getMessage());
+        assertEquals("Error while deleting a word record", daoException.getMessage());
     }
 
     @Test

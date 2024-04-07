@@ -238,9 +238,9 @@ public class DictionaryServiceTest {
 
         Dictionary dictionaryMock = createDictionaryMock();
         replay(dictionaryMock);
-
         addDictionaryToCache(dictionaryMock);
-        dictionaryDaoMock.delete(dictionaryMock);
+
+        dictionaryDaoMock.delete(DICTIONARY_ID);
         expectLastCall().once();
         replay(dictionaryDaoMock);
 
@@ -270,8 +270,8 @@ public class DictionaryServiceTest {
         replay(dictionaryMock);
         addDictionaryToCache(dictionaryMock);
 
-        dictionaryDaoMock.delete(dictionaryMock);
-        expectLastCall().andStubThrow(new DaoException("insert", null));
+        dictionaryDaoMock.delete(DICTIONARY_ID);
+        expectLastCall().andStubThrow(new DaoException("delete", null));
         replay(dictionaryDaoMock);
 
         boolean done = dictionaryService.deleteDictionary(DICTIONARY_ID);
@@ -446,19 +446,17 @@ public class DictionaryServiceTest {
 
         Card cardMock = strictMock(Card.class);
         expect(cardMock.getWordId()).andStubReturn(1);
-        Word wordMock = strictMock(Word.class);
-        expect(cardMock.getWord()).andStubReturn(wordMock);
-        replay(cardMock, wordMock);
+        replay(cardMock);
         addCardToCache(1, cardMock);
 
-        cardDaoMock.delete(cardMock);
+        cardDaoMock.delete(1);
         expectLastCall().once();
         replay(cardDaoMock);
 
         boolean done = dictionaryService.deleteCard(1);
         assertTrue(done);
 
-        verify(cardMock, wordMock);
+        verify(cardMock);
         verify(cardDaoMock);
     }
 
