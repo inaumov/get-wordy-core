@@ -17,8 +17,8 @@ public class Card {
     private Instant insertedAt;
     private Instant updatedAt;
     private Word word;
-    private final List<Context> contexts = new ArrayList<>();
-    private final List<Collocation> collocations = new ArrayList<>();
+    private final List<String> sentences = new ArrayList<>();
+    private final List<String> collocations = new ArrayList<>();
 
     public int getId() {
         return id;
@@ -87,30 +87,30 @@ public class Card {
         this.word = word;
     }
 
-    public List<Context> getContexts() {
-        return List.copyOf(contexts);
+    public List<String> getSentences() {
+        return List.copyOf(sentences);
     }
 
-    public void addContext(Context bean) {
-        contexts.add(bean);
+    public void addSentence(String sentence) {
+        sentences.add(sentence);
     }
 
-    public void setContexts(List<Context> beans) {
-        this.contexts.clear();
-        this.contexts.addAll(beans);
+    public void setSentences(List<String> sentences) {
+        this.sentences.clear();
+        this.sentences.addAll(sentences);
     }
 
-    public List<Collocation> getCollocations() {
+    public List<String> getCollocations() {
         return List.copyOf(collocations);
     }
 
-    public void addCollocation(Collocation bean) {
-        collocations.add(bean);
+    public void addCollocation(String collocation) {
+        collocations.add(collocation);
     }
 
-    public void setCollocations(List<Collocation> beans) {
+    public void setCollocations(List<String> collocations) {
         this.collocations.clear();
-        this.collocations.addAll(beans);
+        this.collocations.addAll(collocations);
     }
 
     @Override
@@ -127,7 +127,7 @@ public class Card {
                 && Objects.equals(this.score, that.score)
                 && Objects.equals(this.insertedAt, that.insertedAt)
                 && Objects.equals(this.updatedAt, that.updatedAt)
-                && Objects.deepEquals(this.contexts, that.getContexts())
+                && Objects.deepEquals(this.sentences, that.getSentences())
                 && Objects.deepEquals(this.collocations, that.getCollocations());
     }
 

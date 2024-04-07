@@ -280,12 +280,18 @@ public class DictionaryService implements IDictionaryService {
                 Word word = wordDao.selectById(card.getWordId());
                 card.setWord(word);
             }
-            if (card.getContexts().isEmpty()) {
-                List<Context> contexts = cardDao.getContextsFor(card);
-                card.setContexts(contexts);
+            if (card.getSentences().isEmpty()) {
+                List<String> sentences = cardDao.getSentencesFor(cardId)
+                        .stream()
+                        .map(Sentence::getExample)
+                        .toList();
+                card.setSentences(sentences);
             }
             if (card.getCollocations().isEmpty()) {
-                List<Collocation> collocations = cardDao.getCollocationsFor(card);
+                List<String> collocations = cardDao.getCollocationsFor(cardId)
+                        .stream()
+                        .map(Collocation::getExample)
+                        .toList();
                 card.setCollocations(collocations);
             }
             connection.commit();

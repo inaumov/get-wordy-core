@@ -40,7 +40,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
                 dictionary.setId(dictionaryId);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while inserting dictionary entity", ex);
+            throw new DaoException("Error while inserting dictionary record", ex);
         }
         return dictionary;
     }
@@ -51,7 +51,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
             statement.setInt(1, dictionary.getId());
             statement.executeUpdate();
         } catch (SQLException ex) {
-            throw new DaoException("Error while deleting dictionary entity", ex);
+            throw new DaoException("Error while deleting dictionary record", ex);
         }
     }
 
@@ -71,7 +71,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
             statement.setInt(2, dictionary.getId());
             statement.executeUpdate();
         } catch (SQLException ex) {
-            throw new DaoException("Error while updating dictionary entity", ex);
+            throw new DaoException("Error while updating dictionary record", ex);
         }
         return dictionary;
     }
@@ -88,7 +88,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
                 dictionaries.add(new Dictionary(id, name, picture, cardsTotal));
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving all dictionary entities", ex);
+            throw new DaoException("Error while retrieving all dictionary records", ex);
         }
         return dictionaries;
     }
@@ -101,7 +101,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
                 count = resultSet.getInt(1);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while counting all dictionary entities", ex);
+            throw new DaoException("Error while counting all dictionary records", ex);
         }
         return count;
     }
@@ -118,7 +118,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
                 return new Dictionary(id, name, picture, cardsTotal);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving a dictionary by id", ex);
+            throw new DaoException("Error while retrieving a dictionary record by id", ex);
         }
         return null;
     }
