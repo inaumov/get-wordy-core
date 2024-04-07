@@ -38,7 +38,7 @@ public class WordDao extends BaseDao<Word> {
                 return word.withId(id);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while inserting word entity", ex);
+            throw new DaoException("Error while inserting word record", ex);
         }
         return word;
     }
@@ -58,7 +58,7 @@ public class WordDao extends BaseDao<Word> {
             }
             return ids;
         } catch (SQLException ex) {
-            throw new DaoException("Error while generating word entity", ex);
+            throw new DaoException("Error while generating word record", ex);
         }
     }
 
@@ -68,7 +68,7 @@ public class WordDao extends BaseDao<Word> {
             statement.setInt(1, word.getId());
             statement.execute();
         } catch (SQLException ex) {
-            throw new DaoException("Error while deleting word entity", ex);
+            throw new DaoException("Error while deleting word record", ex);
         }
     }
 
@@ -82,7 +82,7 @@ public class WordDao extends BaseDao<Word> {
             statement.setInt(5, word.getId());
             statement.execute();
         } catch (SQLException ex) {
-            throw new DaoException("Error while updating word entity", ex);
+            throw new DaoException("Error while updating word record", ex);
         }
         return word;
     }
@@ -96,7 +96,7 @@ public class WordDao extends BaseDao<Word> {
                 words.add(word);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving all word entities", ex);
+            throw new DaoException("Error while retrieving all word records", ex);
         }
         return words;
     }
@@ -109,7 +109,7 @@ public class WordDao extends BaseDao<Word> {
                 return mapResultSetToWordEntity(resultSet);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving a word by id", ex);
+            throw new DaoException("Error while retrieving a word record by id", ex);
         }
         return null;
     }

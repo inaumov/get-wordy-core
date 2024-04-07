@@ -345,7 +345,7 @@ public class DictionaryServiceTest {
         expect(cardMock.getWord()).andReturn(null);
         expect(cardMock.getWordId()).andReturn(wordId);
         cardMock.setWord(wordMock);
-        expect(cardMock.getContexts()).andReturn(Collections.emptyList());
+        expect(cardMock.getSentences()).andReturn(Collections.emptyList());
         expect(cardMock.getCollocations()).andReturn(Collections.emptyList());
         replay(cardMock);
 
@@ -353,10 +353,10 @@ public class DictionaryServiceTest {
         expectLastCall().andAnswer(() -> wordMock);
         cardDaoMock.selectById(cardId);
         expectLastCall().andAnswer(() -> cardMock);
-        cardDaoMock.getContextsFor(cardMock);
-        expectLastCall().andAnswer(() -> List.of(new Context()));
-        cardDaoMock.getCollocationsFor(cardMock);
-        expectLastCall().andAnswer(() -> List.of(new Collocation()));
+        cardDaoMock.getSentencesFor(cardId);
+        expectLastCall().andAnswer(() -> List.of(new Sentence(1, "Test sentence", 1)));
+        cardDaoMock.getCollocationsFor(cardId);
+        expectLastCall().andAnswer(() -> List.of(new Collocation(1, "Test collocation", 1)));
         replay(wordDaoMock, cardDaoMock);
 
         Card card = dictionaryService.loadCard(cardId);
@@ -377,21 +377,13 @@ public class DictionaryServiceTest {
         Word wordMock = strictMock(Word.class);
         replay(wordMock);
 
-        Context contextMock = strictMock(Context.class);
-        contextMock.setCardId(1);
-        replay(contextMock);
-
-        Collocation collocationMock = strictMock(Collocation.class);
-        collocationMock.setCardId(1);
-        replay(collocationMock);
-
         Card cardMock = strictMock(Card.class);
         expect(cardMock.getWord()).andReturn(wordMock);
         cardMock.setDictionaryId(DICTIONARY_ID);
         cardMock.setWordId(1);
         cardMock.setInsertedAt(anyObject(Instant.class));
-        expect(cardMock.getContexts()).andReturn(List.of(contextMock));
-        expect(cardMock.getCollocations()).andReturn(List.of(collocationMock));
+        expect(cardMock.getSentences()).andReturn(List.of("Test sentence"));
+        expect(cardMock.getCollocations()).andReturn(List.of("Test collocation"));
         replay(cardMock);
 
         Word insertedWordMock = strictMock(Word.class);

@@ -54,12 +54,12 @@ public class CardHeadlineDaoTest {
                 () -> assertThat(formattedInstant).isEqualTo("2014-08-17 17:40:03"),
                 () -> assertThat(card.getUpdatedAt()).isNotNull(),
 
-                () -> assertEquals(3, card.getContexts().size()),
-                () -> assertEquals("sentence1", card.getContexts().getFirst().getExample()),
-                () -> assertEquals("sentence4", card.getContexts().getLast().getExample()),
+                () -> assertEquals(3, card.getSentences().size()),
+                () -> assertEquals("sentence1", card.getSentences().getFirst()),
+                () -> assertEquals("sentence4", card.getSentences().getLast()),
 
                 () -> assertEquals(1, card.getCollocations().size()),
-                () -> assertEquals("collocation1", card.getCollocations().getFirst().getExample())
+                () -> assertEquals("collocation1", card.getCollocations().getFirst())
         );
         Word word = card.getWord();
         assertNotNull(word);

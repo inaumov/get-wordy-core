@@ -1,15 +1,15 @@
 package get.wordy.core.api.bean;
 
-public class Context {
+public class Sentence {
 
     private int id;
     private String example;
     private int cardId;
 
-    public Context() {
+    public Sentence() {
     }
 
-    public Context(int id, String example, int cardId) {
+    public Sentence(int id, String example, int cardId) {
         this.id = id;
         this.example = example;
         this.cardId = cardId;
@@ -39,8 +39,8 @@ public class Context {
         this.cardId = cardId;
     }
 
-    public Context withId(int id) {
-        return new Context(id, example, cardId);
+    public Sentence withId(int id) {
+        return new Sentence(id, example, cardId);
     }
 
 }

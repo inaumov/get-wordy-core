@@ -27,8 +27,8 @@ public class CardHeadlineDao {
                 words.part_of_speech,
                 words.transcription,
                 words.meaning,
-                array_remove(array_agg(DISTINCT context.example), NULL) AS context_examples,
-                array_remove(array_agg(DISTINCT collocations.example), NULL) AS collocation_examples
+                array_remove(array_agg(DISTINCT context.example), NULL) AS card_sentences,
+                array_remove(array_agg(DISTINCT collocations.example), NULL) AS card_collocations
             FROM
                 cards
             JOIN
@@ -83,30 +83,17 @@ public class CardHeadlineDao {
                     rs.getString("meaning"));
             cardData.setWord(word);
 
-            String[] contextExamples = (String[]) rs.getArray("context_examples").getArray();
-            String[] collocationExamples = (String[]) rs.getArray("collocation_examples").getArray();
+            String[] cardSentences = (String[]) rs.getArray("card_sentences").getArray();
+            String[] cardCollocations = (String[]) rs.getArray("card_collocations").getArray();
 
-            List<Context> contexts = toContexts(cardId, contextExamples);
-            List<Collocation> collocations = toCollocations(cardId, collocationExamples);
+            List<String> sentences = Arrays.asList(cardSentences);
+            List<String> collocations = Arrays.asList(cardCollocations);
 
-            cardData.setContexts(contexts);
+            cardData.setSentences(sentences);
             cardData.setCollocations(collocations);
 
             return cardData;
         }
-
-        private List<Context> toContexts(int cardId, String[] contextExamples) {
-            return Arrays.stream(contextExamples)
-                    .map(sentence -> new Context(0, sentence, cardId))
-                    .toList();
-        }
-
-        private List<Collocation> toCollocations(int cardId, String[] collocationExamples) {
-            return Arrays.stream(collocationExamples)
-                    .map(collocation -> new Collocation(0, collocation, cardId))
-                    .toList();
-        }
-
     }
 
 }

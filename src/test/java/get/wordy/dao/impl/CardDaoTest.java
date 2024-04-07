@@ -2,7 +2,7 @@ package get.wordy.dao.impl;
 
 import get.wordy.core.api.bean.Card;
 import get.wordy.core.api.bean.Collocation;
-import get.wordy.core.api.bean.Context;
+import get.wordy.core.api.bean.Sentence;
 import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.api.bean.CardStatus;
 import get.wordy.core.dao.exception.DaoException;
@@ -38,8 +38,8 @@ public class CardDaoTest extends BaseDaoTest {
         newCard.setDictionaryId(2);
         newCard.setScore(10);
         newCard.setStatus(CardStatus.POSTPONED);
-        newCard.addContext(prepareContext());
-        newCard.addCollocation(prepareCollocation());
+        newCard.addSentence("Test sentence");
+        newCard.addCollocation("Test collocation");
         newCard.setInsertedAt(Instant.now());
 
         // insert
@@ -56,8 +56,8 @@ public class CardDaoTest extends BaseDaoTest {
         assertEquals(3, actual.getWordId());
         assertEquals(2, actual.getDictionaryId());
         assertEquals(CardStatus.POSTPONED, actual.getStatus());
-        assertContexts(newCard.getContexts(), cardDao.getContextsFor(actual));
-        assertCollocations(newCard.getCollocations(), cardDao.getCollocationsFor(actual));
+        assertSentences(newCard.getSentences(), cardDao.getSentencesFor(actual.getId()));
+        assertCollocations(newCard.getCollocations(), cardDao.getCollocationsFor(actual.getId()));
     }
 
     @Test
@@ -69,8 +69,8 @@ public class CardDaoTest extends BaseDaoTest {
         updatedCard.setStatus(CardStatus.LEARNT);
         updatedCard.setScore(100);
         updatedCard.setUpdatedAt(Instant.now());
-        updatedCard.addContext(prepareContext());
-        updatedCard.addCollocation(prepareCollocation());
+        updatedCard.addSentence("Test sentence");
+        updatedCard.addCollocation("Test collocation");
         updatedCard.setInsertedAt(Instant.now());
 
         cardDao.update(updatedCard);
@@ -181,30 +181,30 @@ public class CardDaoTest extends BaseDaoTest {
         assertEquals(2, actual.getDictionaryId());
         assertEquals(CardStatus.LEARNT, actual.getStatus());
 
-        assertContexts(actual.getContexts(), cardDao.getContextsFor(actual));
-        assertCollocations(actual.getCollocations(), cardDao.getCollocationsFor(actual));
+        assertSentences(actual.getSentences(), cardDao.getSentencesFor(actual.getId()));
+        assertCollocations(actual.getCollocations(), cardDao.getCollocationsFor(actual.getId()));
     }
 
-    private static void assertContexts(List<Context> expectedDefinitions, List<Context> actualContexts) {
-        assertNotNull(actualContexts);
+    private static void assertSentences(List<String> expectedSentences, List<Sentence> actualSentences) {
+        assertNotNull(actualSentences);
 
-        for (int i = 0; i < expectedDefinitions.size(); i++) {
-            Context expected = expectedDefinitions.get(i);
-            Context actual = actualContexts.get(i);
+        for (int i = 0; i < expectedSentences.size(); i++) {
+            String expected = expectedSentences.get(i);
+            Sentence actual = actualSentences.get(i);
             assertTrue(actual.getId() > 2, "actual: " + actual.getId());
-            assertEquals(expected.getExample(), actual.getExample());
+            assertEquals(expected, actual.getExample());
             assertTrue(actual.getCardId() > 2, "actual: " + actual.getCardId());
         }
     }
 
-    private static void assertCollocations(List<Collocation> meaningsExpected, List<Collocation> actualCollocations) {
+    private static void assertCollocations(List<String> expectedCollocations, List<Collocation> actualCollocations) {
         assertNotNull(actualCollocations);
 
-        for (int i = 0; i < meaningsExpected.size(); i++) {
-            Collocation expected = meaningsExpected.get(i);
+        for (int i = 0; i < expectedCollocations.size(); i++) {
+            String expected = expectedCollocations.get(i);
             Collocation actual = actualCollocations.get(i);
             assertTrue(actual.getId() > 2, "actual: " + actual.getId());
-            assertEquals(expected.getExample(), actual.getExample());
+            assertEquals(expected, actual.getExample());
             assertTrue(actual.getCardId() > 2, "actual: " + actual.getCardId());
         }
     }
@@ -271,16 +271,6 @@ public class CardDaoTest extends BaseDaoTest {
                 assertEquals(DEFAULT_SCORE, card.getScore());
             }
         }
-    }
-
-    private Context prepareContext() {
-        String str = "context_example";
-        return new Context(0, str, 0);
-    }
-
-    private Collocation prepareCollocation() {
-        String str = "collocation_example";
-        return new Collocation(0, str, 0);
     }
 
 }
