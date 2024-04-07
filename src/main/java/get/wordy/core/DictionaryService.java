@@ -132,7 +132,7 @@ public class DictionaryService implements IDictionaryService {
         try {
             Dictionary dictionary = findDictionary(dictionaryId);
             connection.open();
-            dictionaryDao.delete(dictionary);
+            dictionaryDao.delete(dictionaryId);
             connection.commit();
             dictionaryList.remove(dictionary);
         } catch (DaoException e) {
@@ -255,9 +255,8 @@ public class DictionaryService implements IDictionaryService {
         Card card = findCardById(cardId);
         try {
             connection.open();
-            cardDao.delete(card);
-            Word word = card.getWord();
-            wordDao.delete(word);
+            cardDao.delete(cardId);
+            wordDao.delete(card.getWordId());
             connection.commit();
             cardsCache.remove(cardId);
         } catch (DaoException e) {

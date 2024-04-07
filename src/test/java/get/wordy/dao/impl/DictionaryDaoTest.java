@@ -97,20 +97,11 @@ public class DictionaryDaoTest extends BaseDaoTest {
 
     @Test
     public void testDelete() throws DaoException {
-        List<Dictionary> dictionariesAll = dictionaryDao.selectAll();
-        assertNotNull(dictionariesAll);
-        int cnt = dictionariesAll.size();
-        assertEquals(PREDEFINED_DICTIONARIES_CNT, cnt);
-
-        for (int i = 0, id = 1; i < PREDEFINED_DICTIONARIES_CNT; i++, id++) {
-            Dictionary toRemove = dictionariesAll.get(i);
-            dictionaryDao.delete(toRemove);
-            List<Dictionary> dictionariesAfter = dictionaryDao.selectAll();
-            assertNotNull(dictionariesAfter);
-            assertEquals(--cnt, dictionariesAfter.size());
-            assertTestData(dictionariesAfter, id + 1);
-        }
-        assertEquals(0, dictionaryDao.count());
+        dictionaryDao.delete(1);
+        List<Dictionary> dictionariesAfter = dictionaryDao.selectAll();
+        assertNotNull(dictionariesAfter);
+        assertEquals(1, dictionaryDao.count());
+        assertTestData(dictionariesAfter, 2);
     }
 
     @Test

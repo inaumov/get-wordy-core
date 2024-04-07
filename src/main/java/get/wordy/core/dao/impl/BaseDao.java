@@ -32,10 +32,10 @@ public abstract class BaseDao<T> {
 
     public abstract T insert(T record) throws DaoException;
 
-    public abstract T selectById(int id) throws DaoException;
+    public abstract T selectById(int recordId) throws DaoException;
 
     public abstract T update(T record) throws DaoException;
 
-    public abstract void delete(T record) throws DaoException;
+    public abstract void delete(int recordId) throws DaoException;
 
 }

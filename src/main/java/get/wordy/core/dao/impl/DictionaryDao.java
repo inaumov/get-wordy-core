@@ -40,18 +40,18 @@ public class DictionaryDao extends BaseDao<Dictionary> {
                 dictionary.setId(dictionaryId);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while inserting dictionary record", ex);
+            throw new DaoException("Error while inserting a dictionary record", ex);
         }
         return dictionary;
     }
 
     @Override
-    public void delete(Dictionary dictionary) throws DaoException {
+    public void delete(int dictionaryId) throws DaoException {
         try (var statement = prepareStatement(DELETE_QUERY)) {
-            statement.setInt(1, dictionary.getId());
+            statement.setInt(1, dictionaryId);
             statement.executeUpdate();
         } catch (SQLException ex) {
-            throw new DaoException("Error while deleting dictionary record", ex);
+            throw new DaoException("Error while deleting a dictionary record", ex);
         }
     }
 
@@ -71,7 +71,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
             statement.setInt(2, dictionary.getId());
             statement.executeUpdate();
         } catch (SQLException ex) {
-            throw new DaoException("Error while updating dictionary record", ex);
+            throw new DaoException("Error while updating a dictionary record", ex);
         }
         return dictionary;
     }
@@ -118,7 +118,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
                 return new Dictionary(id, name, picture, cardsTotal);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving a dictionary record by id", ex);
+            throw new DaoException("Error while retrieving a dictionary record", ex);
         }
         return null;
     }
