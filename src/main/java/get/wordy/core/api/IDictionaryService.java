@@ -3,6 +3,7 @@ package get.wordy.core.api;
 import get.wordy.core.api.bean.Card;
 import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.api.bean.CardStatus;
+import get.wordy.core.api.bean.Exercise;
 import get.wordy.core.api.bean.wrapper.Score;
 
 import java.util.List;
@@ -22,7 +23,7 @@ public interface IDictionaryService {
 
     List<Card> getCards(int dictionaryId);
 
-    List<Card> getCardsForExercise(int dictionaryId, int limit);
+    List<Exercise> getCardsForExercise(int dictionaryId, int limit);
 
     Card addCard(int dictionaryId, Card card);
 

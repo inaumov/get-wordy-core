@@ -2,10 +2,12 @@ package get.wordy.core.dao.impl;
 
 import get.wordy.core.api.bean.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -38,7 +40,7 @@ public class CardHeadlineDao {
             LEFT JOIN
                 collocations ON cards.id = collocations.card_id
             WHERE
-                cards.dictionary_id = ?
+                cards.dictionary_id = :dictionaryId
             GROUP BY
                 cards.id, words.id
             """;
@@ -66,27 +68,59 @@ public class CardHeadlineDao {
             LEFT JOIN
                 collocations ON cards.id = collocations.card_id
             WHERE
-                cards.id = ? -- Specify the card ID to retrieve
+                cards.id = :cardId -- Specify the card ID to retrieve
             GROUP BY
                 cards.id, words.id
             """;
 
-    private final JdbcTemplate jdbcTemplate;
+    private static final String GET_CARDS_FOR_EXERCISE = """
+            SELECT
+                cards.id AS card_id,
+                words.id AS word_id,
+                words.word,
+                words.part_of_speech,
+                words.transcription,
+                words.meaning,
+                array_remove(array_agg(DISTINCT context.example), NULL) AS card_sentences
+            FROM
+                cards
+                    JOIN
+                words ON cards.word_id = words.id
+                    LEFT JOIN
+                context ON cards.id = context.card_id
+            WHERE
+                cards.id in (:cardIds)
+            GROUP BY
+                cards.id, words.id;
+            """;
+
+    private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Autowired
-    public CardHeadlineDao(JdbcTemplate jdbcTemplate) {
+    public CardHeadlineDao(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
     public List<Card> getCardsForDictionary(int dictionaryId) {
-        return jdbcTemplate.query(ALL_JOINS_QUERY, new FullCardRowMapper(), dictionaryId);
+        MapSqlParameterSource parameters = new MapSqlParameterSource("dictionaryId", dictionaryId);
+        return jdbcTemplate.query(ALL_JOINS_QUERY, parameters, new FullCardRowMapper());
     }
 
     public Card getCardById(int cardId) {
-        return jdbcTemplate.queryForObject(GET_CARD_HEADLINE, new FullCardRowMapper(), cardId);
+        MapSqlParameterSource parameters = new MapSqlParameterSource("cardId", cardId);
+        return jdbcTemplate.queryForObject(GET_CARD_HEADLINE, parameters, new FullCardRowMapper());
     }
 
-    public static class FullCardRowMapper implements RowMapper<Card> {
+    public List<Exercise> getCardsForExercise(int... cardIds) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        List<Integer> integers = Arrays.stream(cardIds)
+                .boxed()
+                .toList();
+        parameters.addValue("cardIds", integers);
+        return jdbcTemplate.query(GET_CARDS_FOR_EXERCISE, parameters, new ExerciseRowMapper());
+    }
+
+    private static class FullCardRowMapper implements RowMapper<Card> {
 
         @Override
         public Card mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -108,6 +142,7 @@ public class CardHeadlineDao {
             if (updateTime != null) {
                 cardData.setUpdatedAt(updateTime.toInstant());
             }
+
             Word word = new Word(wordId,
                     rs.getString("word"),
                     rs.getString("part_of_speech"),
@@ -125,6 +160,36 @@ public class CardHeadlineDao {
             cardData.setCollocations(collocations);
 
             return cardData;
+        }
+    }
+
+    private static class ExerciseRowMapper implements RowMapper<Exercise> {
+        @Override
+        public Exercise mapRow(ResultSet rs, int rowNum) throws SQLException {
+            int cardId = rs.getInt("card_id");
+            int wordId = rs.getInt("word_id");
+
+            Exercise exercise = new Exercise();
+            exercise.setCardId(cardId);
+            exercise.setWordId(wordId);
+
+            Word word = new Word(wordId,
+                    rs.getString("word"),
+                    rs.getString("part_of_speech"),
+                    rs.getString("transcription"),
+                    rs.getString("meaning"));
+            exercise.setWord(word);
+
+            Array cardSentencesArr = rs.getArray("card_sentences");
+            exercise.setSentences(asModelList(cardId, (String[]) cardSentencesArr.getArray()));
+
+            return exercise;
+        }
+
+        private static List<Sentence> asModelList(int cardId, String[] cardSentences) {
+            return Arrays.stream(cardSentences)
+                    .map(s -> new Sentence(s, cardId))
+                    .toList();
         }
     }
 

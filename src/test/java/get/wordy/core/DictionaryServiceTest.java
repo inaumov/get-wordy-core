@@ -322,10 +322,12 @@ public class DictionaryServiceTest {
             Card cardMock = strictMock(Card.class);
             addCardToCache(id, cardMock);
         }
+        expect(headlineDaoMock.getCardsForExercise(ids))
+                .andReturn(Collections.nCopies(3, niceMock(Exercise.class)));
 
-        replay(cardDaoMock);
+        replay(cardDaoMock, headlineDaoMock);
 
-        List<Card> cards = dictionaryService.getCardsForExercise(1, 6);
+        List<Exercise> cards = dictionaryService.getCardsForExercise(1, 10);
         assertEquals(3, cards.size());
     }
 
