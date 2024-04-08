@@ -170,24 +170,19 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public List<Card> getCardsForExercise(int dictionaryId, int limit) {
-        int[] cardIds;
+    public List<Exercise> getCardsForExercise(int dictionaryId, int limit) {
+        List<Exercise> exercises;
         try {
             connection.open();
-            cardIds = cardDao.selectCardIdsForExercise(dictionaryId, limit);
+            int[] cardIds = cardDao.selectCardIdsForExercise(dictionaryId, limit);
+            // todo: check in cash and convert from card
+            exercises = cardHeadlineDao.getCardsForExercise(cardIds);
             connection.commit();
         } catch (DaoException e) {
             LOG.error("Error while loading exercise cards set for dictionary, id = {}", dictionaryId, e);
             return Collections.emptyList();
         } finally {
             connection.close();
-        }
-        List<Card> exercises = new ArrayList<>();
-        for (int id : cardIds) {
-            Card card = findCardById(id);
-            if (card != null) {
-                exercises.add(card);
-            }
         }
         return exercises;
     }
