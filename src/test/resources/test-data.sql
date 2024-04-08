@@ -14,10 +14,10 @@ insert into words (id, word, part_of_speech, transcription, meaning) values (3, 
 insert into cards (id, score, create_time, last_update_time, dictionary_id, word_id) values (1, 50, '2014-08-17 17:40:03', CURRENT_TIMESTAMP, 1, 1 );
 insert into cards (id, score, create_time, last_update_time, dictionary_id, word_id, status) values (2, 50, '2014-08-17 17:40:04', CURRENT_TIMESTAMP, 2, 2, 'TO_LEARN');
 
-insert into collocations (id, example, card_id) values (1, 'collocation1', 1);
-insert into collocations (id, example, card_id) values (2, 'collocation2', 2);
+insert into collocations (card_id, example, word_id) values (1, 'collocation1', 1);
+insert into collocations (card_id, example, word_id) values (2, 'collocation2', 2);
 
-insert into context (id, example, card_id) values (1, 'sentence1', 1);
-insert into context (id, example, card_id) values (2, 'sentence2', 2);
-insert into context (id, example, card_id) values (3, 'sentence3', 1);
-insert into context (id, example, card_id) values (4, 'sentence4', 1);
+insert into context (card_id, example, word_id) values (1, 'sentence1', 1);
+insert into context (card_id, example, word_id) values (2, 'sentence2', 2);
+insert into context (card_id, example, word_id) values (1, 'sentence3', 1);
+insert into context (card_id, example, word_id) values (1, 'sentence4', 1);

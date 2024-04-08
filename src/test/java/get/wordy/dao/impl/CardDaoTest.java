@@ -177,7 +177,6 @@ public class CardDaoTest extends BaseDaoTest {
         for (int i = 0; i < expectedSentences.size(); i++) {
             String expected = expectedSentences.get(i);
             Sentence actual = actualSentences.get(i);
-            assertTrue(actual.getId() > 2, "actual: " + actual.getId());
             assertEquals(expected, actual.getExample());
             assertTrue(actual.getCardId() > 2, "actual: " + actual.getCardId());
         }
@@ -189,7 +188,6 @@ public class CardDaoTest extends BaseDaoTest {
         for (int i = 0; i < expectedCollocations.size(); i++) {
             String expected = expectedCollocations.get(i);
             Collocation actual = actualCollocations.get(i);
-            assertTrue(actual.getId() > 2, "actual: " + actual.getId());
             assertEquals(expected, actual.getExample());
             assertTrue(actual.getCardId() > 2, "actual: " + actual.getCardId());
         }

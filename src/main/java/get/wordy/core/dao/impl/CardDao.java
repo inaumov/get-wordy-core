@@ -2,7 +2,6 @@ package get.wordy.core.dao.impl;
 
 import get.wordy.core.api.bean.*;
 import get.wordy.core.api.bean.Sentence;
-import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.db.LocalTxManager;
 
@@ -41,8 +40,8 @@ public class CardDao extends BaseDao<Card> {
             """;
 
     // context and collocations
-    private static final String INSERT_SENTENCE_QUERY = "INSERT INTO context (card_id, example) VALUES (?,?)";
-    private static final String INSERT_COLLOCATIONS_QUERY = "INSERT INTO collocations (card_id, example) VALUES (?,?)";
+    private static final String INSERT_SENTENCE_QUERY = "INSERT INTO context (card_id, example, word_id) VALUES (?,?,?)";
+    private static final String INSERT_COLLOCATIONS_QUERY = "INSERT INTO collocations (card_id, example, word_id) VALUES (?,?,?)";
     private static final String SELECT_FROM_CONTEXT_QUERY = "SELECT * FROM context WHERE card_id=?";
     private static final String SELECT_COLLOCATIONS_QUERY = "SELECT * FROM collocations WHERE card_id=?";
     private static final String DELETE_FROM_CONTEXT_QUERY = "DELETE FROM context WHERE card_id=?";
@@ -64,8 +63,8 @@ public class CardDao extends BaseDao<Card> {
             ResultSet resultSet = statement.getGeneratedKeys();
             if (resultSet.next()) {
                 int cardId = resultSet.getInt(1);
-                insertSentences(cardId, card.getSentences());
-                insertCollocations(cardId, card.getCollocations());
+                insertSentences(cardId, card.getWordId(), card.getSentences());
+                insertCollocations(cardId, card.getWordId(), card.getCollocations());
                 card.setId(cardId);
             }
         } catch (SQLException ex) {
@@ -94,41 +93,43 @@ public class CardDao extends BaseDao<Card> {
         }
     }
 
-    private Set<Integer> insertSentences(int cardId, List<String> sentences) throws DaoException {
+    private Set<Sentence> insertSentences(int cardId, int wordId, List<String> sentences) throws DaoException {
         try (var statement = prepareStatementForInsert(INSERT_SENTENCE_QUERY)) {
             for (String sentence : sentences) {
                 statement.setInt(1, cardId);
                 statement.setString(2, sentence);
+                statement.setInt(3, wordId);
                 statement.addBatch();
             }
             statement.executeBatch();
             // get inserted ids
             ResultSet keys = statement.getGeneratedKeys();
-            Set<Integer> ids = new HashSet<>();
+            Set<Sentence> records = new HashSet<>();
             while (keys.next()) {
-                ids.add(keys.getInt(1));
+                records.add(new Sentence(keys.getString("example"), keys.getInt("card_id")));
             }
-            return ids;
+            return records;
         } catch (SQLException ex) {
             throw new DaoException("Error while inserting sentence examples", ex);
         }
     }
 
-    private Set<Integer> insertCollocations(int cardId, List<String> collocations) throws DaoException {
+    private Set<Collocation> insertCollocations(int cardId, int wordId, List<String> collocations) throws DaoException {
         try (var statement = prepareStatementForInsert(INSERT_COLLOCATIONS_QUERY)) {
             for (String collocation : collocations) {
                 statement.setInt(1, cardId);
                 statement.setString(2, collocation);
+                statement.setInt(3, wordId);
                 statement.addBatch();
             }
             statement.executeBatch();
-            // get inserted ids
+            // get inserted records
             ResultSet keys = statement.getGeneratedKeys();
-            Set<Integer> ids = new HashSet<>();
+            Set<Collocation> records = new HashSet<>();
             while (keys.next()) {
-                ids.add(keys.getInt(1));
+                records.add(new Collocation(keys.getString("example"), keys.getInt("card_id")));
             }
-            return ids;
+            return records;
         } catch (SQLException ex) {
             throw new DaoException("Error while inserting collocation examples", ex);
         }
@@ -160,8 +161,8 @@ public class CardDao extends BaseDao<Card> {
         deleteFromContext(card.getId());
         deleteFromCollocations(card.getId());
 
-        insertSentences(card.getId(), card.getSentences());
-        insertCollocations(card.getId(), card.getCollocations());
+        insertSentences(card.getId(), card.getWordId(), card.getSentences());
+        insertCollocations(card.getId(), card.getWordId(), card.getCollocations());
 
         return card;
     }
@@ -264,9 +265,8 @@ public class CardDao extends BaseDao<Card> {
             statement.setInt(1, cardId);
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                int id = resultSet.getInt(1);
-                String example = resultSet.getString(2);
-                Sentence sentence = new Sentence(id, example, cardId);
+                String example = resultSet.getString("example");
+                Sentence sentence = new Sentence(example, cardId);
                 result.add(sentence);
             }
         } catch (SQLException ex) {
@@ -281,9 +281,8 @@ public class CardDao extends BaseDao<Card> {
             statement.setInt(1, cardId);
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                int id = resultSet.getInt(1);
-                String example = resultSet.getString(2);
-                Collocation collocation = new Collocation(id, example, cardId);
+                String example = resultSet.getString("example");
+                Collocation collocation = new Collocation(example, cardId);
                 collocations.add(collocation);
             }
         } catch (SQLException ex) {
