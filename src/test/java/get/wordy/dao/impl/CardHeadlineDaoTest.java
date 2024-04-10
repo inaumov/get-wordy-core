@@ -1,4 +1,4 @@
-package get.wordy.dao;
+package get.wordy.dao.impl;
 
 import get.wordy.core.api.bean.Card;
 import get.wordy.core.api.bean.CardStatus;
