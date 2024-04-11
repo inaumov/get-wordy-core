@@ -156,7 +156,7 @@ public class CardHeadlineDao {
             List<String> sentences = Arrays.asList(cardSentences);
             List<String> collocations = Arrays.asList(cardCollocations);
 
-            cardData.setSentences(sentences);
+            cardData.setStrSentences(sentences);
             cardData.setCollocations(collocations);
 
             return cardData;

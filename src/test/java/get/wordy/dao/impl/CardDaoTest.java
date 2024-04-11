@@ -37,7 +37,7 @@ public class CardDaoTest extends BaseDaoTest {
         newCard.setDictionaryId(2);
         newCard.setScore(10);
         newCard.setStatus(CardStatus.POSTPONED);
-        newCard.addSentence("Test sentence");
+        newCard.addStrSentence("Test sentence");
         newCard.addCollocation("Test collocation");
         newCard.setInsertedAt(Instant.now());
 
@@ -68,7 +68,7 @@ public class CardDaoTest extends BaseDaoTest {
         updatedCard.setStatus(CardStatus.LEARNT);
         updatedCard.setScore(100);
         updatedCard.setUpdatedAt(Instant.now());
-        updatedCard.addSentence("Test sentence");
+        updatedCard.addStrSentence("Test sentence");
         updatedCard.addCollocation("Test collocation");
         updatedCard.setInsertedAt(Instant.now());
 
@@ -171,11 +171,11 @@ public class CardDaoTest extends BaseDaoTest {
         assertCollocations(actual.getCollocations(), cardDao.getCollocationsFor(actual.getId()));
     }
 
-    private static void assertSentences(List<String> expectedSentences, List<Sentence> actualSentences) {
+    private static void assertSentences(List<Sentence> expectedSentences, List<Sentence> actualSentences) {
         assertNotNull(actualSentences);
 
         for (int i = 0; i < expectedSentences.size(); i++) {
-            String expected = expectedSentences.get(i);
+            String expected = expectedSentences.get(i).getExample();
             Sentence actual = actualSentences.get(i);
             assertEquals(expected, actual.getExample());
             assertTrue(actual.getCardId() > 2, "actual: " + actual.getCardId());
