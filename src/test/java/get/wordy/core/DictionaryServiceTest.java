@@ -367,7 +367,7 @@ public class DictionaryServiceTest {
         cardMock.setDictionaryId(DICTIONARY_ID);
         cardMock.setWordId(1);
         cardMock.setInsertedAt(anyObject(Instant.class));
-        expect(cardMock.getSentences()).andReturn(List.of("Test sentence"));
+        expect(cardMock.getStrSentences()).andReturn(List.of("Test sentence"));
         expect(cardMock.getCollocations()).andReturn(List.of("Test collocation"));
         replay(cardMock);
 

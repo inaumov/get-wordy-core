@@ -1,9 +1,6 @@
 package get.wordy.dao.impl;
 
-import get.wordy.core.api.bean.Card;
-import get.wordy.core.api.bean.CardStatus;
-import get.wordy.core.api.bean.Exercise;
-import get.wordy.core.api.bean.Word;
+import get.wordy.core.api.bean.*;
 import get.wordy.core.dao.impl.CardHeadlineDao;
 import get.wordy.dao.config.SpringJdbcConfig;
 import org.junit.jupiter.api.Test;
@@ -46,6 +43,7 @@ public class CardHeadlineDaoTest {
 
         String formattedInstant = DATE_TIME_FORMATTER.format(card.getInsertedAt());
 
+        List<String> sentences = card.getStrSentences();
         assertAll(
                 "Grouped assertions of Card Headline",
                 () -> assertThat(card.getId()).isEqualTo(1),
@@ -55,9 +53,9 @@ public class CardHeadlineDaoTest {
                 () -> assertThat(formattedInstant).isEqualTo("2014-08-17 17:40:03"),
                 () -> assertThat(card.getUpdatedAt()).isNotNull(),
 
-                () -> assertEquals(3, card.getSentences().size()),
-                () -> assertEquals("sentence1", card.getSentences().getFirst()),
-                () -> assertEquals("sentence4", card.getSentences().getLast()),
+                () -> assertEquals(3, sentences.size()),
+                () -> assertEquals("sentence1", sentences.getFirst()),
+                () -> assertEquals("sentence4", sentences.getLast()),
 
                 () -> assertEquals(1, card.getCollocations().size()),
                 () -> assertEquals("collocation1", card.getCollocations().getFirst())
@@ -86,6 +84,7 @@ public class CardHeadlineDaoTest {
 
         String formattedInstant = DATE_TIME_FORMATTER.format(card.getInsertedAt());
 
+        List<String> sentences = card.getStrSentences();
         assertAll(
                 "Grouped assertions of Card Headline",
                 () -> assertThat(card.getId()).isEqualTo(1),
@@ -95,9 +94,9 @@ public class CardHeadlineDaoTest {
                 () -> assertThat(formattedInstant).isEqualTo("2014-08-17 17:40:03"),
                 () -> assertThat(card.getUpdatedAt()).isNotNull(),
 
-                () -> assertEquals(3, card.getSentences().size()),
-                () -> assertEquals("sentence1", card.getSentences().getFirst()),
-                () -> assertEquals("sentence4", card.getSentences().getLast()),
+                () -> assertEquals(3, sentences.size()),
+                () -> assertEquals("sentence1", sentences.getFirst()),
+                () -> assertEquals("sentence4", sentences.getLast()),
 
                 () -> assertEquals(1, card.getCollocations().size()),
                 () -> assertEquals("collocation1", card.getCollocations().getFirst())

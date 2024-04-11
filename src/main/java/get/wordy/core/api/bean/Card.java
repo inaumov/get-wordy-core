@@ -17,7 +17,7 @@ public class Card {
     private Instant insertedAt;
     private Instant updatedAt;
     private Word word;
-    private final List<String> sentences = new ArrayList<>();
+    private final List<Sentence> sentences = new ArrayList<>();
     private final List<String> collocations = new ArrayList<>();
 
     public int getId() {
@@ -87,17 +87,36 @@ public class Card {
         this.word = word;
     }
 
-    public List<String> getSentences() {
+    public List<Sentence> getSentences() {
         return List.copyOf(sentences);
     }
 
-    public void addSentence(String sentence) {
+    public List<String> getStrSentences() {
+        return sentences
+                .stream()
+                .map(Sentence::getExample)
+                .toList();
+    }
+
+    public void addSentence(Sentence sentence) {
         sentences.add(sentence);
     }
 
-    public void setSentences(List<String> sentences) {
+    public void addStrSentence(String sentence) {
+        sentences.add(Sentence.of(sentence));
+    }
+
+    public void setSentences(List<Sentence> sentences) {
         this.sentences.clear();
         this.sentences.addAll(sentences);
+    }
+
+    public void setStrSentences(List<String> strSentences) {
+        this.sentences.clear();
+        this.sentences.addAll(strSentences
+                .stream()
+                .map(Sentence::of)
+                .toList());
     }
 
     public List<String> getCollocations() {

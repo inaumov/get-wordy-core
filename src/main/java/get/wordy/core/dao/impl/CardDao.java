@@ -63,7 +63,7 @@ public class CardDao extends BaseDao<Card> {
             ResultSet resultSet = statement.getGeneratedKeys();
             if (resultSet.next()) {
                 int cardId = resultSet.getInt(1);
-                insertSentences(cardId, card.getWordId(), card.getSentences());
+                insertSentences(cardId, card.getWordId(), card.getStrSentences());
                 insertCollocations(cardId, card.getWordId(), card.getCollocations());
                 card.setId(cardId);
             }
@@ -161,7 +161,7 @@ public class CardDao extends BaseDao<Card> {
         deleteFromContext(card.getId());
         deleteFromCollocations(card.getId());
 
-        insertSentences(card.getId(), card.getWordId(), card.getSentences());
+        insertSentences(card.getId(), card.getWordId(), card.getStrSentences());
         insertCollocations(card.getId(), card.getWordId(), card.getCollocations());
 
         return card;
