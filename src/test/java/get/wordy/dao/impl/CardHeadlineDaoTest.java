@@ -12,6 +12,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -145,6 +146,28 @@ public class CardHeadlineDaoTest {
                 () -> assertEquals("noun", word.getPartOfSpeech()),
                 () -> assertEquals("a word in dic 1", word.getMeaning())
         );
+    }
+
+    @Test
+    void getSentencesFor() {
+        // Define test data
+        int cardIdExpected = 1;
+        int[] cardIds = {1, 3, 4};
+
+        // Execute DAO method
+        Map<Integer, List<Sentence>> result = cardHeadlineDao.getSentencesFor(cardIds);
+
+        assertEquals(1, result.size());
+        assertTrue(result.containsKey(cardIdExpected));
+        // Assert sentences
+        List<String> sentences = result.get(cardIdExpected)
+                .stream()
+                .map(Sentence::getExample)
+                .toList();
+        assertEquals(3, sentences.size());
+        assertTrue(sentences.contains("sentence1"));
+        assertTrue(sentences.contains("sentence3"));
+        assertTrue(sentences.contains("sentence4"));
     }
 
 }

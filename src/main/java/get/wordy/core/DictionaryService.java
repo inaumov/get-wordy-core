@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class DictionaryService implements IDictionaryService {
 
@@ -171,13 +172,40 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public List<Exercise> getCardsForExercise(int dictionaryId, int limit) {
-        List<Exercise> exercises;
+        List<Exercise> exercises = new ArrayList<>();
         try {
             connection.open();
             int[] cardIds = cardDao.selectCardIdsForExercise(dictionaryId, limit);
-            // todo: check in cash and convert from card
-            exercises = cardHeadlineDao.getCardsForExercise(cardIds);
-            connection.commit();
+            LOG.info("Selected card ids for exercise from database = {}", cardIds);
+            if (cardIds == null || cardIds.length == 0) {
+                return Collections.emptyList();
+            }
+
+            // check if cards are in the cache
+            int[] cardsInCache = IntStream.of(cardIds)
+                    .filter(cardsCache::containsKey)
+                    .toArray();
+            boolean allCached = cardsInCache.length == cardIds.length;
+
+            if (allCached) { // get only actual sentences from database for cached cards
+                LOG.debug("Get actual sentences from database for cached cards = {}", cardsInCache);
+                Map<Integer, List<Sentence>> missingSentences = cardHeadlineDao.getSentencesFor(cardIds);
+                connection.commit();
+                for (Integer id : cardIds) {
+                    Card card = cardsCache.get(id);
+                    Exercise exercise = new Exercise();
+                    exercise.setCardId(card.getId());
+                    exercise.setWordId(card.getWord().getId());
+                    exercise.setWord(card.getWord());
+                    exercise.setSentences(missingSentences.get(id));
+                    exercises.add(exercise);
+                }
+            } else { // get all in case NOT fully present in cache
+                LOG.debug("Get cards for exercise from database for ids = {}", cardIds);
+                List<Exercise> cardsForExercise = cardHeadlineDao.getCardsForExercise(cardIds);
+                connection.commit();
+                exercises.addAll(cardsForExercise);
+            }
         } catch (DaoException e) {
             LOG.error("Error while loading exercise cards set for dictionary, id = {}", dictionaryId, e);
             return Collections.emptyList();

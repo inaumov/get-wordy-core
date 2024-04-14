@@ -305,30 +305,80 @@ public class DictionaryServiceTest {
     }
 
     @Test
-    public void testGetCardsForExercise() throws Exception {
+    public void testGetCardsForExercise_Full() throws Exception {
         replayTxCommited();
 
         Dictionary dictionaryMock = createDictionaryMock();
         replay(dictionaryMock);
         addDictionaryToCache(dictionaryMock);
 
-        int[] ids = {8, 1, 3};
+        int[] selectedIds = {8, 1, 3};
         expect(cardDaoMock.selectCardIdsForExercise(anyInt(), anyInt()))
-                .andReturn(ids)
+                .andReturn(selectedIds)
                 .once();
 
-        int[] all = {1, 2, 3, 5, 8, 13};
-        for (int id : all) {
+        int[] inCache = {2, 5, 13};
+        for (int cardId : inCache) {
             Card cardMock = strictMock(Card.class);
-            addCardToCache(id, cardMock);
+            addCardToCache(cardId, cardMock);
         }
-        expect(headlineDaoMock.getCardsForExercise(ids))
+        expect(headlineDaoMock.getCardsForExercise(selectedIds))
                 .andReturn(Collections.nCopies(3, niceMock(Exercise.class)));
 
         replay(cardDaoMock, headlineDaoMock);
 
         List<Exercise> cards = dictionaryService.getCardsForExercise(1, 10);
         assertEquals(3, cards.size());
+        verify(cardDaoMock, headlineDaoMock);
+    }
+
+    @Test
+    public void testGetCardsForExercise_SentencesOnly() throws Exception {
+        replayTxCommited();
+
+        Dictionary dictionaryMock = createDictionaryMock();
+        replay(dictionaryMock);
+        addDictionaryToCache(dictionaryMock);
+
+        int[] selectedIds = {8, 1, 3};
+        expect(cardDaoMock.selectCardIdsForExercise(anyInt(), anyInt()))
+                .andReturn(selectedIds)
+                .once();
+
+        int[] inCache = {1, 2, 3, 5, 8, 13};
+        for (int cardId : inCache) {
+            int wordId = new Random().nextInt(101);
+            Word wordMock = niceMock(Word.class);
+            expect(wordMock.getId()).andReturn(wordId);
+            replay(wordMock);
+
+            Card cardMock = strictMock(Card.class);
+            expect(cardMock.getId()).andReturn(cardId);
+            expect(cardMock.getWord()).andReturn(wordMock).times(2);
+            cardMock.setWord(wordMock);
+            expectLastCall().once();
+            replay(cardMock);
+
+            addCardToCache(cardId, cardMock);
+        }
+        expect(headlineDaoMock.getSentencesFor(selectedIds))
+                .andReturn(Map.of(
+                        1, Collections.nCopies(1, niceMock(Sentence.class)),
+                        3, Collections.nCopies(2, niceMock(Sentence.class)),
+                        8, Collections.nCopies(1, niceMock(Sentence.class))
+                ));
+
+        replay(cardDaoMock, headlineDaoMock);
+
+        List<Exercise> cards = dictionaryService.getCardsForExercise(1, 10);
+        assertEquals(3, cards.size());
+        for (Exercise card : cards) {
+            assertTrue(card.getCardId() > 0);
+            assertTrue(card.getWordId() > 0);
+            assertNotNull(card.getWord());
+            assertFalse(card.getSentences().isEmpty());
+        }
+        verify(cardDaoMock, headlineDaoMock);
     }
 
     @Test
