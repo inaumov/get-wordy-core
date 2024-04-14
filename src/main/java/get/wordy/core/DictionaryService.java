@@ -194,19 +194,20 @@ public class DictionaryService implements IDictionaryService {
             Word word = wordDao.insert(card.getWord());
             card.setDictionaryId(dictionaryId);
             card.setWordId(word.getId());
+            card.setWord(word);
             card.setInsertedAt(Instant.now());
             Card insertedCard = cardDao.insert(card);
 
             connection.commit();
             int cardId = insertedCard.getId();
             if (cardId > 0) {
-                cardsCache.put(cardId, card);
+                cardsCache.put(cardId, insertedCard);
                 return insertedCard;
             } else {
                 throw new DictionaryServiceException();
             }
         } catch (DaoException e) {
-            LOG.error("Error while saving a card into dictionary",  e);
+            LOG.error("Error while saving a card into dictionary", e);
             connection.rollback();
             throw new DictionaryServiceException();
         } finally {
@@ -217,23 +218,30 @@ public class DictionaryService implements IDictionaryService {
     @Override
     public Card updateCard(int dictionaryId, Card card) {
         int cardId = card.getId();
-        Card oldCard = findCardById(cardId);
+        Card cachedCard = findCardById(cardId);
+        Word cachedWord = cachedCard.getWord();
 
-        if (card.equals(oldCard)) {
+        Word word = card.getWord();
+        boolean sameWord = Objects.equals(word, cachedWord);
+        boolean sameCard = Objects.equals(card, cachedCard);
+        if (sameWord && sameCard) {
             return card;
         }
 
         try {
             connection.open();
-
-            Word word = card.getWord();
-            if (!word.equals(oldCard.getWord())) {
-                wordDao.update(word);
+            if (!sameWord) {
+                Word updatedWord = wordDao.update(word);
+                // sync both
+                card.setWord(updatedWord);
+                cachedCard.setWord(updatedWord);
             }
-            cardDao.update(card);
+            if (!sameCard) {
+                Card updatedCard = cardDao.update(card);
+                // refresh in cache if only needed
+                cardsCache.put(cardId, updatedCard);
+            }
             connection.commit();
-
-            cardsCache.put(cardId, card);
 
         } catch (DaoException e) {
             LOG.error("Error while updating card, id = {}", cardId, e);
