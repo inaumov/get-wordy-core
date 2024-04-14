@@ -362,18 +362,19 @@ public class DictionaryServiceTest {
         Word wordMock = strictMock(Word.class);
         replay(wordMock);
 
+        Word insertedWordMock = strictMock(Word.class);
+        expect(insertedWordMock.getId()).andReturn(1);
+        replay(insertedWordMock);
+
         Card cardMock = strictMock(Card.class);
         expect(cardMock.getWord()).andReturn(wordMock);
         cardMock.setDictionaryId(DICTIONARY_ID);
         cardMock.setWordId(1);
+        cardMock.setWord(insertedWordMock);
         cardMock.setInsertedAt(anyObject(Instant.class));
         expect(cardMock.getStrSentences()).andReturn(List.of("Test sentence"));
         expect(cardMock.getCollocations()).andReturn(List.of("Test collocation"));
         replay(cardMock);
-
-        Word insertedWordMock = strictMock(Word.class);
-        expect(insertedWordMock.getId()).andReturn(1);
-        replay(insertedWordMock);
 
         Card insertedCardMock = strictMock(Card.class);
         expect(insertedCardMock.getId()).andReturn(1);
@@ -400,6 +401,8 @@ public class DictionaryServiceTest {
 
         Card cardMock = strictMock(Card.class);
         expect(cardMock.getWord()).andReturn(wordMock);
+        cardMock.setWord(wordMock);
+        expectLastCall().once();
         replay(cardMock);
         addCardToCache(1, cardMock);
 
@@ -410,6 +413,8 @@ public class DictionaryServiceTest {
         Card cardForUpdMock = strictMock(Card.class);
         expect(cardForUpdMock.getId()).andReturn(1);
         expect(cardForUpdMock.getWord()).andReturn(wordForUpdMock);
+        cardForUpdMock.setWord(wordMock);
+        expectLastCall().once();
         replay(cardForUpdMock);
 
         wordDaoMock.update(wordForUpdMock);
