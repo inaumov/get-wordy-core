@@ -2,6 +2,8 @@ package get.wordy.core.dao.impl;
 
 import get.wordy.core.api.bean.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -11,8 +13,11 @@ import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Repository
 public class CardHeadlineDao {
@@ -94,6 +99,8 @@ public class CardHeadlineDao {
                 cards.id, words.id;
             """;
 
+    private static final String SELECT_FROM_CONTEXT_QUERY = "SELECT * FROM context WHERE card_id in (:cardIds)";
+
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Autowired
@@ -118,6 +125,15 @@ public class CardHeadlineDao {
                 .toList();
         parameters.addValue("cardIds", integers);
         return jdbcTemplate.query(GET_CARDS_FOR_EXERCISE, parameters, new ExerciseRowMapper());
+    }
+
+    public Map<Integer, List<Sentence>> getSentencesFor(int... cardIds) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        List<Integer> integers = Arrays.stream(cardIds)
+                .boxed()
+                .toList();
+        parameters.addValue("cardIds", integers);
+        return jdbcTemplate.query(SELECT_FROM_CONTEXT_QUERY, parameters, new SentencesMapper());
     }
 
     private static class FullCardRowMapper implements RowMapper<Card> {
@@ -190,6 +206,23 @@ public class CardHeadlineDao {
             return Arrays.stream(cardSentences)
                     .map(s -> new Sentence(s, cardId))
                     .toList();
+        }
+    }
+
+    private static class SentencesMapper implements ResultSetExtractor<Map<Integer, List<Sentence>>> {
+
+        @Override
+        public Map<Integer, List<Sentence>> extractData(ResultSet rs) throws SQLException, DataAccessException {
+            List<Sentence> result = new ArrayList<>();
+            while (rs.next()) {
+                int cardId = rs.getInt("card_id");
+                String example = rs.getString("example");
+                Sentence sentence = new Sentence(example, cardId);
+                result.add(sentence);
+            }
+            return result
+                    .stream()
+                    .collect(Collectors.groupingBy(Sentence::getCardId));
         }
     }
 
