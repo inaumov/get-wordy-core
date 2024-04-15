@@ -1,5 +1,7 @@
 package get.wordy.core.api.bean;
 
+import java.util.Objects;
+
 public class Word {
     private int id;
     private String value;
@@ -40,6 +42,23 @@ public class Word {
 
     public Word withId(int id) {
         return new Word(id, value, partOfSpeech, transcription, meaning);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Word that = (Word) o;
+        return id == that.id
+                && Objects.equals(value, that.value)
+                && Objects.equals(partOfSpeech, that.partOfSpeech)
+                && Objects.equals(transcription, that.transcription)
+                && Objects.equals(meaning, that.meaning);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, value, partOfSpeech, transcription, meaning);
     }
 
 }

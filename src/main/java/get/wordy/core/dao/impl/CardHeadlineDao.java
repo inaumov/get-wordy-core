@@ -25,6 +25,7 @@ public class CardHeadlineDao {
     private static final String ALL_JOINS_QUERY = """
             SELECT
                 cards.id AS card_id,
+                cards.dictionary_id AS dictionary_id,
                 cards.status,
                 cards.score,
                 cards.create_time,
@@ -53,6 +54,7 @@ public class CardHeadlineDao {
     private static final String GET_CARD_HEADLINE = """
             SELECT
                 cards.id AS card_id,
+                cards.dictionary_id AS dictionary_id,
                 cards.status,
                 cards.score,
                 cards.create_time,
@@ -141,12 +143,14 @@ public class CardHeadlineDao {
         @Override
         public Card mapRow(ResultSet rs, int rowNum) throws SQLException {
             int cardId = rs.getInt("card_id");
+            int dictionaryId = rs.getInt("dictionary_id");
             String status = rs.getString("status");
             int score = rs.getInt("score");
             int wordId = rs.getInt("word_id");
 
             Card cardData = new Card();
             cardData.setId(cardId);
+            cardData.setDictionaryId(dictionaryId);
             cardData.setStatus(CardStatus.valueOf(status));
             cardData.setScore(score);
             cardData.setWordId(wordId);
