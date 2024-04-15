@@ -10,17 +10,17 @@ import java.util.*;
 
 public class CardDao extends BaseDao<Card> {
 
-    public static final String INSERT_CARD_QUERY = """
+    private static final String INSERT_CARD_QUERY = """
             INSERT INTO cards (dictionary_id, word_id, status) VALUES (?,?,?)
             """;
-    public static final String GENERATE_EMPTY_CARDS_QUERY = """
+    private static final String GENERATE_EMPTY_CARDS_QUERY = """
             INSERT INTO cards (dictionary_id, word_id) VALUES (?,?)
             """;
-    public static final String DELETE_CARD_QUERY = "DELETE FROM cards WHERE id=?";
-    public static final String UPDATE_CARD_QUERY = """
+    private static final String DELETE_CARD_QUERY = "DELETE FROM cards WHERE id=?";
+    private static final String UPDATE_CARD_QUERY = """
             UPDATE cards SET status=?,score=?,word_id=?,dictionary_id=?,last_update_time=NOW() WHERE id=?
             """;
-    public static final String SELECT_CARD_QUERY = """
+    private static final String SELECT_CARD_QUERY = """
             SELECT id, status, score, create_time, last_update_time, word_id, dictionary_id FROM cards WHERE id=?
             """;
     private static final String RESET_SCORE_QUERY = """
@@ -28,6 +28,9 @@ public class CardDao extends BaseDao<Card> {
             """;
     private static final String UPDATE_STATUS_QUERY = """
             UPDATE cards SET status=?,score=?, last_update_time=NOW() WHERE id=?
+            """;
+    private static final String UPDATE_TIME_QUERY = """
+            UPDATE cards SET last_update_time=NOW() WHERE id=?
             """;
     private static final String SCORE_SUMMARY_QUERY = """
             SELECT status, COUNT(status) FROM cards WHERE dictionary_id=? GROUP BY status
@@ -153,6 +156,23 @@ public class CardDao extends BaseDao<Card> {
             statement.setInt(3, card.getWordId());
             statement.setInt(4, card.getDictionaryId());
             statement.setInt(5, card.getId());
+            statement.executeUpdate();
+        } catch (SQLException ex) {
+            throw new DaoException("Error while updating card record", ex);
+        }
+
+        deleteFromContext(card.getId());
+        deleteFromCollocations(card.getId());
+
+        insertSentences(card.getId(), card.getWordId(), card.getStrSentences());
+        insertCollocations(card.getId(), card.getWordId(), card.getCollocations());
+
+        return card;
+    }
+
+    public Card updateRelations(Card card) throws DaoException {
+        try (var statement = prepareStatement(UPDATE_TIME_QUERY)) {
+            statement.setInt(1, card.getId());
             statement.executeUpdate();
         } catch (SQLException ex) {
             throw new DaoException("Error while updating card record", ex);

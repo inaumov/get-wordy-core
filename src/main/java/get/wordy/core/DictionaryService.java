@@ -223,7 +223,6 @@ public class DictionaryService implements IDictionaryService {
             card.setDictionaryId(dictionaryId);
             card.setWordId(word.getId());
             card.setWord(word);
-            card.setInsertedAt(Instant.now());
             Card insertedCard = cardDao.insert(card);
 
             connection.commit();
@@ -246,28 +245,30 @@ public class DictionaryService implements IDictionaryService {
     @Override
     public Card updateCard(int dictionaryId, Card card) {
         int cardId = card.getId();
-        Card cachedCard = findCardById(cardId);
+        // needed for equality test
+        card.setDictionaryId(dictionaryId);
+
+        Card cachedCard = loadFullCardHeadlineFromDb(cardId);
         Word cachedWord = cachedCard.getWord();
 
         Word word = card.getWord();
         boolean sameWord = Objects.equals(word, cachedWord);
         boolean sameCard = Objects.equals(card, cachedCard);
+
         if (sameWord && sameCard) {
+            LOG.debug("Nothing to update in a card {} from dictionary {}. Return", cardId, dictionaryId);
             return card;
         }
 
         try {
             connection.open();
             if (!sameWord) {
-                Word updatedWord = wordDao.update(word);
-                // sync both
-                card.setWord(updatedWord);
-                cachedCard.setWord(updatedWord);
+                word = wordDao.update(word);
+                // sync
+                card.setWord(word);
             }
             if (!sameCard) {
-                Card updatedCard = cardDao.update(card);
-                // refresh in cache if only needed
-                cardsCache.put(cardId, updatedCard);
+                card = cardDao.updateRelations(card);
             }
             connection.commit();
 
@@ -278,6 +279,10 @@ public class DictionaryService implements IDictionaryService {
         } finally {
             connection.close();
         }
+
+        // refresh in cache
+        cardsCache.put(cardId, card);
+
         return card;
     }
 

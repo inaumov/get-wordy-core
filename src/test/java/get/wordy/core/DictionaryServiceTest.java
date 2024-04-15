@@ -80,7 +80,7 @@ public class DictionaryServiceTest {
         connectionMock.open();
         expectLastCall().atLeastOnce();
         connectionMock.close();
-        expectLastCall().once();
+        expectLastCall().atLeastOnce();
         connectionMock.commit();
         expectLastCall().atLeastOnce();
 
@@ -421,7 +421,6 @@ public class DictionaryServiceTest {
         cardMock.setDictionaryId(DICTIONARY_ID);
         cardMock.setWordId(1);
         cardMock.setWord(insertedWordMock);
-        cardMock.setInsertedAt(anyObject(Instant.class));
         expect(cardMock.getStrSentences()).andReturn(List.of("Test sentence"));
         expect(cardMock.getCollocations()).andReturn(List.of("Test collocation"));
         replay(cardMock);
@@ -446,32 +445,36 @@ public class DictionaryServiceTest {
     public void testUpdateCard() throws Exception {
         replayTxCommited();
 
+        int cardId = 1;
         Word wordMock = strictMock(Word.class);
         replay(wordMock);
 
         Card cardMock = strictMock(Card.class);
         expect(cardMock.getWord()).andReturn(wordMock);
-        cardMock.setWord(wordMock);
         expectLastCall().once();
         replay(cardMock);
-        addCardToCache(1, cardMock);
+        addCardToCache(cardId, cardMock);
 
         Word wordForUpdMock = strictMock(Word.class);
         expect(wordForUpdMock.getId()).andReturn(1);
         replay(wordForUpdMock);
 
         Card cardForUpdMock = strictMock(Card.class);
-        expect(cardForUpdMock.getId()).andReturn(1);
+        expect(cardForUpdMock.getId()).andReturn(cardId);
+        cardForUpdMock.setDictionaryId(DICTIONARY_ID);
+        expectLastCall().once();
         expect(cardForUpdMock.getWord()).andReturn(wordForUpdMock);
         cardForUpdMock.setWord(wordMock);
         expectLastCall().once();
         replay(cardForUpdMock);
 
+        headlineDaoMock.getCardById(cardId);
+        expectLastCall().andAnswer(() -> cardMock);
         wordDaoMock.update(wordForUpdMock);
         expectLastCall().andAnswer(() -> wordMock);
-        cardDaoMock.update(cardForUpdMock);
+        cardDaoMock.updateRelations(cardForUpdMock);
         expectLastCall().andAnswer(() -> cardMock);
-        replay(wordDaoMock, cardDaoMock);
+        replay(headlineDaoMock, wordDaoMock, cardDaoMock);
 
         Card done = dictionaryService.updateCard(DICTIONARY_ID, cardForUpdMock);
         assertNotNull(done);

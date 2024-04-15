@@ -82,7 +82,7 @@ public class Card {
 
     public void setWord(Word word) {
         if (wordId != word.getId()) {
-            throw new InconsistentDataException("Card.wordId and Word.Id are not consistent");
+            throw new InconsistentDataException("Card.wordId and Word.id are not consistent");
         }
         this.word = word;
     }
@@ -139,23 +139,16 @@ public class Card {
 
         Card that = (Card) o;
 
-        return Objects.equals(this.id, that.id)
-                && Objects.equals(this.wordId, that.wordId)
-                && Objects.equals(this.dictionaryId, that.dictionaryId)
-                && Objects.equals(this.status, that.status)
-                && Objects.equals(this.score, that.score)
-                && Objects.equals(this.insertedAt, that.insertedAt)
-                && Objects.equals(this.updatedAt, that.updatedAt)
-                && Objects.deepEquals(this.sentences, that.getSentences())
-                && Objects.deepEquals(this.collocations, that.getCollocations());
+        return this.id == that.id
+                && this.wordId == that.wordId
+                && this.dictionaryId == that.dictionaryId
+                && Objects.equals(this.getStrSentences(), that.getStrSentences())
+                && Objects.equals(this.collocations, that.collocations);
     }
 
     @Override
     public int hashCode() {
-        int result = id;
-        result = 31 * result + wordId;
-        result = 31 * result + dictionaryId;
-        return result;
+        return Objects.hash(id, wordId, dictionaryId, getStrSentences(), collocations);
     }
 
 }
