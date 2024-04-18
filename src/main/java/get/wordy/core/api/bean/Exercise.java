@@ -1,5 +1,7 @@
 package get.wordy.core.api.bean;
 
+import org.springframework.util.CollectionUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,10 +41,17 @@ public class Exercise {
     }
 
     public void addSentence(Sentence sentence) {
+        if (sentence == null) {
+            return;
+        }
         sentences.add(sentence);
     }
 
     public void setSentences(List<Sentence> sentences) {
+        if (CollectionUtils.isEmpty(sentences)) {
+            this.sentences.clear();
+            return;
+        }
         this.sentences.clear();
         this.sentences.addAll(sentences);
     }

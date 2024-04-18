@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -198,7 +199,8 @@ public class DictionaryService implements IDictionaryService {
                     exercise.setCardId(card.getId());
                     exercise.setWordId(card.getWord().getId());
                     exercise.setWord(card.getWord());
-                    exercise.setSentences(missingSentences.get(id));
+                    Optional.ofNullable(missingSentences.get(id))
+                            .ifPresent(exercise::setSentences);
                     exercises.add(exercise);
                 }
             } else { // get all in case NOT fully present in cache
