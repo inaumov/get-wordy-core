@@ -13,7 +13,7 @@ public class CardTest {
         card1.setId(1);
         card1.setDictionaryId(100);
         card1.setWordId(200);
-        card1.addStrSentence("Sentence 1");
+        card1.addSentence(Sentence.of("Sentence test 1").withMatchedWords("test"));
         card1.addStrSentence("Sentence 2");
         card1.addCollocation("Collocation 1");
         card1.addCollocation("Collocation 2");
@@ -22,7 +22,7 @@ public class CardTest {
         card2.setId(1);
         card2.setDictionaryId(100);
         card2.setWordId(200);
-        card2.addStrSentence("Sentence 1");
+        card2.addSentence(new Sentence("Sentence test 1", 53).withMatchedWords("test"));
         card2.addStrSentence("Sentence 2");
         card2.addCollocation("Collocation 1");
         card2.addCollocation("Collocation 2");
@@ -47,7 +47,7 @@ public class CardTest {
         card2.setId(1);
         card2.setDictionaryId(100);
         card2.setWordId(200);
-        card2.addStrSentence("Sentence 11"); // Different
+        card2.addSentence(new Sentence("Sentence 1", 53).withMatchedWords("test")); // Different
         card2.addStrSentence("Sentence 2");
         card2.addCollocation("Collocation 1");
         card2.addCollocation("Collocation 2");

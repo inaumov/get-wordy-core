@@ -1,10 +1,12 @@
 package get.wordy.core.api.bean;
 
+import java.util.Objects;
+
 public class Sentence {
 
     private String example;
-    private String matchedWord;
     private int cardId;
+    private String matchedWords;
 
     public Sentence(String fullSentence) {
         this.example = fullSentence;
@@ -23,12 +25,8 @@ public class Sentence {
         this.example = example;
     }
 
-    public String getMatchedWord() {
-        return matchedWord;
-    }
-
-    public void setMatchedWord(String matchedWord) {
-        this.matchedWord = matchedWord;
+    public String getMatchedWords() {
+        return matchedWords;
     }
 
     public int getCardId() {
@@ -39,8 +37,29 @@ public class Sentence {
         this.cardId = cardId;
     }
 
+    public Sentence withMatchedWords(String matchedWords) {
+        this.matchedWords = matchedWords;
+        return this;
+    }
+
     public static Sentence of(String fullSentence) {
         return new Sentence(fullSentence);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Sentence sentence = (Sentence) o;
+
+        return Objects.equals(example, sentence.example)
+                && Objects.equals(matchedWords, sentence.matchedWords);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(example, matchedWords);
     }
 
 }

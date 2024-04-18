@@ -43,7 +43,7 @@ public class CardDao extends BaseDao<Card> {
             """;
 
     // context and collocations
-    private static final String INSERT_SENTENCE_QUERY = "INSERT INTO context (card_id, example, word_id) VALUES (?,?,?)";
+    private static final String INSERT_SENTENCE_QUERY = "INSERT INTO context (card_id, example, word_id, matched_words) VALUES (?,?,?,?)";
     private static final String INSERT_COLLOCATIONS_QUERY = "INSERT INTO collocations (card_id, example, word_id) VALUES (?,?,?)";
     private static final String SELECT_FROM_CONTEXT_QUERY = "SELECT * FROM context WHERE card_id=?";
     private static final String SELECT_COLLOCATIONS_QUERY = "SELECT * FROM collocations WHERE card_id=?";
@@ -66,7 +66,7 @@ public class CardDao extends BaseDao<Card> {
             ResultSet resultSet = statement.getGeneratedKeys();
             if (resultSet.next()) {
                 int cardId = resultSet.getInt(1);
-                insertSentences(cardId, card.getWordId(), card.getStrSentences());
+                insertSentences(cardId, card.getWordId(), card.getSentences());
                 insertCollocations(cardId, card.getWordId(), card.getCollocations());
                 card.setId(cardId);
             }
@@ -96,12 +96,13 @@ public class CardDao extends BaseDao<Card> {
         }
     }
 
-    private Set<Sentence> insertSentences(int cardId, int wordId, List<String> sentences) throws DaoException {
+    private Set<Sentence> insertSentences(int cardId, int wordId, List<Sentence> sentences) throws DaoException {
         try (var statement = prepareStatementForInsert(INSERT_SENTENCE_QUERY)) {
-            for (String sentence : sentences) {
+            for (Sentence sentence : sentences) {
                 statement.setInt(1, cardId);
-                statement.setString(2, sentence);
+                statement.setString(2, sentence.getExample());
                 statement.setInt(3, wordId);
+                statement.setString(4, sentence.getMatchedWords());
                 statement.addBatch();
             }
             statement.executeBatch();
@@ -164,7 +165,7 @@ public class CardDao extends BaseDao<Card> {
         deleteFromContext(card.getId());
         deleteFromCollocations(card.getId());
 
-        insertSentences(card.getId(), card.getWordId(), card.getStrSentences());
+        insertSentences(card.getId(), card.getWordId(), card.getSentences());
         insertCollocations(card.getId(), card.getWordId(), card.getCollocations());
 
         return card;
@@ -181,7 +182,7 @@ public class CardDao extends BaseDao<Card> {
         deleteFromContext(card.getId());
         deleteFromCollocations(card.getId());
 
-        insertSentences(card.getId(), card.getWordId(), card.getStrSentences());
+        insertSentences(card.getId(), card.getWordId(), card.getSentences());
         insertCollocations(card.getId(), card.getWordId(), card.getCollocations());
 
         return card;

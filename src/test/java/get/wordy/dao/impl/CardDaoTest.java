@@ -37,7 +37,9 @@ public class CardDaoTest extends BaseDaoTest {
         newCard.setDictionaryId(2);
         newCard.setScore(10);
         newCard.setStatus(CardStatus.POSTPONED);
-        newCard.addStrSentence("Test sentence");
+        Sentence testSentence = Sentence.of("Test sentence")
+                .withMatchedWords("test");
+        newCard.addSentence(testSentence);
         newCard.addCollocation("Test collocation");
         newCard.setInsertedAt(Instant.now());
 
@@ -68,7 +70,10 @@ public class CardDaoTest extends BaseDaoTest {
         updatedCard.setStatus(CardStatus.LEARNT);
         updatedCard.setScore(100);
         updatedCard.setUpdatedAt(Instant.now());
-        updatedCard.addStrSentence("Test sentence");
+        Sentence testSentence = Sentence.of("Test sentence")
+                .withMatchedWords("test");
+        updatedCard.addSentence(testSentence);
+        updatedCard.addStrSentence("Test sentence 2");
         updatedCard.addCollocation("Test collocation");
         updatedCard.setInsertedAt(Instant.now());
 

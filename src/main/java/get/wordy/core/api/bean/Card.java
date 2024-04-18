@@ -142,13 +142,13 @@ public class Card {
         return this.id == that.id
                 && this.wordId == that.wordId
                 && this.dictionaryId == that.dictionaryId
-                && Objects.equals(this.getStrSentences(), that.getStrSentences())
+                && Objects.equals(this.sentences, that.sentences)
                 && Objects.equals(this.collocations, that.collocations);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, wordId, dictionaryId, getStrSentences(), collocations);
+        return Objects.hash(id, wordId, dictionaryId, sentences, collocations);
     }
 
 }

@@ -1,0 +1,3 @@
+ALTER TABLE context
+    ADD COLUMN matched_words VARCHAR(255),
+    ALTER COLUMN example TYPE VARCHAR(500);
