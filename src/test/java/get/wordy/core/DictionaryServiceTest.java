@@ -414,6 +414,9 @@ public class DictionaryServiceTest {
 
         Word insertedWordMock = strictMock(Word.class);
         expect(insertedWordMock.getId()).andReturn(1);
+        expect(insertedWordMock.getValue()).andReturn("banana");
+        expect(insertedWordMock.getPartOfSpeech()).andReturn("noun");
+        expect(insertedWordMock.getMeaning()).andReturn(null);
         replay(insertedWordMock);
 
         Card cardMock = strictMock(Card.class);

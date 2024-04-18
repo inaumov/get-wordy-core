@@ -15,6 +15,7 @@ import get.wordy.core.api.exception.DictionaryNotFoundException;
 import get.wordy.core.api.bean.wrapper.Score;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.*;
@@ -223,6 +224,9 @@ public class DictionaryService implements IDictionaryService {
             card.setDictionaryId(dictionaryId);
             card.setWordId(word.getId());
             card.setWord(word);
+            if (isReadyToLearn(word)) {
+                card.setStatus(CardStatus.TO_LEARN);
+            }
             Card insertedCard = cardDao.insert(card);
 
             connection.commit();
@@ -240,6 +244,12 @@ public class DictionaryService implements IDictionaryService {
         } finally {
             connection.close();
         }
+    }
+
+    private static boolean isReadyToLearn(Word word) {
+        return StringUtils.hasText(word.getValue())
+                && StringUtils.hasText(word.getPartOfSpeech())
+                && StringUtils.hasText(word.getMeaning());
     }
 
     @Override
