@@ -1,6 +1,7 @@
 package get.wordy.core.dao.impl;
 
 import get.wordy.core.api.bean.*;
+import get.wordy.core.dao.impl.helper.SentenceParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ResultSetExtractor;
@@ -88,7 +89,10 @@ public class CardHeadlineDao {
                 words.part_of_speech,
                 words.transcription,
                 words.meaning,
-                array_remove(array_agg(DISTINCT context.example), NULL) AS card_sentences
+                array_remove(
+                    array_agg(DISTINCT 'example:' || context.example || ';' || 'matchedWords:' || context.matched_words),
+                    NULL
+                ) AS exercise_sentences
             FROM
                 cards
                     JOIN
@@ -200,15 +204,16 @@ public class CardHeadlineDao {
                     rs.getString("meaning"));
             exercise.setWord(word);
 
-            Array cardSentencesArr = rs.getArray("card_sentences");
-            exercise.setSentences(asModelList(cardId, (String[]) cardSentencesArr.getArray()));
+            Array exerciseSentencesArr = rs.getArray("exercise_sentences");
+            exercise.setSentences(asModelList((String[]) exerciseSentencesArr.getArray()));
 
             return exercise;
         }
 
-        private static List<Sentence> asModelList(int cardId, String[] cardSentences) {
-            return Arrays.stream(cardSentences)
-                    .map(s -> new Sentence(s, cardId))
+        private static List<Sentence> asModelList(String[] exerciseSentences) {
+            final SentenceParser parser = new SentenceParser();
+            return Arrays.stream(exerciseSentences)
+                    .map(parser::parseSentence)
                     .toList();
         }
     }

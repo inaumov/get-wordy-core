@@ -55,8 +55,8 @@ public class CardHeadlineDaoTest {
                 () -> assertThat(card.getUpdatedAt()).isNotNull(),
 
                 () -> assertEquals(3, sentences.size()),
-                () -> assertEquals("sentence1", sentences.getFirst()),
-                () -> assertEquals("sentence4", sentences.getLast()),
+                () -> assertEquals("Test sentence 1", sentences.getFirst()),
+                () -> assertEquals("Test sentence 4", sentences.getLast()),
 
                 () -> assertEquals(1, card.getCollocations().size()),
                 () -> assertEquals("collocation1", card.getCollocations().getFirst())
@@ -96,8 +96,8 @@ public class CardHeadlineDaoTest {
                 () -> assertThat(card.getUpdatedAt()).isNotNull(),
 
                 () -> assertEquals(3, sentences.size()),
-                () -> assertEquals("sentence1", sentences.getFirst()),
-                () -> assertEquals("sentence4", sentences.getLast()),
+                () -> assertEquals("Test sentence 1", sentences.getFirst()),
+                () -> assertEquals("Test sentence 4", sentences.getLast()),
 
                 () -> assertEquals(1, card.getCollocations().size()),
                 () -> assertEquals("collocation1", card.getCollocations().getFirst())
@@ -131,10 +131,12 @@ public class CardHeadlineDaoTest {
                 () -> assertThat(card.getCardId()).isEqualTo(1),
                 () -> assertThat(card.getWordId()).isEqualTo(1),
 
-                () -> assertEquals(3, card.getSentences().size()),
-                () -> assertEquals("sentence1", card.getSentences().getFirst().getExample()),
-                () -> assertEquals("sentence3", card.getSentences().get(1).getExample()),
-                () -> assertEquals("sentence4", card.getSentences().getLast().getExample())
+                // select only those which has both example and matched words value. as most viable
+                () -> assertEquals(2, card.getSentences().size()),
+                () -> assertEquals("Test sentence 1", card.getSentences().getFirst().getExample()),
+                () -> assertEquals("sentence", card.getSentences().getFirst().getMatchedWords()),
+                () -> assertEquals("Test sentence 4", card.getSentences().getLast().getExample()),
+                () -> assertEquals("sentence", card.getSentences().getLast().getMatchedWords())
         );
         Word word = card.getWord();
         assertNotNull(word);
@@ -165,9 +167,9 @@ public class CardHeadlineDaoTest {
                 .map(Sentence::getExample)
                 .toList();
         assertEquals(3, sentences.size());
-        assertTrue(sentences.contains("sentence1"));
-        assertTrue(sentences.contains("sentence3"));
-        assertTrue(sentences.contains("sentence4"));
+        assertTrue(sentences.contains("Test sentence 1"));
+        assertTrue(sentences.contains("Test sentence 3"));
+        assertTrue(sentences.contains("Test sentence 4"));
     }
 
 }
