@@ -17,7 +17,7 @@ insert into cards (id, score, create_time, last_update_time, dictionary_id, word
 insert into collocations (card_id, example, word_id) values (1, 'collocation1', 1);
 insert into collocations (card_id, example, word_id) values (2, 'collocation2', 2);
 
-insert into context (card_id, example, word_id, matched_words) values (1, 'Test sentence 1', 1, 'sentence');
+insert into context (card_id, example, word_id, matched_words) values (1, 'Test sentence 1', 1, 'sentence 1');
 insert into context (card_id, example, word_id) values (2, 'Test sentence 2', 2);
 insert into context (card_id, example, word_id) values (1, 'Test sentence 3', 1);
-insert into context (card_id, example, word_id, matched_words) values (1, 'Test sentence 4', 1, 'sentence');
+insert into context (card_id, example, word_id, matched_words) values (1, 'Test sentence 4', 1, 'sentence 4');

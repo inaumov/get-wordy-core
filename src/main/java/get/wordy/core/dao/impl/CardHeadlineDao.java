@@ -100,12 +100,12 @@ public class CardHeadlineDao {
                     LEFT JOIN
                 context ON cards.id = context.card_id
             WHERE
-                cards.id in (:cardIds)
+                cards.id IN (:cardIds)
             GROUP BY
                 cards.id, words.id;
             """;
 
-    private static final String SELECT_FROM_CONTEXT_QUERY = "SELECT * FROM context WHERE card_id in (:cardIds)";
+    private static final String SELECT_FROM_CONTEXT_QUERY = "SELECT * FROM context WHERE matched_words IS NOT NULL AND card_id IN (:cardIds)";
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -226,7 +226,9 @@ public class CardHeadlineDao {
             while (rs.next()) {
                 int cardId = rs.getInt("card_id");
                 String example = rs.getString("example");
-                Sentence sentence = new Sentence(example, cardId);
+                String matchedWords = rs.getString("matched_words");
+                Sentence sentence = new Sentence(example, cardId)
+                        .withMatchedWords(matchedWords);
                 result.add(sentence);
             }
             return result
