@@ -627,7 +627,7 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(cardDaoMock);
 
-        boolean done = dictionaryService.increaseScoreUp(1, new int[]{1, 2}, 10);
+        boolean done = dictionaryService.increaseScoreUp(1, new int[]{1, 2, 2, 2, 1}, 10);
         assertTrue(done);
 
         verify(cardMock1, cardDaoMock);

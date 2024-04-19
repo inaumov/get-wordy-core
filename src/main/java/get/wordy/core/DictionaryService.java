@@ -410,8 +410,12 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public boolean increaseScoreUp(final int dictionaryId, int[] cardIds, int repetitions) {
+        // omit duplicates if any
+        int[] uniqueCardIds = Arrays.stream(cardIds)
+                .distinct()
+                .toArray();
         List<Card> cards = new ArrayList<>();
-        for (int cardId : cardIds) {
+        for (int cardId : uniqueCardIds) {
             Card card = findCardById(cardId);
 
             int diff = 100 / repetitions;
