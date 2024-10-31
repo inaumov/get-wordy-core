@@ -3,6 +3,7 @@ package get.wordy.core;
 import get.wordy.core.api.bean.*;
 import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.api.exception.DictionaryNotFoundException;
+import get.wordy.core.api.exception.DictionaryServiceException;
 import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.CardDao;
@@ -18,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.platform.commons.util.ReflectionUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.*;
@@ -238,6 +238,7 @@ public class DictionaryServiceTest {
         replayTxCommited();
 
         Dictionary dictionaryMock = createDictionaryMock();
+        expect(dictionaryMock.getCardsTotal()).andReturn(0); // override
         replay(dictionaryMock);
         addDictionaryToCache(dictionaryMock);
 
@@ -264,10 +265,25 @@ public class DictionaryServiceTest {
     }
 
     @Test
+    public void testDeleteDictionaryWhenCardsPresent() throws Exception {
+        Dictionary dictionaryMock = createDictionaryMock();
+        expect(dictionaryMock.getCardsTotal()).andReturn(1); // override
+        replay(dictionaryMock);
+        addDictionaryToCache(dictionaryMock);
+
+        replayTxWhenException();
+
+        Throwable exception = assertThrows(DictionaryServiceException.class,
+                () -> dictionaryService.deleteDictionary(JOHN_DOE, DICTIONARY_ID));
+        assertEquals("Cannot delete dictionary with cards", exception.getMessage());
+    }
+
+    @Test
     public void testDeleteDictionaryWhenDaoException() throws Exception {
         replayTxRollback();
 
         Dictionary dictionaryMock = createDictionaryMock();
+        expect(dictionaryMock.getCardsTotal()).andReturn(0); // override
         replay(dictionaryMock);
         addDictionaryToCache(dictionaryMock);
 
@@ -489,6 +505,12 @@ public class DictionaryServiceTest {
 
     @Test
     public void testDeleteCard() throws Exception {
+        // prepare dictionary
+        Dictionary dictionaryMock = createDictionaryMock();
+        expect(dictionaryMock.getCardsTotal()).andReturn(1); // override
+        replay(dictionaryMock);
+        addDictionaryToCache(dictionaryMock);
+
         replayTxCommited();
 
         Card cardMock = strictMock(Card.class);
@@ -500,7 +522,7 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(cardDaoMock);
 
-        boolean done = dictionaryService.deleteCard(1);
+        boolean done = dictionaryService.deleteCard(JOHN_DOE, DICTIONARY_ID, 1);
         assertTrue(done);
 
         verify(cardMock);

@@ -134,8 +134,11 @@ public class DictionaryService implements IDictionaryService {
     @Override
     public boolean deleteDictionary(OwnerId ownerId, int dictionaryId) {
         try {
-            Dictionary dictionary = findDictionary(ownerId,dictionaryId);
+            Dictionary dictionary = findDictionary(ownerId, dictionaryId);
             connection.open();
+            if (dictionary.getCardsTotal() > 0) {
+                throw new DictionaryServiceException("Cannot delete dictionary with cards");
+            }
             dictionaryDao.delete(dictionaryId);
             connection.commit();
             dictionariesCache.get(ownerId).remove(dictionary);
@@ -300,10 +303,12 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean deleteCard(int cardId) {
+    public boolean deleteCard(OwnerId ownerId, int dictionaryId, int cardId) {
+        findDictionary(ownerId, dictionaryId);
         Card card = findCardById(cardId);
         try {
             connection.open();
+
             cardDao.delete(cardId);
             wordDao.delete(card.getWordId());
             connection.commit();

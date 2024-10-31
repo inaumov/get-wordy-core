@@ -32,7 +32,7 @@ public interface IDictionaryService {
 
     Card loadCard(int cardId);
 
-    boolean deleteCard(int cardId);
+    boolean deleteCard(OwnerId ownerId, int dictionaryId, int cardId);
 
     boolean changeStatus(int cardId, CardStatus updatedStatus);
 
