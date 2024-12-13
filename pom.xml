@@ -4,7 +4,7 @@
 
     <groupId>get.wordy</groupId>
     <artifactId>core</artifactId>
-    <version>2.3.0-SNAPSHOT</version>
+    <version>2.4.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Get Wordy :: Backend</name>
@@ -24,7 +24,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring-boot.version>3.2.3</spring-boot.version>
+        <spring-boot.version>3.4.0</spring-boot.version>
         <postgresql.version>42.6.1</postgresql.version>
         <junit.version>5.10.1</junit.version>
         <easymock.version>5.2.0</easymock.version>
@@ -57,7 +57,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
-            <version>3.2.3</version>
+            <version>3.4.0</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
