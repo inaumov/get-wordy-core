@@ -1,6 +1,7 @@
 package get.wordy.dao.impl;
 
 import get.wordy.core.api.bean.Dictionary;
+import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.DictionaryDao;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,28 +43,24 @@ public class DictionaryDaoTest extends BaseDaoTest {
 
     @Test
     public void testInsert() throws DaoException {
+        OwnerId user = new OwnerId("john-123", "user");
+
         Dictionary dictionary = new Dictionary();
         dictionary.setName("name");
         dictionary.setPicture(LOGO_PNG);
 
         dictionaryDao.insert(dictionary);
+        dictionaryDao.updateOwnerRelation(user, dictionary);
+
         assertTrue(dictionary.getId() >= EXPECTED_NEW_ID);
 
-        List<Dictionary> dictionaries = dictionaryDao.selectAll();
+        List<Dictionary> dictionaries = dictionaryDao.selectAllByOwnerId(user);
         assertNotNull(dictionaries);
-        assertEquals(PREDEFINED_DICTIONARIES_CNT + 1, dictionaries.size());
+        assertEquals(2, dictionaries.size());
 
-        int id = 1;
-        for (Dictionary actual : dictionaries) {
-            if (actual.getId() >= EXPECTED_NEW_ID) {
-                assertEquals(dictionary.getName(), actual.getName());
-                assertEquals(LOGO_PNG, actual.getPicture());
-            } else {
-                assertEquals(id, actual.getId());
-                assertEquals("dictionary" + id, actual.getName());
-            }
-            id++;
-        }
+        Dictionary last = dictionaries.getLast();
+        assertEquals(LOGO_PNG, last.getPicture());
+        assertEquals("name", last.getName());
 
         int count = dictionaryDao.count();
         assertEquals(PREDEFINED_DICTIONARIES_CNT + 1, count);
@@ -98,18 +95,22 @@ public class DictionaryDaoTest extends BaseDaoTest {
     @Test
     public void testDelete() throws DaoException {
         dictionaryDao.delete(1);
-        List<Dictionary> dictionariesAfter = dictionaryDao.selectAll();
-        assertNotNull(dictionariesAfter);
+        List<Dictionary> dictionaries = dictionaryDao.selectAllByOwnerId(new OwnerId("john-123", "user"));
+        assertNotNull(dictionaries);
         assertEquals(1, dictionaryDao.count());
-        assertTestData(dictionariesAfter, 2);
+        assertTestData(dictionaries, 2);
     }
 
     @Test
     public void testSelectAll() throws DaoException {
-        List<Dictionary> dictionaries = dictionaryDao.selectAll();
+        List<Dictionary> dictionaries = dictionaryDao.selectAllByOwnerId(new OwnerId("john-123", "user"));
         assertNotNull(dictionaries);
-        assertEquals(PREDEFINED_DICTIONARIES_CNT, dictionaries.size());
+        assertEquals(1, dictionaries.size());
         assertTestData(dictionaries, 1);
+        dictionaries = dictionaryDao.selectAllByOwnerId(new OwnerId("class-42", "class"));
+        assertNotNull(dictionaries);
+        assertEquals(1, dictionaries.size());
+        assertTestData(dictionaries, 2);
     }
 
     @Test

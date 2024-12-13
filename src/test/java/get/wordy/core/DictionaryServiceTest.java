@@ -3,6 +3,8 @@ package get.wordy.core;
 import get.wordy.core.api.bean.*;
 import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.api.exception.DictionaryNotFoundException;
+import get.wordy.core.api.exception.DictionaryServiceException;
+import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.CardDao;
 import get.wordy.core.dao.impl.CardHeadlineDao;
@@ -17,10 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.platform.commons.function.Try;
-import org.junit.platform.commons.util.ReflectionUtils;
+import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.Instant;
 import java.util.*;
 
 import static org.easymock.EasyMock.*;
@@ -31,6 +31,7 @@ public class DictionaryServiceTest {
 
     private static final int DICTIONARY_ID = 42;
     private static final String DICTIONARY_NAME = "Default";
+    private static final OwnerId JOHN_DOE = new OwnerId("john-doe-xyz8w", "individual-user");
 
     @Mock(name = "dictionaryDao")
     private DictionaryDao dictionaryDaoMock;
@@ -67,11 +68,11 @@ public class DictionaryServiceTest {
         replay(dictionaryMock);
 
         List<Dictionary> dictionaries = Collections.singletonList(dictionaryMock);
-        expect(dictionaryDaoMock.selectAll()).andReturn(dictionaries);
+        expect(dictionaryDaoMock.selectAllByOwnerId(JOHN_DOE)).andReturn(dictionaries);
         expectLastCall().once();
         replay(dictionaryDaoMock);
 
-        List<Dictionary> list = dictionaryService.getDictionaries();
+        List<Dictionary> list = dictionaryService.getDictionaries(JOHN_DOE);
         assertEquals(1, list.size());
         verify(dictionaryDaoMock);
     }
@@ -111,10 +112,10 @@ public class DictionaryServiceTest {
     public void testGetDictionariesWhenDaoException() throws Exception {
         replayTxWhenException();
 
-        expect(dictionaryDaoMock.selectAll()).andStubThrow(new DaoException("selectAll", null));
+        expect(dictionaryDaoMock.selectAllByOwnerId(JOHN_DOE)).andStubThrow(new DaoException("selectAll", null));
         replay(dictionaryDaoMock);
 
-        List<Dictionary> list = dictionaryService.getDictionaries();
+        List<Dictionary> list = dictionaryService.getDictionaries(JOHN_DOE);
         assertTrue(list.isEmpty());
 
         verify(dictionaryDaoMock);
@@ -132,7 +133,7 @@ public class DictionaryServiceTest {
         expectLastCall().andReturn(dictionaryMock);
         replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.createDictionary(DICTIONARY_NAME, "http://picture.jpg") != null;
+        boolean done = dictionaryService.createDictionary(JOHN_DOE, DICTIONARY_NAME, "http://picture.jpg") != null;
         assertTrue(done);
         assertEquals(DICTIONARY_NAME, dictionaryCapture.getValue().getName());
 
@@ -148,7 +149,7 @@ public class DictionaryServiceTest {
         expectLastCall().andStubThrow(new DaoException("insert", null));
         replay(dictionaryDaoMock);
 
-        boolean exceptionHappened = dictionaryService.createDictionary(DICTIONARY_NAME, "http://picture.jpg") == null;
+        boolean exceptionHappened = dictionaryService.createDictionary(JOHN_DOE, DICTIONARY_NAME, "http://picture.jpg") == null;
         assertTrue(exceptionHappened);
         assertEquals(DICTIONARY_NAME, dictionaryCapture.getValue().getName());
 
@@ -170,7 +171,7 @@ public class DictionaryServiceTest {
                 .once();
         replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.renameDictionary(DICTIONARY_ID, "nameUpdated");
+        boolean done = dictionaryService.renameDictionary(JOHN_DOE, DICTIONARY_ID, "nameUpdated");
         assertTrue(done);
         assertEquals("nameUpdated", dictionaryCapture.getValue().getName());
 
@@ -192,7 +193,7 @@ public class DictionaryServiceTest {
                 .once();
         replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.changeDictionaryPicture(DICTIONARY_ID, "http://example.com");
+        boolean done = dictionaryService.changeDictionaryPicture(JOHN_DOE, DICTIONARY_ID, "http://example.com");
         assertTrue(done);
         assertEquals("http://example.com", dictionaryCapture.getValue().getPicture());
 
@@ -207,7 +208,7 @@ public class DictionaryServiceTest {
         replayTxWhenException();
 
         Throwable exception = assertThrows(DictionaryNotFoundException.class,
-                () -> dictionaryService.renameDictionary(DICTIONARY_ID, "nameUpdated"));
+                () -> dictionaryService.renameDictionary(JOHN_DOE, DICTIONARY_ID, "nameUpdated"));
         assertNull(exception.getMessage());
     }
 
@@ -225,7 +226,7 @@ public class DictionaryServiceTest {
         expectLastCall().andStubThrow(new DaoException("rename", null));
         replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.renameDictionary(DICTIONARY_ID, "nameUpdated");
+        boolean done = dictionaryService.renameDictionary(JOHN_DOE, DICTIONARY_ID, "nameUpdated");
         assertFalse(done);
         assertEquals("nameUpdated", dictionaryCapture.getValue().getName());
 
@@ -237,6 +238,7 @@ public class DictionaryServiceTest {
         replayTxCommited();
 
         Dictionary dictionaryMock = createDictionaryMock();
+        expect(dictionaryMock.getCardsTotal()).andReturn(0); // override
         replay(dictionaryMock);
         addDictionaryToCache(dictionaryMock);
 
@@ -244,7 +246,7 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.deleteDictionary(DICTIONARY_ID);
+        boolean done = dictionaryService.deleteDictionary(JOHN_DOE, DICTIONARY_ID);
         assertTrue(done);
 
         verify(dictionaryDaoMock);
@@ -258,8 +260,22 @@ public class DictionaryServiceTest {
         replayTxWhenException();
 
         Throwable exception = assertThrows(DictionaryNotFoundException.class,
-                () -> dictionaryService.deleteDictionary(DICTIONARY_ID));
+                () -> dictionaryService.deleteDictionary(JOHN_DOE, DICTIONARY_ID));
         assertNull(exception.getMessage());
+    }
+
+    @Test
+    public void testDeleteDictionaryWhenCardsPresent() throws Exception {
+        Dictionary dictionaryMock = createDictionaryMock();
+        expect(dictionaryMock.getCardsTotal()).andReturn(1); // override
+        replay(dictionaryMock);
+        addDictionaryToCache(dictionaryMock);
+
+        replayTxWhenException();
+
+        Throwable exception = assertThrows(DictionaryServiceException.class,
+                () -> dictionaryService.deleteDictionary(JOHN_DOE, DICTIONARY_ID));
+        assertEquals("Cannot delete dictionary with cards", exception.getMessage());
     }
 
     @Test
@@ -267,6 +283,7 @@ public class DictionaryServiceTest {
         replayTxRollback();
 
         Dictionary dictionaryMock = createDictionaryMock();
+        expect(dictionaryMock.getCardsTotal()).andReturn(0); // override
         replay(dictionaryMock);
         addDictionaryToCache(dictionaryMock);
 
@@ -274,7 +291,7 @@ public class DictionaryServiceTest {
         expectLastCall().andStubThrow(new DaoException("delete", null));
         replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.deleteDictionary(DICTIONARY_ID);
+        boolean done = dictionaryService.deleteDictionary(JOHN_DOE, DICTIONARY_ID);
         assertFalse(done);
 
         verify(dictionaryDaoMock);
@@ -297,7 +314,7 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(headlineDaoMock);
 
-        List<Card> cards = dictionaryService.getCards(DICTIONARY_ID);
+        List<Card> cards = dictionaryService.getCards(JOHN_DOE, DICTIONARY_ID);
         assertNotNull(cards);
         assertEquals(1, cards.size());
 
@@ -327,7 +344,7 @@ public class DictionaryServiceTest {
 
         replay(cardDaoMock, headlineDaoMock);
 
-        List<Exercise> cards = dictionaryService.getCardsForExercise(1, 10);
+        List<Exercise> cards = dictionaryService.getCardsForExercise(JOHN_DOE, 1, 10);
         assertEquals(3, cards.size());
         verify(cardDaoMock, headlineDaoMock);
     }
@@ -370,7 +387,7 @@ public class DictionaryServiceTest {
 
         replay(cardDaoMock, headlineDaoMock);
 
-        List<Exercise> cards = dictionaryService.getCardsForExercise(1, 10);
+        List<Exercise> cards = dictionaryService.getCardsForExercise(JOHN_DOE, 1, 10);
         assertEquals(3, cards.size());
         for (Exercise card : cards) {
             assertTrue(card.getCardId() > 0);
@@ -488,6 +505,12 @@ public class DictionaryServiceTest {
 
     @Test
     public void testDeleteCard() throws Exception {
+        // prepare dictionary
+        Dictionary dictionaryMock = createDictionaryMock();
+        expect(dictionaryMock.getCardsTotal()).andReturn(1); // override
+        replay(dictionaryMock);
+        addDictionaryToCache(dictionaryMock);
+
         replayTxCommited();
 
         Card cardMock = strictMock(Card.class);
@@ -499,7 +522,7 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(cardDaoMock);
 
-        boolean done = dictionaryService.deleteCard(1);
+        boolean done = dictionaryService.deleteCard(JOHN_DOE, DICTIONARY_ID, 1);
         assertTrue(done);
 
         verify(cardMock);
@@ -575,7 +598,7 @@ public class DictionaryServiceTest {
         expect(cardDaoMock.getScoreSummary(DICTIONARY_ID)).andReturn(Map.of("EDIT", 1, "LEARNT", 3));
         replay(cardDaoMock);
 
-        Score score = dictionaryService.getScoreSummary(DICTIONARY_ID);
+        Score score = dictionaryService.getScoreSummary(JOHN_DOE, DICTIONARY_ID);
         assertEquals(1, score.getEditCnt());
         assertEquals(0, score.getToLearnCnt());
         assertEquals(0, score.getPostponedCnt());
@@ -661,22 +684,24 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(wordDaoMock, cardDaoMock);
 
-        List<Card> done = dictionaryService.generateCards(DICTIONARY_ID, words);
+        List<Card> done = dictionaryService.generateCards(JOHN_DOE, DICTIONARY_ID, words);
         assertFalse(done.isEmpty());
 
         verify(wordDaoMock, cardDaoMock);
     }
 
-    private void addDictionaryToCache(Dictionary dictionaryMock) throws Exception {
-        Try<Object> dictionaryList = ReflectionUtils.tryToReadFieldValue(DictionaryService.class, "dictionaryList", dictionaryService);
-        List<Dictionary> o = (List<Dictionary>) dictionaryList.get();
-        o.add(dictionaryMock);
+    private void addDictionaryToCache(Dictionary dictionaryMock) {
+        @SuppressWarnings("unchecked")
+        var dictionariesCache = (Map<OwnerId, List<Dictionary>>) ReflectionTestUtils.getField(dictionaryService, "dictionariesCache");
+        List<Dictionary> dictionaries = new ArrayList<>();
+        dictionaries.add(dictionaryMock);
+        Objects.requireNonNull(dictionariesCache).put(JOHN_DOE, dictionaries);
     }
 
-    private void addCardToCache(int id, Card cardMock) throws Exception {
-        Try<Object> dictionaryList = ReflectionUtils.tryToReadFieldValue(DictionaryService.class, "cardsCache", dictionaryService);
-        Map<Integer, Card> o = (Map<Integer, Card>) dictionaryList.get();
-        o.put(id, cardMock);
+    private void addCardToCache(int id, Card cardMock) {
+        @SuppressWarnings("unchecked")
+        var cardsCache = (Map<Integer, Card>) ReflectionTestUtils.getField(dictionaryService, "cardsCache");
+        Objects.requireNonNull(cardsCache).put(id, cardMock);
     }
 
     private Dictionary createDictionaryMock() {

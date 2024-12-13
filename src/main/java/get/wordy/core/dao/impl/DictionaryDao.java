@@ -1,5 +1,6 @@
 package get.wordy.core.dao.impl;
 
+import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.db.LocalTxManager;
@@ -16,18 +17,17 @@ public class DictionaryDao extends BaseDao<Dictionary> {
     public static final String UPDATE_NAME_QUERY = "UPDATE dictionaries SET name = ? WHERE id = ?";
     public static final String UPDATE_PIC_QUERY = "UPDATE dictionaries SET picture_url = ? WHERE id = ?";
     public static final String SELECT_ALL_WITH_CARDS_TOTAL_QUERY = """
-            SELECT d.*, count(c.id) cards_total FROM dictionaries d LEFT OUTER JOIN cards c ON d.id = c.dictionary_id GROUP BY d.id, d.name ORDER BY d.name;
+            SELECT d.*, count(c.id) cards_total FROM dictionaries d LEFT OUTER JOIN cards c ON d.id = c.dictionary_id WHERE d.owner_id = ? AND d.owner_type = ? GROUP BY d.id, d.name ORDER BY d.name;
             """;
     public static final String SELECT_BY_ID_WITH_CARDS_TOTAL_QUERY = """
-            SELECT d.*, count(c.id) cards_total FROM dictionaries d LEFT OUTER JOIN cards c ON d.id = c.dictionary_id  WHERE d.id = ? GROUP BY d.id, d.name ORDER BY d.name;
+            SELECT d.*, count(c.id) cards_total FROM dictionaries d LEFT OUTER JOIN cards c ON d.id = c.dictionary_id WHERE d.id = ? GROUP BY d.id, d.name ORDER BY d.name;
             """;
-    public static final String COUNT_QUERY = "SELECT COUNT(name) FROM dictionaries";
+    public static final String COUNT_QUERY = "SELECT COUNT(d.name) FROM dictionaries d";
 
     DictionaryDao(LocalTxManager txManager) {
         super(txManager);
     }
 
-    @Override
     public Dictionary insert(Dictionary dictionary) throws DaoException {
         try (var statement = prepareStatementForInsert(INSERT_QUERY)) {
             statement.setString(1, dictionary.getName());
@@ -76,10 +76,12 @@ public class DictionaryDao extends BaseDao<Dictionary> {
         return dictionary;
     }
 
-    public List<Dictionary> selectAll() throws DaoException {
+    public List<Dictionary> selectAllByOwnerId(OwnerId ownerId) throws DaoException {
         ArrayList<Dictionary> dictionaries = new ArrayList<>();
-        try (var statement = getConnection().createStatement()) {
-            ResultSet resultSet = statement.executeQuery(SELECT_ALL_WITH_CARDS_TOTAL_QUERY);
+        try (var statement = prepareStatement(SELECT_ALL_WITH_CARDS_TOTAL_QUERY)) {
+            statement.setString(1, ownerId.ownerId());
+            statement.setString(2, ownerId.ownerType());
+            ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 int id = resultSet.getInt(1);
                 String name = resultSet.getString(2);
@@ -121,6 +123,17 @@ public class DictionaryDao extends BaseDao<Dictionary> {
             throw new DaoException("Error while retrieving a dictionary record", ex);
         }
         return null;
+    }
+
+    public void updateOwnerRelation(OwnerId user, Dictionary dictionary) throws DaoException {
+        try (var statement = prepareStatement("update dictionaries set owner_id = ?, owner_type = ? where id = ?")) {
+            statement.setString(1, user.ownerId());
+            statement.setString(2, user.ownerType());
+            statement.setInt(3, dictionary.getId());
+            statement.executeUpdate();
+        } catch (SQLException ex) {
+            throw new DaoException("Error while updating an owner relation to dictionary record", ex);
+        }
     }
 
 }

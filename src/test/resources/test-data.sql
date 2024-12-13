@@ -21,3 +21,6 @@ insert into context (card_id, example, word_id, matched_words) values (1, 'Test 
 insert into context (card_id, example, word_id) values (2, 'Test sentence 2', 2);
 insert into context (card_id, example, word_id) values (1, 'Test sentence 3', 1);
 insert into context (card_id, example, word_id, matched_words) values (1, 'Test sentence 4', 1, 'sentence 4');
+
+update dictionaries set owner_id = 'john-123', owner_type = 'user' where id = 1;
+update dictionaries set owner_id = 'class-42', owner_type = 'class' where id = 2;

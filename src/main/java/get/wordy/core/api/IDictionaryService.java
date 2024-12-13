@@ -5,25 +5,26 @@ import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.api.bean.CardStatus;
 import get.wordy.core.api.bean.Exercise;
 import get.wordy.core.api.bean.wrapper.Score;
+import get.wordy.core.api.id.OwnerId;
 
 import java.util.List;
 import java.util.Set;
 
 public interface IDictionaryService {
 
-    List<Dictionary> getDictionaries();
+    List<Dictionary> getDictionaries(OwnerId ownerId);
 
-    Dictionary createDictionary(String dictionaryName, String picture);
+    Dictionary createDictionary(OwnerId ownerId, String dictionaryName, String picture);
 
-    boolean renameDictionary(int dictionaryId, String newName);
+    boolean renameDictionary(OwnerId ownerId, int dictionaryId, String newName);
 
-    boolean changeDictionaryPicture(int dictionaryId, String newPictureUrl);
+    boolean changeDictionaryPicture(OwnerId ownerId, int dictionaryId, String newPictureUrl);
 
-    boolean deleteDictionary(int dictionaryId);
+    boolean deleteDictionary(OwnerId ownerId, int dictionaryId);
 
-    List<Card> getCards(int dictionaryId);
+    List<Card> getCards(OwnerId ownerId, int dictionaryId);
 
-    List<Exercise> getCardsForExercise(int dictionaryId, int limit);
+    List<Exercise> getCardsForExercise(OwnerId ownerId, int dictionaryId, int limit);
 
     Card addCard(int dictionaryId, Card card);
 
@@ -31,7 +32,7 @@ public interface IDictionaryService {
 
     Card loadCard(int cardId);
 
-    boolean deleteCard(int cardId);
+    boolean deleteCard(OwnerId ownerId, int dictionaryId, int cardId);
 
     boolean changeStatus(int cardId, CardStatus updatedStatus);
 
@@ -39,8 +40,8 @@ public interface IDictionaryService {
 
     boolean increaseScoreUp(int dictionaryId, int[] cardIds, int repetitions);
 
-    List<Card> generateCards(int dictionaryId, Set<String> words);
+    List<Card> generateCards(OwnerId ownerId, int dictionaryId, Set<String> words);
 
-    Score getScoreSummary(int dictionaryId);
+    Score getScoreSummary(OwnerId ownerId, int dictionaryId);
 
 }

@@ -5,6 +5,7 @@ import get.wordy.core.api.bean.*;
 import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.api.exception.CardNotFoundException;
 import get.wordy.core.api.exception.DictionaryServiceException;
+import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.CardDao;
 import get.wordy.core.dao.impl.CardHeadlineDao;
@@ -19,8 +20,8 @@ import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -33,7 +34,7 @@ public class DictionaryService implements IDictionaryService {
     private CardDao cardDao;
     private CardHeadlineDao cardHeadlineDao;
     private LocalTxManager connection;
-    private final List<Dictionary> dictionaryList = new ArrayList<>();
+    private final Map<OwnerId, List<Dictionary>> dictionariesCache = new HashMap<>();
     private final Map<Integer, Card> cardsCache = new HashMap<>();
 
     @SuppressWarnings("unused")
@@ -55,14 +56,14 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public List<Dictionary> getDictionaries() {
+    public List<Dictionary> getDictionaries(OwnerId ownerId) {
         List<Dictionary> list;
         try {
             connection.open();
-            list = dictionaryDao.selectAll();
+            list = dictionaryDao.selectAllByOwnerId(ownerId);
             connection.commit();
-            dictionaryList.clear();
-            dictionaryList.addAll(list);
+            dictionariesCache.remove(ownerId);
+            dictionariesCache.put(ownerId, list);
         } catch (DaoException e) {
             LOG.error("Error while loading dictionaries", e);
             return Collections.emptyList();
@@ -73,7 +74,7 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public Dictionary createDictionary(String dictionaryName, String picture) {
+    public Dictionary createDictionary(OwnerId ownerId, String dictionaryName, String picture) {
         Dictionary dictionary = new Dictionary();
         dictionary.setName(dictionaryName);
         dictionary.setPicture(picture);
@@ -81,7 +82,7 @@ public class DictionaryService implements IDictionaryService {
             connection.open();
             dictionaryDao.insert(dictionary);
             connection.commit();
-            dictionaryList.add(dictionary);
+            putToCache(ownerId, () -> dictionary);
         } catch (DaoException e) {
             LOG.error("Error while creating a new dictionary", e);
             connection.rollback();
@@ -93,9 +94,9 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean renameDictionary(int dictionaryId, String newDictionaryName) {
+    public boolean renameDictionary(OwnerId ownerId, int dictionaryId, String newDictionaryName) {
         try {
-            Dictionary dictionary = findDictionary(dictionaryId);
+            Dictionary dictionary = findDictionary(ownerId, dictionaryId);
             Dictionary copy = new Dictionary(dictionaryId, newDictionaryName, null);
             connection.open();
             dictionaryDao.update(copy);
@@ -112,9 +113,9 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean changeDictionaryPicture(int dictionaryId, String newPictureUrl) {
+    public boolean changeDictionaryPicture(OwnerId ownerId, int dictionaryId, String newPictureUrl) {
         try {
-            Dictionary dictionary = findDictionary(dictionaryId);
+            Dictionary dictionary = findDictionary(ownerId, dictionaryId);
             Dictionary copy = new Dictionary(dictionaryId, null, newPictureUrl);
             connection.open();
             dictionaryDao.update(copy);
@@ -131,13 +132,16 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean deleteDictionary(int dictionaryId) {
+    public boolean deleteDictionary(OwnerId ownerId, int dictionaryId) {
         try {
-            Dictionary dictionary = findDictionary(dictionaryId);
+            Dictionary dictionary = findDictionary(ownerId, dictionaryId);
             connection.open();
+            if (dictionary.getCardsTotal() > 0) {
+                throw new DictionaryServiceException("Cannot delete dictionary with cards");
+            }
             dictionaryDao.delete(dictionaryId);
             connection.commit();
-            dictionaryList.remove(dictionary);
+            dictionariesCache.get(ownerId).remove(dictionary);
         } catch (DaoException e) {
             connection.rollback();
             LOG.error("Error while removing dictionary by id = {}", dictionaryId, e);
@@ -149,11 +153,11 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public List<Card> getCards(int dictionaryId) {
+    public List<Card> getCards(OwnerId ownerId, int dictionaryId) {
         List<Card> cardListFull;
         try {
             connection.open();
-            cardListFull = cardHeadlineDao.getCardsForDictionary(findDictionary(dictionaryId).getId());
+            cardListFull = cardHeadlineDao.getCardsForDictionary(findDictionary(ownerId, dictionaryId).getId());
             connection.commit();
         } catch (DaoException e) {
             LOG.error("Error while loading all cards in dictionary by id = {}", dictionaryId, e);
@@ -173,7 +177,7 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public List<Exercise> getCardsForExercise(int dictionaryId, int limit) {
+    public List<Exercise> getCardsForExercise(OwnerId ownerId, int dictionaryId, int limit) {
         List<Exercise> exercises = new ArrayList<>();
         try {
             connection.open();
@@ -299,10 +303,12 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public boolean deleteCard(int cardId) {
+    public boolean deleteCard(OwnerId ownerId, int dictionaryId, int cardId) {
+        findDictionary(ownerId, dictionaryId);
         Card card = findCardById(cardId);
         try {
             connection.open();
+
             cardDao.delete(cardId);
             wordDao.delete(card.getWordId());
             connection.commit();
@@ -371,9 +377,9 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public Score getScoreSummary(int dictionaryId) {
+    public Score getScoreSummary(OwnerId ownerId, int dictionaryId) {
         try {
-            Dictionary dictionary = findDictionary(dictionaryId);
+            Dictionary dictionary = findDictionary(ownerId, dictionaryId);
             Score score = new Score();
             connection.open();
             Map<String, Integer> result = cardDao.getScoreSummary(dictionary.getId());
@@ -443,14 +449,14 @@ public class DictionaryService implements IDictionaryService {
         return true;
     }
 
-    private Dictionary findDictionary(int dictionaryId) {
-        return dictionaryList.stream()
+    private Dictionary findDictionary(OwnerId ownerId, int dictionaryId) {
+        return dictionariesCache.getOrDefault(ownerId, Collections.emptyList()).stream()
                 .filter(dictionary -> dictionary.getId() == dictionaryId)
                 .findAny()
-                .orElseGet(() -> getDictionaryFromDb(dictionaryId));
+                .orElseGet(() -> getDictionaryFromDb(ownerId, dictionaryId));
     }
 
-    private Dictionary getDictionaryFromDb(int dictionaryId) {
+    private Dictionary getDictionaryFromDb(OwnerId ownerId, int dictionaryId) {
         Dictionary dictionary;
         try {
             connection.open();
@@ -462,7 +468,7 @@ public class DictionaryService implements IDictionaryService {
         if (dictionary == null) {
             throw new DictionaryNotFoundException();
         }
-        dictionaryList.add(dictionary);
+        putToCache(ownerId, () -> dictionary);
         return dictionary;
     }
 
@@ -488,9 +494,9 @@ public class DictionaryService implements IDictionaryService {
     }
 
     @Override
-    public List<Card> generateCards(int dictionaryId, Set<String> words) {
+    public List<Card> generateCards(OwnerId ownerId, int dictionaryId, Set<String> words) {
         try {
-            Dictionary dictionary = findDictionary(dictionaryId);
+            Dictionary dictionary = findDictionary(ownerId, dictionaryId);
             int cnt = words.size();
             connection.open();
             Set<Integer> generatedIds = wordDao.generate(words);
@@ -531,6 +537,17 @@ public class DictionaryService implements IDictionaryService {
             return Collections.emptyList();
         } finally {
             connection.close();
+        }
+    }
+
+    private void putToCache(OwnerId ownerId, Supplier<Dictionary> dictionary) {
+        if (dictionariesCache.containsKey(ownerId)) {
+            List<Dictionary> dictionaries = dictionariesCache.get(ownerId);
+            dictionaries.add(dictionary.get());
+        } else {
+            List<Dictionary> newList = new ArrayList<>();
+            newList.add(dictionary.get());
+            dictionariesCache.put(ownerId, newList);
         }
     }
 
