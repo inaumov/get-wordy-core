@@ -58,7 +58,8 @@ public class WordDaoTest extends BaseDaoTest {
         // update an existed word
         for (int id = 1; id <= PREDEFINED_WORDS_CNT; id++) {
             Word word = new Word(id, "to test " + id, "VERB", "transcription" + id, "test");
-            wordDao.update(word);
+            int i = wordDao.update(word);
+            assertEquals(1, i);
         }
         // count words after updating
         List<Word> words = wordDao.selectAll(Set.of(1, 2, 3));

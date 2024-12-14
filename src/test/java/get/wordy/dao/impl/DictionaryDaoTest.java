@@ -70,7 +70,8 @@ public class DictionaryDaoTest extends BaseDaoTest {
     public void testUpdateName() throws DaoException {
         // update an existed dictionary
         Dictionary dictionary = new Dictionary(1, "name_changed_test", LOGO_PNG);
-        dictionaryDao.update(dictionary);
+        int i = dictionaryDao.update(dictionary);
+        assertEquals(1, i);
         // verify after
         Dictionary actual = dictionaryDao.selectById(1);
         assertNotNull(actual);
@@ -83,7 +84,8 @@ public class DictionaryDaoTest extends BaseDaoTest {
     public void testUpdatePictureUrl() throws DaoException {
         // update an existed dictionary
         Dictionary dictionary = new Dictionary(1, null, LOGO_PNG);
-        dictionaryDao.update(dictionary);
+        int i = dictionaryDao.update(dictionary);
+        assertEquals(1, i);
         // verify after
         Dictionary actual = dictionaryDao.selectById(1);
         assertNotNull(actual);

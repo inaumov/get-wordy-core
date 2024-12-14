@@ -74,18 +74,17 @@ public class WordDao extends BaseDao<Word> {
     }
 
     @Override
-    public Word update(Word word) throws DaoException {
+    public int update(Word word) throws DaoException {
         try (var statement = prepareStatement(UPDATE_QUERY)) {
             statement.setString(1, word.getValue());
             statement.setString(2, word.getPartOfSpeech());
             statement.setString(3, word.getTranscription());
             statement.setString(4, word.getMeaning());
             statement.setInt(5, word.getId());
-            statement.executeUpdate();
+            return statement.executeUpdate();
         } catch (SQLException ex) {
             throw new DaoException("Error while updating a word record", ex);
         }
-        return word;
     }
 
     public List<Word> selectAll(Set<Integer> wordsRefs) throws DaoException {

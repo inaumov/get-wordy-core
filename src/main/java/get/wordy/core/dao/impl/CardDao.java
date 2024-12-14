@@ -150,14 +150,15 @@ public class CardDao extends BaseDao<Card> {
     }
 
     @Override
-    public Card update(Card card) throws DaoException {
+    public int update(Card card) throws DaoException {
+        int records = 0;
         try (var statement = prepareStatement(UPDATE_CARD_QUERY)) {
             statement.setString(1, card.getStatus().name());
             statement.setInt(2, card.getScore());
             statement.setInt(3, card.getWordId());
             statement.setInt(4, card.getDictionaryId());
             statement.setInt(5, card.getId());
-            statement.executeUpdate();
+            records = statement.executeUpdate();
         } catch (SQLException ex) {
             throw new DaoException("Error while updating card record", ex);
         }
@@ -168,7 +169,7 @@ public class CardDao extends BaseDao<Card> {
         insertSentences(card.getId(), card.getWordId(), card.getSentences());
         insertCollocations(card.getId(), card.getWordId(), card.getCollocations());
 
-        return card;
+        return records;
     }
 
     public Card updateRelations(Card card) throws DaoException {
@@ -339,12 +340,12 @@ public class CardDao extends BaseDao<Card> {
         }
     }
 
-    public void updateStatus(int cardId, CardStatus status, int score) throws DaoException {
+    public int updateStatus(int cardId, CardStatus status, int score) throws DaoException {
         try (var statement = prepareStatement(UPDATE_STATUS_QUERY)) {
             statement.setString(1, status.name());
             statement.setInt(2, score);
             statement.setInt(3, cardId);
-            statement.executeUpdate();
+            return statement.executeUpdate();
         } catch (SQLException ex) {
             throw new DaoException("Error while updating status and score", ex);
         }

@@ -279,9 +279,11 @@ public class DictionaryService implements IDictionaryService {
         try {
             connection.open();
             if (!sameWord) {
-                word = wordDao.update(word);
+                int updated = wordDao.update(word);
                 // sync
-                card.setWord(word);
+                if (updated == 0) {
+                    LOG.warn("Nothing has been updated for card id = {}", card.getId());
+                }
             }
             if (!sameCard) {
                 card = cardDao.updateRelations(card);

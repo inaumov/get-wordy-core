@@ -167,7 +167,7 @@ public class DictionaryServiceTest {
 
         Capture<Dictionary> dictionaryCapture = Capture.newInstance();
         dictionaryDaoMock.update(capture(dictionaryCapture));
-        expectLastCall().andReturn(dictionaryMock)
+        expectLastCall().andReturn(1)
                 .once();
         replay(dictionaryDaoMock);
 
@@ -189,7 +189,7 @@ public class DictionaryServiceTest {
 
         Capture<Dictionary> dictionaryCapture = Capture.newInstance();
         dictionaryDaoMock.update(capture(dictionaryCapture));
-        expectLastCall().andReturn(dictionaryMock)
+        expectLastCall().andReturn(1)
                 .once();
         replay(dictionaryDaoMock);
 
@@ -491,7 +491,7 @@ public class DictionaryServiceTest {
         headlineDaoMock.getCardById(cardId);
         expectLastCall().andAnswer(() -> cardMock);
         wordDaoMock.update(wordForUpdMock);
-        expectLastCall().andAnswer(() -> wordMock);
+        expectLastCall().andReturn(1);
         cardDaoMock.updateRelations(cardForUpdMock);
         expectLastCall().andAnswer(() -> cardMock);
         replay(headlineDaoMock, wordDaoMock, cardDaoMock);
@@ -578,7 +578,7 @@ public class DictionaryServiceTest {
         replayTxCommited();
 
         cardDaoMock.updateStatus(cardId, status, score);
-        expectLastCall().once();
+        expectLastCall().andReturn(1);
         replay(cardDaoMock);
 
         boolean done = dictionaryService.changeStatus(cardId, status);

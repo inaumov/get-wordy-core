@@ -77,7 +77,8 @@ public class CardDaoTest extends BaseDaoTest {
         updatedCard.addCollocation("Test collocation");
         updatedCard.setInsertedAt(Instant.now());
 
-        cardDao.update(updatedCard);
+        int i = cardDao.update(updatedCard);
+        assertEquals(1, i);
 
         assertCards(2);
     }
@@ -219,7 +220,8 @@ public class CardDaoTest extends BaseDaoTest {
 
     @Test
     void updateStatus() throws DaoException {
-        cardDao.updateStatus(2, CardStatus.LEARNT, 100);
+        int i = cardDao.updateStatus(2, CardStatus.LEARNT, 100);
+        assertEquals(1, i);
         assertCards(2);
     }
 

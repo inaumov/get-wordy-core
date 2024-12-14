@@ -56,7 +56,7 @@ public class DictionaryDao extends BaseDao<Dictionary> {
     }
 
     @Override
-    public Dictionary update(Dictionary dictionary) throws DaoException {
+    public int update(Dictionary dictionary) throws DaoException {
         String query;
         String paramValue;
         if (StringUtils.hasText(dictionary.getName())) {
@@ -69,11 +69,10 @@ public class DictionaryDao extends BaseDao<Dictionary> {
         try (var statement = prepareStatement(query)) {
             statement.setString(1, paramValue);
             statement.setInt(2, dictionary.getId());
-            statement.executeUpdate();
+            return statement.executeUpdate();
         } catch (SQLException ex) {
             throw new DaoException("Error while updating a dictionary record", ex);
         }
-        return dictionary;
     }
 
     public List<Dictionary> selectAllByOwnerId(OwnerId ownerId) throws DaoException {
