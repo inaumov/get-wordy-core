@@ -679,7 +679,7 @@ public class DictionaryServiceTest {
         expect(wordDaoMock.generate(words)).andReturn(wordIds).once();
         expect(cardDaoMock.generateEmptyCards(anyInt(), eq(wordIds)))
                 .andReturn(Set.of(15, 16)).once();
-        expect(wordDaoMock.selectAll())
+        expect(wordDaoMock.selectAll(wordIds))
                 .andReturn(List.of(wordMock42, wordMock87));
         expectLastCall().once();
         replay(wordDaoMock, cardDaoMock);

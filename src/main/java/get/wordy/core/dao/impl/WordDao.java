@@ -6,6 +6,7 @@ import get.wordy.core.db.LocalTxManager;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -15,7 +16,7 @@ public class WordDao extends BaseDao<Word> {
     public static final String INSERT_QUERY = "INSERT INTO words (word, part_of_speech, transcription, meaning) VALUES (?, ?, ?, ?)";
     public static final String DELETE_QUERY = "DELETE FROM words WHERE id = ?";
     public static final String UPDATE_QUERY = "UPDATE words SET word = ?, part_of_speech = ?, transcription = ?, meaning = ? WHERE id = ?";
-    public static final String SELECT_ALL_QUERY = "SELECT * FROM words ORDER BY id";
+    public static final String SELECT_ALL_QUERY = "SELECT * FROM words WHERE id IN (%s)";
     public static final String SELECT_BY_ID_QUERY = "SELECT * FROM words WHERE id = ?";
     public static final String INSERT_WORD_BATCH_QUERY = "INSERT INTO words (word) VALUES (?)";
 
@@ -80,23 +81,38 @@ public class WordDao extends BaseDao<Word> {
             statement.setString(3, word.getTranscription());
             statement.setString(4, word.getMeaning());
             statement.setInt(5, word.getId());
-            statement.execute();
+            statement.executeUpdate();
         } catch (SQLException ex) {
             throw new DaoException("Error while updating a word record", ex);
         }
         return word;
     }
 
-    public List<Word> selectAll() throws DaoException {
+    public List<Word> selectAll(Set<Integer> wordsRefs) throws DaoException {
+
+        if (wordsRefs == null || wordsRefs.isEmpty()) {
+            throw new IllegalArgumentException("The set of wordsRefs cannot be null or empty");
+        }
+
+        // generate the dynamic query
+        String placeholders = String.join(",", Collections.nCopies(wordsRefs.size(), "?"));
+        String sql = String.format(SELECT_ALL_QUERY, placeholders);
+
         List<Word> words = new ArrayList<>();
-        try (var statement = getConnection().createStatement()) {
-            ResultSet resultSet = statement.executeQuery(SELECT_ALL_QUERY);
+
+        try (var preparedStatement = prepareStatement(sql)) {
+            // bind parameters
+            int index = 1;
+            for (Integer id : wordsRefs) {
+                preparedStatement.setInt(index++, id);
+            }
+            ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 var word = mapResultSetToWordEntity(resultSet);
                 words.add(word);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving all word records", ex);
+            throw new DaoException("Error while retrieving word records by ids", ex);
         }
         return words;
     }

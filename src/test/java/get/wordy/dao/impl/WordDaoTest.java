@@ -31,7 +31,9 @@ public class WordDaoTest extends BaseDaoTest {
         Word inserted = wordDao.insert(word);
         assertTrue(inserted.getId() >= EXPECTED_NEW_ID);
 
-        List<Word> words = wordDao.selectAll();
+        Set<Integer> ids = Set.of(1, 2, 3, inserted.getId());
+
+        List<Word> words = wordDao.selectAll(ids);
         assertNotNull(words);
         assertEquals(PREDEFINED_WORDS_CNT + 1, words.size());
 
@@ -59,7 +61,7 @@ public class WordDaoTest extends BaseDaoTest {
             wordDao.update(word);
         }
         // count words after updating
-        List<Word> words = wordDao.selectAll();
+        List<Word> words = wordDao.selectAll(Set.of(1, 2, 3));
         assertNotNull(words);
         assertEquals(PREDEFINED_WORDS_CNT, words.size());
 
@@ -76,7 +78,7 @@ public class WordDaoTest extends BaseDaoTest {
     public void testDeleteAbandonedWord() throws DaoException {
         int abandonedWordId = 3;
         wordDao.delete(abandonedWordId);
-        List<Word> wordsAfter = wordDao.selectAll();
+        List<Word> wordsAfter = wordDao.selectAll(Set.of(1, 2, 3));
         assertNotNull(wordsAfter);
         assertEquals(PREDEFINED_WORDS_CNT - 1, wordsAfter.size());
         assertTestData(wordsAfter, 1);
@@ -93,7 +95,7 @@ public class WordDaoTest extends BaseDaoTest {
 
     @Test
     public void testSelectAll() throws DaoException {
-        List<Word> words = wordDao.selectAll();
+        List<Word> words = wordDao.selectAll(Set.of(1, 2, 3, 4));
         assertNotNull(words);
         assertEquals(PREDEFINED_WORDS_CNT, words.size());
         assertTestData(words, 1);
@@ -104,8 +106,13 @@ public class WordDaoTest extends BaseDaoTest {
         Set<String> strings = Set.of("singleton", "generated");
         Set<Integer> generated = wordDao.generate(strings);
         assertEquals(2, generated.size());
+        Set<Integer> all = new HashSet<>();
+        all.add(1);
+        all.add(2);
+        all.add(3);
+        all.addAll(generated);
 
-        List<Word> words = wordDao.selectAll();
+        List<Word> words = wordDao.selectAll(all);
         assertNotNull(words);
         assertEquals(PREDEFINED_WORDS_CNT + 2, words.size());
 

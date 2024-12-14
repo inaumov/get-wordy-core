@@ -508,7 +508,7 @@ public class DictionaryService implements IDictionaryService {
                 throw new IllegalStateException();
             }
 
-            List<Word> wordList = wordDao.selectAll();
+            List<Word> wordList = wordDao.selectAll(generatedIds);
             connection.commit();
 
             Map<Integer, Word> wordsMap = wordList
