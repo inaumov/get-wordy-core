@@ -76,11 +76,12 @@ public class ClassesDaoTest {
         // fetch data and verify is present
         Optional<ClassInfo> classInfo = classesDao.selectById(ownerId, "class001");
         assertTrue(classInfo.isPresent());
-        assertEquals("Math 101", classInfo.get().getName());
-        assertEquals("online", classInfo.get().getFormat());
-        assertEquals("beginner", classInfo.get().getLevel());
-        assertEquals("book.pdf", classInfo.get().getMaterial());
-        assertEquals("Basic math concepts", classInfo.get().getNotes());
+        ClassInfo entity = classInfo.get();
+        assertEquals("Math 101", entity.getName());
+        assertEquals("online", entity.getFormat());
+        assertEquals("beginner", entity.getLevel());
+        assertEquals("book.pdf", entity.getMaterial());
+        assertEquals("Basic math concepts", entity.getNotes());
     }
 
     @Test

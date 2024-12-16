@@ -2,11 +2,13 @@ package get.wordy.core.dao.impl;
 
 import get.wordy.core.api.bean.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -97,7 +99,7 @@ public class WordsheetDao {
         ));
     }
 
-    public WordsheetHeader selectById(int wordsheetId) {
+    public Optional<WordsheetHeader> selectById(int wordsheetId) {
         String query = """
                 SELECT ws.id AS wordsheet_id,
                        ws.name,
@@ -110,12 +112,16 @@ public class WordsheetDao {
                 """;
         MapSqlParameterSource params = new MapSqlParameterSource("wordsheetId", wordsheetId);
 
-        return jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> new WordsheetHeader(
-                rs.getInt("wordsheet_id"),
-                rs.getString("name"),
-                rs.getBoolean("is_shared"),
-                rs.getInt("words_total")
-        ));
+        try {
+            return Optional.ofNullable(jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> new WordsheetHeader(
+                    rs.getInt("wordsheet_id"),
+                    rs.getString("name"),
+                    rs.getBoolean("is_shared"),
+                    rs.getInt("words_total")
+            )));
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
     }
 
     public void addToWordsheet(int wordsheetId, Set<Integer> wordsRefs) {

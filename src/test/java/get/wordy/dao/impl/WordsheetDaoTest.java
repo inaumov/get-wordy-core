@@ -14,6 +14,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -83,14 +84,22 @@ public class WordsheetDaoTest {
 
     @Test
     public void testSelectById() {
-        // assume wordsheet ID 1 exists in test-data.sql
-        WordsheetHeader wordsheet = wordsheetDao.selectById(1);
+        // assume wordsheet id 1 exists in test-data.sql
+        Optional<WordsheetHeader> wordsheet = wordsheetDao.selectById(1);
 
-        assertNotNull(wordsheet);
-        assertEquals(1, wordsheet.wordsheetId());
-        assertEquals("Vocabulary Basics", wordsheet.name());
-        assertFalse(wordsheet.isShared());
-        assertEquals(4, wordsheet.wordsTotal()); // assume 10 words for ID 1 in test-data.sql
+        assertTrue(wordsheet.isPresent());
+        WordsheetHeader entity = wordsheet.get();
+        assertEquals(1, entity.wordsheetId());
+        assertEquals("Vocabulary Basics", entity.name());
+        assertFalse(entity.isShared());
+        assertEquals(4, entity.wordsTotal()); // assume 10 words for id 1 in test-data.sql
+    }
+
+    @Test
+    public void testSelectByIdNotFound() {
+        Optional<WordsheetHeader> wordsheet = wordsheetDao.selectById(100500);
+
+        assertTrue(wordsheet.isEmpty());
     }
 
     @ParameterizedTest

@@ -4,6 +4,7 @@ import get.wordy.core.api.IClassService;
 import get.wordy.core.api.bean.*;
 import get.wordy.core.api.exception.ClassInfoNotFoundException;
 import get.wordy.core.api.exception.ClassServiceException;
+import get.wordy.core.api.exception.WordsheetNotFoundException;
 import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.*;
@@ -263,10 +264,10 @@ public class ClassService implements IClassService {
             classInfo = classesDao.selectById(ownerId, classId);
             connection.commit();
         } catch (Exception e) {
-            throw new ClassInfoNotFoundException("Class with id " + classId + " not found for owner " + ownerId, e);
+            throw new ClassServiceException("Could not get class info with id = " + classId + " for owner " + ownerId, e);
         }
         if (classInfo.isEmpty()) {
-            throw new ClassInfoNotFoundException("Class with id " + classId + " not found for owner " + ownerId);
+            throw new ClassInfoNotFoundException("Class with id = " + classId + " not found for owner " + ownerId);
         }
         putClassInfoToCache(ownerId, classInfo::get);
         return classInfo.get();
@@ -303,19 +304,19 @@ public class ClassService implements IClassService {
     }
 
     private WordsheetHeader getWordsheetFromDb(String classId, int wordsheetId) {
-        WordsheetHeader wordsheet;
+        Optional<WordsheetHeader> wordsheet;
         try {
             connection.open();
             wordsheet = wordsheetDao.selectById(wordsheetId);
             connection.commit();
-        } catch (DaoException e) {
-            throw new ClassServiceException();
+        } catch (Exception e) {
+            throw new ClassServiceException("Could not load wordsheet with id = " + wordsheetId + " for class id = " + classId, e);
         }
-        if (wordsheet == null) {
-            throw new ClassServiceException();
+        if (wordsheet.isEmpty()) {
+            throw new WordsheetNotFoundException("Wordsheet with id = " + wordsheetId + " not found for class id = " + classId);
         }
-        putWordsheetToCache(classId, () -> wordsheet);
-        return wordsheet;
+        putWordsheetToCache(classId, wordsheet::get);
+        return wordsheet.get();
     }
 
 }
