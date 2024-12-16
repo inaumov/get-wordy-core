@@ -46,21 +46,29 @@ public class ClassService implements IClassService {
 
     @Override
     public List<ClassInfo> getClasses(OwnerId userId, String dayOfWeek) {
+
+        List<ClassInfo> cachedClassInfos = classListCache.get(userId);
+        if (cachedClassInfos != null && !cachedClassInfos.isEmpty()) {
+            return cachedClassInfos;
+        }
+
         List<ClassInfo> list;
         try {
             connection.open();
+            // fetch from the database if not present in the cache
             // todo filter by day (a class can be assigned to several days)
             list = classesDao.selectAllByOwnerId(userId);
             connection.commit();
-            classListCache.remove(userId);
+
+            // update the cache
             classListCache.put(userId, list);
         } catch (DaoException e) {
-            LOG.error("Error while getting list of classes", e);
+            LOG.error("Error while getting list of class infos", e);
             return Collections.emptyList();
         } finally {
             connection.close();
         }
-        return list; // todo copy from cache
+        return list;
     }
 
     @Override
