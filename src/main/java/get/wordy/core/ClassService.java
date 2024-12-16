@@ -2,8 +2,8 @@ package get.wordy.core;
 
 import get.wordy.core.api.IClassService;
 import get.wordy.core.api.bean.*;
-import get.wordy.core.api.exception.DictionaryNotFoundException;
-import get.wordy.core.api.exception.DictionaryServiceException;
+import get.wordy.core.api.exception.ClassInfoNotFoundException;
+import get.wordy.core.api.exception.ClassServiceException;
 import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.*;
@@ -77,7 +77,7 @@ public class ClassService implements IClassService {
             connection.open();
             ClassInfo inserted = classesDao.insert(userId, classInfo);
             connection.commit();
-            putClassToCache(userId, () -> classInfo);
+            putClassInfoToCache(userId, () -> classInfo);
             return inserted;
         } catch (DaoException e) {
             LOG.error("Error while creating a new dictionary", e);
@@ -90,9 +90,19 @@ public class ClassService implements IClassService {
 
     @Override
     public boolean deleteClass(OwnerId userId, String classId) {
-        // todo
-        // todo check user owns class before delete
-        classesDao.delete(userId, classId);
+        try {
+            ClassInfo classInfo = findClassInfo(userId, classId);
+            connection.open();
+            classesDao.delete(userId, classId);
+            connection.commit();
+            classListCache.get(userId).remove(classInfo);
+        } catch (DaoException e) {
+            connection.rollback();
+            LOG.error("Error while removing class by id = {}", classId, e);
+            return false;
+        } finally {
+            connection.close();
+        }
         return true;
     }
 
@@ -239,7 +249,30 @@ public class ClassService implements IClassService {
         return true;
     }
 
-    private void putClassToCache(OwnerId ownerId, Supplier<ClassInfo> classDetailsSupplier) {
+    private ClassInfo findClassInfo(OwnerId ownerId, String classId) {
+        return classListCache.getOrDefault(ownerId, Collections.emptyList()).stream()
+                .filter(classInfo -> Objects.equals(classInfo.getClassId(), classId))
+                .findAny()
+                .orElseGet(() -> getClassInfoFromDb(ownerId, classId));
+    }
+
+    private ClassInfo getClassInfoFromDb(OwnerId ownerId, String classId) {
+        Optional<ClassInfo> classInfo;
+        try {
+            connection.open();
+            classInfo = classesDao.selectById(ownerId, classId);
+            connection.commit();
+        } catch (Exception e) {
+            throw new ClassInfoNotFoundException("Class with id " + classId + " not found for owner " + ownerId, e);
+        }
+        if (classInfo.isEmpty()) {
+            throw new ClassInfoNotFoundException("Class with id " + classId + " not found for owner " + ownerId);
+        }
+        putClassInfoToCache(ownerId, classInfo::get);
+        return classInfo.get();
+    }
+
+    private void putClassInfoToCache(OwnerId ownerId, Supplier<ClassInfo> classDetailsSupplier) {
         if (classListCache.containsKey(ownerId)) {
             List<ClassInfo> dictionaries = classListCache.get(ownerId);
             dictionaries.add(classDetailsSupplier.get());
@@ -276,10 +309,10 @@ public class ClassService implements IClassService {
             wordsheet = wordsheetDao.selectById(wordsheetId);
             connection.commit();
         } catch (DaoException e) {
-            throw new DictionaryServiceException();
+            throw new ClassServiceException();
         }
         if (wordsheet == null) {
-            throw new DictionaryNotFoundException();
+            throw new ClassServiceException();
         }
         putWordsheetToCache(classId, () -> wordsheet);
         return wordsheet;

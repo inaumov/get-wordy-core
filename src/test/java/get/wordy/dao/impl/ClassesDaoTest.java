@@ -12,6 +12,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -67,4 +68,28 @@ public class ClassesDaoTest {
                 .anyMatch(c -> c.getClassId().equals("class001"))
         );
     }
+
+    @Test
+    public void testSelectById() {
+        OwnerId ownerId = new OwnerId("owner123", "user");
+
+        // fetch data and verify is present
+        Optional<ClassInfo> classInfo = classesDao.selectById(ownerId, "class001");
+        assertTrue(classInfo.isPresent());
+        assertEquals("Math 101", classInfo.get().getName());
+        assertEquals("online", classInfo.get().getFormat());
+        assertEquals("beginner", classInfo.get().getLevel());
+        assertEquals("book.pdf", classInfo.get().getMaterial());
+        assertEquals("Basic math concepts", classInfo.get().getNotes());
+    }
+
+    @Test
+    public void testSelectByIdNotFound() {
+        OwnerId ownerId = new OwnerId("owner456", "user");
+
+        // fetch data and verify not present
+        Optional<ClassInfo> classInfo = classesDao.selectById(ownerId, "class001");
+        assertTrue(classInfo.isEmpty());
+    }
+
 }
