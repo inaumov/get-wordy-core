@@ -57,12 +57,20 @@ public class DictionaryService implements IDictionaryService {
 
     @Override
     public List<Dictionary> getDictionaries(OwnerId ownerId) {
+
+        List<Dictionary> cachedDictionaries = dictionariesCache.get(ownerId);
+        if (cachedDictionaries != null && !cachedDictionaries.isEmpty()) {
+            return cachedDictionaries;
+        }
+
         List<Dictionary> list;
         try {
             connection.open();
+            // fetch from the database if not present in the cache
             list = dictionaryDao.selectAllByOwnerId(ownerId);
             connection.commit();
-            dictionariesCache.remove(ownerId);
+
+            // update the cache
             dictionariesCache.put(ownerId, list);
         } catch (DaoException e) {
             LOG.error("Error while loading dictionaries", e);
