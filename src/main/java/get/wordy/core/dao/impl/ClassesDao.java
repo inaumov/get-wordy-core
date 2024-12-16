@@ -1,6 +1,6 @@
 package get.wordy.core.dao.impl;
 
-import get.wordy.core.api.bean.ClassDetails;
+import get.wordy.core.api.bean.ClassInfo;
 import get.wordy.core.api.id.OwnerId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -19,7 +19,7 @@ public class ClassesDao {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<ClassDetails> selectAllByOwnerId(OwnerId userId) {
+    public List<ClassInfo> selectAllByOwnerId(OwnerId userId) {
         String query = """
                 SELECT class_id, name, format, level, material, notes
                 FROM classes
@@ -28,7 +28,7 @@ public class ClassesDao {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("ownerId", userId.ownerId())
                 .addValue("ownerType", userId.ownerType());
-        return jdbcTemplate.query(query, params, (rs, rowNum) -> new ClassDetails(
+        return jdbcTemplate.query(query, params, (rs, rowNum) -> new ClassInfo(
                 rs.getString("class_id"),
                 rs.getString("name"),
                 rs.getString("format"),
@@ -38,41 +38,41 @@ public class ClassesDao {
         ));
     }
 
-    public ClassDetails insert(OwnerId userId, ClassDetails classDetails) {
+    public ClassInfo insert(OwnerId userId, ClassInfo classInfo) {
         String query = """
                 INSERT INTO classes (class_id, name, format, level, material, notes, owner_id, owner_type)
                 VALUES (:classId, :name, :format, :level, :material, :notes, :ownerId, :ownerType)
                 """;
         MapSqlParameterSource params = new MapSqlParameterSource()
-                .addValue("classId", classDetails.getClassId())
-                .addValue("name", classDetails.getName())
-                .addValue("format", classDetails.getFormat())
-                .addValue("level", classDetails.getLevel())
-                .addValue("material", classDetails.getMaterial())
-                .addValue("notes", classDetails.getNotes())
+                .addValue("classId", classInfo.getClassId())
+                .addValue("name", classInfo.getName())
+                .addValue("format", classInfo.getFormat())
+                .addValue("level", classInfo.getLevel())
+                .addValue("material", classInfo.getMaterial())
+                .addValue("notes", classInfo.getNotes())
                 .addValue("ownerId", userId.ownerId())
                 .addValue("ownerType", userId.ownerType());
         jdbcTemplate.update(query, params);
-        return classDetails;
+        return classInfo;
     }
 
-    public ClassDetails update(OwnerId userId, ClassDetails classDetails) {
+    public ClassInfo update(OwnerId userId, ClassInfo classInfo) {
         String query = """
                 UPDATE classes
                 SET name = :name, format = :format, level = :level, material = :material, notes = :notes
                 WHERE class_id = :classId AND owner_id = :ownerId AND owner_type = :ownerType
                 """;
         MapSqlParameterSource params = new MapSqlParameterSource()
-                .addValue("classId", classDetails.getClassId())
-                .addValue("name", classDetails.getName())
-                .addValue("format", classDetails.getFormat())
-                .addValue("level", classDetails.getLevel())
-                .addValue("material", classDetails.getMaterial())
-                .addValue("notes", classDetails.getNotes())
+                .addValue("classId", classInfo.getClassId())
+                .addValue("name", classInfo.getName())
+                .addValue("format", classInfo.getFormat())
+                .addValue("level", classInfo.getLevel())
+                .addValue("material", classInfo.getMaterial())
+                .addValue("notes", classInfo.getNotes())
                 .addValue("ownerId", userId.ownerId())
                 .addValue("ownerType", userId.ownerType());
         jdbcTemplate.update(query, params);
-        return classDetails;
+        return classInfo;
     }
 
     public int delete(OwnerId userId, String classId) {

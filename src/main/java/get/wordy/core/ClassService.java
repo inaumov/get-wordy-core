@@ -24,7 +24,7 @@ public class ClassService implements IClassService {
     private WordDao wordDao;
     private LocalTxManager connection;
 
-    private final Map<OwnerId, List<ClassDetails>> classListCache = new HashMap<>();
+    private final Map<OwnerId, List<ClassInfo>> classListCache = new HashMap<>();
     private final Map<String, List<WordsheetHeader>> classWordsheetCache = new HashMap<>();
     private final Map<Integer, List<Word>> wordsheetItemsCache = new HashMap<>();
 
@@ -45,8 +45,8 @@ public class ClassService implements IClassService {
     }
 
     @Override
-    public List<ClassDetails> getClasses(OwnerId userId, String dayOfWeek) {
-        List<ClassDetails> list;
+    public List<ClassInfo> getClasses(OwnerId userId, String dayOfWeek) {
+        List<ClassInfo> list;
         try {
             connection.open();
             // todo filter by day (a class can be assigned to several days)
@@ -64,12 +64,12 @@ public class ClassService implements IClassService {
     }
 
     @Override
-    public ClassDetails saveClass(OwnerId userId, ClassDetails classDetails) {
+    public ClassInfo saveClass(OwnerId userId, ClassInfo classInfo) {
         try {
             connection.open();
-            ClassDetails inserted = classesDao.insert(userId, classDetails);
+            ClassInfo inserted = classesDao.insert(userId, classInfo);
             connection.commit();
-            putClassToCache(userId, () -> classDetails);
+            putClassToCache(userId, () -> classInfo);
             return inserted;
         } catch (DaoException e) {
             LOG.error("Error while creating a new dictionary", e);
@@ -231,12 +231,12 @@ public class ClassService implements IClassService {
         return true;
     }
 
-    private void putClassToCache(OwnerId ownerId, Supplier<ClassDetails> classDetailsSupplier) {
+    private void putClassToCache(OwnerId ownerId, Supplier<ClassInfo> classDetailsSupplier) {
         if (classListCache.containsKey(ownerId)) {
-            List<ClassDetails> dictionaries = classListCache.get(ownerId);
+            List<ClassInfo> dictionaries = classListCache.get(ownerId);
             dictionaries.add(classDetailsSupplier.get());
         } else {
-            List<ClassDetails> newList = new ArrayList<>();
+            List<ClassInfo> newList = new ArrayList<>();
             newList.add(classDetailsSupplier.get());
             classListCache.put(ownerId, newList);
         }

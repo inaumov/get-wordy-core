@@ -1,6 +1,6 @@
 package get.wordy.dao.impl;
 
-import get.wordy.core.api.bean.ClassDetails;
+import get.wordy.core.api.bean.ClassInfo;
 import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.impl.ClassesDao;
 import get.wordy.dao.config.SpringJdbcConfig;
@@ -29,7 +29,7 @@ public class ClassesDaoTest {
         OwnerId ownerId = new OwnerId("owner123", "user");
 
         // fetch data and verify
-        List<ClassDetails> results = classesDao.selectAllByOwnerId(ownerId);
+        List<ClassInfo> results = classesDao.selectAllByOwnerId(ownerId);
         assertEquals(2, results.size());
         assertEquals("Math 101", results.get(0).getName());
         assertEquals("Science 101", results.get(1).getName());
@@ -38,14 +38,14 @@ public class ClassesDaoTest {
     @Test
     public void testUpdate() {
         OwnerId ownerId = new OwnerId("owner123", "user");
-        ClassDetails updatedDetails = new ClassDetails("class001", "Math 102", "offline", "intermediate", "updated.pdf", "Advanced topics");
+        ClassInfo updatedDetails = new ClassInfo("class001", "Math 102", "offline", "intermediate", "updated.pdf", "Advanced topics");
 
         // update and verify
         classesDao.update(ownerId, updatedDetails);
-        List<ClassDetails> results = classesDao.selectAllByOwnerId(ownerId);
+        List<ClassInfo> results = classesDao.selectAllByOwnerId(ownerId);
 
         assertEquals(2, results.size());
-        ClassDetails updatedClass = results.stream()
+        ClassInfo updatedClass = results.stream()
                 .filter(c -> c.getClassId().equals("class001"))
                 .findFirst()
                 .orElseThrow();
@@ -59,7 +59,7 @@ public class ClassesDaoTest {
 
         // delete and verify
         classesDao.delete(ownerId, "class001");
-        List<ClassDetails> results = classesDao.selectAllByOwnerId(ownerId);
+        List<ClassInfo> results = classesDao.selectAllByOwnerId(ownerId);
 
         assertEquals(1, results.size());
         assertFalse(results

@@ -1,6 +1,6 @@
 package get.wordy.core.api.bean;
 
-public class ClassDetails {
+public class ClassInfo {
 
     private String classId;
     private String name;
@@ -8,9 +8,8 @@ public class ClassDetails {
     private String level;
     private String material;
     private String notes;
-    private int attendees;
 
-    public ClassDetails(String classId, String name, String format, String level, String material, String notes) {
+    public ClassInfo(String classId, String name, String format, String level, String material, String notes) {
         this.classId = classId;
         this.name = name;
         this.format = format;
@@ -65,14 +64,6 @@ public class ClassDetails {
 
     public void setNotes(String notes) {
         this.notes = notes;
-    }
-
-    public int getAttendees() {
-        return attendees;
-    }
-
-    public void setAttendees(int attendees) {
-        this.attendees = attendees;
     }
 
 }
