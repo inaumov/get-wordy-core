@@ -1,13 +1,17 @@
 package get.wordy.core.api.bean;
 
+import java.util.List;
 import java.util.Objects;
 
 public class Word {
+
     private int id;
     private String value;
     private String partOfSpeech;
     private String transcription;
     private String meaning;
+    private List<String> sentences;
+    private List<String> collocations;
 
     public Word() {
     }
@@ -42,6 +46,24 @@ public class Word {
 
     public Word withId(int id) {
         return new Word(id, value, partOfSpeech, transcription, meaning);
+    }
+
+    public List<String> getSentences() {
+        return sentences;
+    }
+
+    public Word withSentences(List<String> sentences) {
+        this.sentences = sentences;
+        return this;
+    }
+
+    public List<String> getCollocations() {
+        return collocations;
+    }
+
+    public Word withCollocations(List<String> collocations) {
+        this.collocations = collocations;
+        return this;
     }
 
     @Override

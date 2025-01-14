@@ -1,7 +1,6 @@
 package get.wordy.core.api;
 
 import get.wordy.core.api.bean.Card;
-import get.wordy.core.api.bean.Dictionary;
 import get.wordy.core.api.bean.CardStatus;
 import get.wordy.core.api.bean.Exercise;
 import get.wordy.core.api.bean.wrapper.Score;
@@ -11,16 +10,6 @@ import java.util.List;
 import java.util.Set;
 
 public interface IDictionaryService {
-
-    List<Dictionary> getDictionaries(OwnerId ownerId);
-
-    Dictionary createDictionary(OwnerId ownerId, String dictionaryName, String picture);
-
-    boolean renameDictionary(OwnerId ownerId, int dictionaryId, String newName);
-
-    boolean changeDictionaryPicture(OwnerId ownerId, int dictionaryId, String newPictureUrl);
-
-    boolean deleteDictionary(OwnerId ownerId, int dictionaryId);
 
     List<Card> getCards(OwnerId ownerId, int dictionaryId);
 

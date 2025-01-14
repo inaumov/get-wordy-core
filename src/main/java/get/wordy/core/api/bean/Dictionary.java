@@ -2,60 +2,70 @@ package get.wordy.core.api.bean;
 
 public class Dictionary {
 
-    private int id;
+    private int vocabId;
 
     private String name;
 
-    private String picture;
+    private String pictureUrl;
 
-    private int cardsTotal;
+    private boolean isShared;
+
+    private int wordsTotal;
 
     public Dictionary() {
     }
 
-    public Dictionary(int id, String name, String picture) {
-        this.id = id;
+    public Dictionary(String name, String pictureUrl) {
         this.name = name;
-        this.picture = picture;
+        this.pictureUrl = pictureUrl;
     }
 
-    public Dictionary(int id, String name, String picture, int cardsTotal) {
-        this.id = id;
+    public Dictionary(int vocabId, String name, String pictureUrl, boolean isShared, int wordsTotal) {
+        this.vocabId = vocabId;
         this.name = name;
-        this.picture = picture;
-        this.cardsTotal = cardsTotal;
+        this.pictureUrl = pictureUrl;
+        this.isShared = isShared;
+        this.wordsTotal = wordsTotal;
     }
 
-    public int getId() {
-        return id;
+    public int getVocabId() {
+        return vocabId;
     }
 
-    public void setId(int dictionaryId) {
-        this.id = dictionaryId;
+    public void setVocabId(int vocabId) {
+        this.vocabId = vocabId;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String dictionary) {
-        this.name = dictionary;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public String getPicture() {
-        return picture;
+    public String getPictureUrl() {
+        return pictureUrl;
     }
 
-    public void setPicture(String picture) {
-        this.picture = picture;
+    public void setPictureUrl(String pictureUrl) {
+        this.pictureUrl = pictureUrl;
     }
 
-    public int getCardsTotal() {
-        return cardsTotal;
+    public boolean isShared() {
+        return isShared;
     }
 
-    public void setCardsTotal(int cardsTotal) {
-        this.cardsTotal = cardsTotal;
+    public void setShared(boolean shared) {
+        isShared = shared;
+    }
+
+    public int getWordsTotal() {
+        return wordsTotal;
+    }
+
+    public void setWordsTotal(int wordsTotal) {
+        this.wordsTotal = wordsTotal;
     }
 
 }

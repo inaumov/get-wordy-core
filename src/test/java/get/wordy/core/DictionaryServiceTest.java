@@ -2,7 +2,7 @@ package get.wordy.core;
 
 import get.wordy.core.api.bean.*;
 import get.wordy.core.api.bean.Dictionary;
-import get.wordy.core.api.exception.DictionaryNotFoundException;
+import get.wordy.core.api.exception.VocabNotFoundException;
 import get.wordy.core.api.exception.DictionaryServiceException;
 import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
@@ -13,12 +13,12 @@ import get.wordy.core.dao.impl.WordDao;
 import get.wordy.core.db.LocalTxManager;
 import get.wordy.core.api.bean.wrapper.Score;
 import org.easymock.*;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.dao.DataAccessException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.*;
@@ -31,6 +31,7 @@ public class DictionaryServiceTest {
 
     private static final int DICTIONARY_ID = 42;
     private static final String DICTIONARY_NAME = "Default";
+    private static final String PICTURE_JPG = "http://picture.jpg";
     private static final OwnerId JOHN_DOE = new OwnerId("john-doe-xyz8w", "individual-user");
 
     @Mock(name = "dictionaryDao")
@@ -53,17 +54,8 @@ public class DictionaryServiceTest {
         EasyMockSupport.injectMocks(this);
     }
 
-    @AfterEach
-    void tearDown() {
-        verify(connectionMock);
-    }
-
-    // test dictionary section
-
     @Test
-    public void testGetDictionaries() throws Exception {
-        replayTxCommited();
-
+    public void testGetVocabularies() {
         Dictionary dictionaryMock = createDictionaryMock();
         replay(dictionaryMock);
 
@@ -72,92 +64,65 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(dictionaryDaoMock);
 
-        List<Dictionary> list = dictionaryService.getDictionaries(JOHN_DOE);
+        List<Dictionary> list = dictionaryService.getVocabularies(JOHN_DOE);
         assertEquals(1, list.size());
         verify(dictionaryDaoMock);
     }
 
-    private void replayTxCommited() throws Exception {
-        connectionMock.open();
-        expectLastCall().atLeastOnce();
-        connectionMock.close();
-        expectLastCall().atLeastOnce();
-        connectionMock.commit();
-        expectLastCall().atLeastOnce();
-
-        replay(connectionMock);
-    }
-
-    private void replayTxWhenException() throws Exception {
-        connectionMock.open();
-        expectLastCall().once();
-        connectionMock.close();
-        expectLastCall().once();
-
-        replay(connectionMock);
-    }
-
-    private void replayTxRollback() throws Exception {
-        connectionMock.open();
-        expectLastCall().once();
-        connectionMock.rollback();
-        expectLastCall().once();
-        connectionMock.close();
-        expectLastCall().once();
-
-        replay(connectionMock);
-    }
-
     @Test
-    public void testGetDictionariesWhenDaoException() throws Exception {
-        replayTxWhenException();
+    public void testGetVocabulariesWhenException() {
 
-        expect(dictionaryDaoMock.selectAllByOwnerId(JOHN_DOE)).andStubThrow(new DaoException("selectAll", null));
+        expect(dictionaryDaoMock.selectAllByOwnerId(JOHN_DOE))
+                .andStubThrow(new DataAccessException("selectAll", null) {
+                });
         replay(dictionaryDaoMock);
 
-        List<Dictionary> list = dictionaryService.getDictionaries(JOHN_DOE);
+        List<Dictionary> list = dictionaryService.getVocabularies(JOHN_DOE);
         assertTrue(list.isEmpty());
 
         verify(dictionaryDaoMock);
     }
 
     @Test
-    public void testCreateDictionary() throws Exception {
+    public void testCreateVocabulary() throws Exception {
         replayTxCommited();
 
         Dictionary dictionaryMock = createDictionaryMock();
         replay(dictionaryMock);
 
         Capture<Dictionary> dictionaryCapture = Capture.newInstance();
-        dictionaryDaoMock.insert(capture(dictionaryCapture));
+        dictionaryDaoMock.insert(eq(JOHN_DOE), capture(dictionaryCapture));
         expectLastCall().andReturn(dictionaryMock);
         replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.createDictionary(JOHN_DOE, DICTIONARY_NAME, "http://picture.jpg") != null;
-        assertTrue(done);
+        Dictionary vocabulary = dictionaryService.createVocabulary(JOHN_DOE, DICTIONARY_NAME, PICTURE_JPG);
+        assertNotNull(vocabulary);
         assertEquals(DICTIONARY_NAME, dictionaryCapture.getValue().getName());
 
         verify(dictionaryDaoMock);
+        verify(connectionMock);
     }
 
     @Test
-    public void testCreateDictionaryWhenDaoException() throws Exception {
+    public void testCreateVocabularyWhenException() throws Exception {
         replayTxRollback();
 
         Capture<Dictionary> dictionaryCapture = Capture.newInstance();
-        dictionaryDaoMock.insert(capture(dictionaryCapture));
-        expectLastCall().andStubThrow(new DaoException("insert", null));
+        dictionaryDaoMock.insert(eq(JOHN_DOE), capture(dictionaryCapture));
+        expectLastCall().andStubThrow(new DataAccessException("insert", null) {
+        });
         replay(dictionaryDaoMock);
 
-        boolean exceptionHappened = dictionaryService.createDictionary(JOHN_DOE, DICTIONARY_NAME, "http://picture.jpg") == null;
+        boolean exceptionHappened = dictionaryService.createVocabulary(JOHN_DOE, DICTIONARY_NAME, "http://picture.jpg") == null;
         assertTrue(exceptionHappened);
         assertEquals(DICTIONARY_NAME, dictionaryCapture.getValue().getName());
 
         verify(dictionaryDaoMock);
+        verify(connectionMock);
     }
 
     @Test
-    public void testRenameDictionary() throws Exception {
+    public void testRenameVocabulary() throws Exception {
         replayTxCommited();
 
         Dictionary dictionaryMock = createDictionaryMock();
@@ -165,133 +130,138 @@ public class DictionaryServiceTest {
         addDictionaryToCache(dictionaryMock);
         replay(dictionaryMock);
 
-        Capture<Dictionary> dictionaryCapture = Capture.newInstance();
-        dictionaryDaoMock.update(capture(dictionaryCapture));
+        dictionaryDaoMock.rename(dictionaryMock.getVocabId(), "nameUpdated");
         expectLastCall().andReturn(1)
                 .once();
         replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.renameDictionary(JOHN_DOE, DICTIONARY_ID, "nameUpdated");
+        boolean done = dictionaryService.renameVocabulary(JOHN_DOE, DICTIONARY_ID, "nameUpdated");
         assertTrue(done);
-        assertEquals("nameUpdated", dictionaryCapture.getValue().getName());
 
         verify(dictionaryDaoMock);
     }
 
     @Test
-    public void testChangeDictionaryPicture() throws Exception {
+    public void testChangeVocabularyPicture() throws Exception {
+        String newPictureUrl = "http://example.com";
         replayTxCommited();
 
         Dictionary dictionaryMock = createDictionaryMock();
-        dictionaryMock.setPicture("http://example.com");
+        expect(dictionaryMock.getPictureUrl()).andReturn(PICTURE_JPG);
+        dictionaryMock.setPictureUrl(newPictureUrl);
         addDictionaryToCache(dictionaryMock);
         replay(dictionaryMock);
 
-        Capture<Dictionary> dictionaryCapture = Capture.newInstance();
-        dictionaryDaoMock.update(capture(dictionaryCapture));
+        dictionaryDaoMock.updatePicture(DICTIONARY_ID, newPictureUrl);
         expectLastCall().andReturn(1)
                 .once();
         replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.changeDictionaryPicture(JOHN_DOE, DICTIONARY_ID, "http://example.com");
+        boolean done = dictionaryService.changeVocabularyPicture(JOHN_DOE, DICTIONARY_ID, newPictureUrl);
         assertTrue(done);
-        assertEquals("http://example.com", dictionaryCapture.getValue().getPicture());
 
         verify(dictionaryDaoMock);
     }
 
     @Test
-    public void testRenameDictionaryWhenNotFound() throws Exception {
-        // expect commit when get a dictionary
-        connectionMock.commit();
-        expectLastCall().atLeastOnce();
-        replayTxWhenException();
+    public void testRenameVocabularyWhenNotFound() {
+        replayTxShouldNotStart();
 
-        Throwable exception = assertThrows(DictionaryNotFoundException.class,
-                () -> dictionaryService.renameDictionary(JOHN_DOE, DICTIONARY_ID, "nameUpdated"));
-        assertNull(exception.getMessage());
-    }
-
-    @Test
-    public void testRenameDictionaryWhenDaoException() throws Exception {
-        replayTxRollback();
-
-        Dictionary dictionaryMock = createDictionaryMock();
-        replay(dictionaryMock);
-
-        addDictionaryToCache(dictionaryMock);
-
-        Capture<Dictionary> dictionaryCapture = Capture.newInstance();
-        dictionaryDaoMock.update(capture(dictionaryCapture));
-        expectLastCall().andStubThrow(new DaoException("rename", null));
-        replay(dictionaryDaoMock);
-
-        boolean done = dictionaryService.renameDictionary(JOHN_DOE, DICTIONARY_ID, "nameUpdated");
-        assertFalse(done);
-        assertEquals("nameUpdated", dictionaryCapture.getValue().getName());
-
-        verify(dictionaryDaoMock);
-    }
-
-    @Test
-    public void testDeleteDictionary() throws Exception {
-        replayTxCommited();
-
-        Dictionary dictionaryMock = createDictionaryMock();
-        expect(dictionaryMock.getCardsTotal()).andReturn(0); // override
-        replay(dictionaryMock);
-        addDictionaryToCache(dictionaryMock);
-
-        dictionaryDaoMock.delete(DICTIONARY_ID);
+        expect(dictionaryDaoMock.selectById(DICTIONARY_ID))
+                .andReturn(Optional.empty());
         expectLastCall().once();
         replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.deleteDictionary(JOHN_DOE, DICTIONARY_ID);
+        Throwable exception = assertThrows(VocabNotFoundException.class,
+                () -> dictionaryService.renameVocabulary(JOHN_DOE, DICTIONARY_ID, "nameUpdated"));
+        assertTrue(exception.getMessage().startsWith("Vocabulary with id = "));
+
+        verify(dictionaryDaoMock);
+    }
+
+    @Test
+    public void testMakeVocabularyShared() throws Exception {
+        replayTxCommited();
+
+        Dictionary dictionaryMock = createDictionaryMock();
+        expect(dictionaryMock.isShared()).andReturn(false);
+        dictionaryMock.setShared(true);
+        addDictionaryToCache(dictionaryMock);
+        replay(dictionaryMock);
+
+        dictionaryDaoMock.updateIsShared(DICTIONARY_ID, true);
+        expectLastCall().andReturn(1)
+                .once();
+        replay(dictionaryDaoMock);
+
+        boolean done = dictionaryService.makeVocabularyIsShared(JOHN_DOE, DICTIONARY_ID, true);
         assertTrue(done);
 
         verify(dictionaryDaoMock);
     }
 
     @Test
-    public void testDeleteDictionaryWhenNotFound() throws Exception {
-        // expect commit when get a dictionary
-        connectionMock.commit();
-        expectLastCall().atLeastOnce();
-        replayTxWhenException();
+    public void testDeleteVocabulary() throws Exception {
+        replayTxCommited();
 
-        Throwable exception = assertThrows(DictionaryNotFoundException.class,
-                () -> dictionaryService.deleteDictionary(JOHN_DOE, DICTIONARY_ID));
-        assertNull(exception.getMessage());
+        Dictionary dictionaryMock = createDictionaryMock();
+        expect(dictionaryMock.getWordsTotal()).andReturn(0); // override
+        replay(dictionaryMock);
+        addDictionaryToCache(dictionaryMock);
+
+        dictionaryDaoMock.deleteVocabularyById(DICTIONARY_ID);
+        expectLastCall().andReturn(1).once();
+        replay(dictionaryDaoMock);
+
+        boolean done = dictionaryService.deleteVocabulary(JOHN_DOE, DICTIONARY_ID);
+        assertTrue(done);
+
+        verify(dictionaryDaoMock);
     }
 
     @Test
-    public void testDeleteDictionaryWhenCardsPresent() throws Exception {
+    public void testDeleteVocabularyWhenNotFound() {
+        replayTxShouldNotStart();
+
+        expect(dictionaryDaoMock.selectById(DICTIONARY_ID))
+                .andReturn(Optional.empty());
+        expectLastCall().once();
+        replay(dictionaryDaoMock);
+
+        Throwable exception = assertThrows(VocabNotFoundException.class,
+                () -> dictionaryService.deleteVocabulary(JOHN_DOE, DICTIONARY_ID));
+        assertTrue(exception.getMessage().startsWith("Vocabulary with id = 42 not found for owner id"));
+    }
+
+    @Test
+    public void testDeleteVocabularyWhenWordsPresent() throws Exception {
         Dictionary dictionaryMock = createDictionaryMock();
-        expect(dictionaryMock.getCardsTotal()).andReturn(1); // override
+        expect(dictionaryMock.getWordsTotal()).andReturn(1).anyTimes();
         replay(dictionaryMock);
         addDictionaryToCache(dictionaryMock);
 
         replayTxWhenException();
 
         Throwable exception = assertThrows(DictionaryServiceException.class,
-                () -> dictionaryService.deleteDictionary(JOHN_DOE, DICTIONARY_ID));
-        assertEquals("Cannot delete dictionary with cards", exception.getMessage());
+                () -> dictionaryService.deleteVocabulary(JOHN_DOE, DICTIONARY_ID));
+        assertEquals("Cannot delete vocabulary with words (not empty)", exception.getMessage());
     }
 
     @Test
-    public void testDeleteDictionaryWhenDaoException() throws Exception {
+    public void testDeleteVocabularyWhenException() throws Exception {
         replayTxRollback();
 
         Dictionary dictionaryMock = createDictionaryMock();
-        expect(dictionaryMock.getCardsTotal()).andReturn(0); // override
+        expect(dictionaryMock.getWordsTotal()).andReturn(0); // override
         replay(dictionaryMock);
         addDictionaryToCache(dictionaryMock);
 
-        dictionaryDaoMock.delete(DICTIONARY_ID);
-        expectLastCall().andStubThrow(new DaoException("delete", null));
+        dictionaryDaoMock.deleteVocabularyById(DICTIONARY_ID);
+        expectLastCall().andStubThrow(new DataAccessException("delete", null) {
+        });
         replay(dictionaryDaoMock);
 
-        boolean done = dictionaryService.deleteDictionary(JOHN_DOE, DICTIONARY_ID);
+        boolean done = dictionaryService.deleteVocabulary(JOHN_DOE, DICTIONARY_ID);
         assertFalse(done);
 
         verify(dictionaryDaoMock);
@@ -507,7 +477,7 @@ public class DictionaryServiceTest {
     public void testDeleteCard() throws Exception {
         // prepare dictionary
         Dictionary dictionaryMock = createDictionaryMock();
-        expect(dictionaryMock.getCardsTotal()).andReturn(1); // override
+        expect(dictionaryMock.getWordsTotal()).andReturn(1); // override
         replay(dictionaryMock);
         addDictionaryToCache(dictionaryMock);
 
@@ -706,9 +676,44 @@ public class DictionaryServiceTest {
 
     private Dictionary createDictionaryMock() {
         Dictionary dictionaryMock = mock(Dictionary.class);
-        expect(dictionaryMock.getId()).andReturn(DICTIONARY_ID).anyTimes();
+        expect(dictionaryMock.getVocabId()).andReturn(DICTIONARY_ID).anyTimes();
         expect(dictionaryMock.getName()).andReturn(DICTIONARY_NAME);
         return dictionaryMock;
+    }
+
+    private void replayTxShouldNotStart() {
+        replay(connectionMock);
+    }
+
+    private void replayTxCommited() throws Exception {
+        connectionMock.open();
+        expectLastCall().atLeastOnce();
+        connectionMock.close();
+        expectLastCall().atLeastOnce();
+        connectionMock.commit();
+        expectLastCall().atLeastOnce();
+
+        replay(connectionMock);
+    }
+
+    private void replayTxWhenException() throws Exception {
+        connectionMock.open();
+        expectLastCall().once();
+        connectionMock.close();
+        expectLastCall().once();
+
+        replay(connectionMock);
+    }
+
+    private void replayTxRollback() throws Exception {
+        connectionMock.open();
+        expectLastCall().once();
+        connectionMock.rollback();
+        expectLastCall().once();
+        connectionMock.close();
+        expectLastCall().once();
+
+        replay(connectionMock);
     }
 
 }

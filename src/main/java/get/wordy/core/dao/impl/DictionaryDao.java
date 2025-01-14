@@ -1,138 +1,210 @@
 package get.wordy.core.dao.impl;
 
-import get.wordy.core.api.id.OwnerId;
-import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.api.bean.Dictionary;
-import get.wordy.core.db.LocalTxManager;
-import org.springframework.util.StringUtils;
+import get.wordy.core.api.id.OwnerId;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
 
-import java.sql.*;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-public class DictionaryDao extends BaseDao<Dictionary> {
+/**
+ * Data Access Object (DAO) for managing vocabularies and their associated words.
+ * <p>
+ * This class provides methods for performing CRUD operations on vocabularies,
+ * managing their relationships with words, and handling specific fields like
+ * {@code picture_url} and {@code words_total}.
+ * </p>
+ *
+ * <h2>Features:</h2>
+ * <ul>
+ *   <li><b>CRUD Operations:</b>
+ *     <ul>
+ *       <li>{@code selectAllByOwnerId(OwnerId ownerId)}: Retrieves all vocabularies for a given owner.</li>
+ *       <li>{@code selectById(int vocabId)}: Fetches a specific vocabulary by its ID.</li>
+ *       <li>{@code insert(OwnerId ownerId, String name, String pictureUrl)}: Inserts a new vocabulary with the specified details.</li>
+ *       <li>{@code rename(int vocabId, String name)}: Updates the name of a vocabulary.</li>
+ *       <li>{@code updatePicture(int vocabId, String pictureUrl)}: Updates the picture URL of a vocabulary.</li>
+ *       <li>{@code updateIsShared(int vocabId, boolean isShared)}: Updates the shared status of a vocabulary.</li>
+ *       <li>{@code deleteVocabularyById(int vocabId)}: Deletes a vocabulary and its associated words.</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>Word Management:</b>
+ *     <ul>
+ *       <li>{@code addWordsToVocabulary(int vocabId, Set<Integer> wordRefs)}: Associates multiple words with a vocabulary.</li>
+ *       <li>{@code removeWordsFromVocabulary(int vocabId, Set<Integer> wordRefs)}: Removes multiple words from a vocabulary.</li>
+ *       <li>{@code getWordRefs(int vocabId)}: Retrieves all word references associated with a vocabulary.</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>Query Features:</b>
+ *     <ul>
+ *       <li>Handles {@code words_total}, a calculated field representing the total number of words in a vocabulary.</li>
+ *       <li>Manages the {@code picture_url} field for storing image URLs associated with vocabularies.</li>
+ *     </ul>
+ *   </li>
+ * </ul>
+ *
+ * <h2>Note:</h2>
+ * Methods return results in a structured and efficient manner. Batch updates for word management
+ * are implemented for performance, and transaction management is recommended for safety.
+ *
+ * @see Dictionary
+ * @see OwnerId
+ */
+@Repository
+public class DictionaryDao {
 
-    public static final String INSERT_QUERY = "INSERT INTO dictionaries (name, picture_url) VALUES (?, ?)";
-    public static final String DELETE_QUERY = "DELETE FROM dictionaries WHERE id = ?";
-    public static final String UPDATE_NAME_QUERY = "UPDATE dictionaries SET name = ? WHERE id = ?";
-    public static final String UPDATE_PIC_QUERY = "UPDATE dictionaries SET picture_url = ? WHERE id = ?";
-    public static final String SELECT_ALL_WITH_CARDS_TOTAL_QUERY = """
-            SELECT d.*, count(c.id) cards_total FROM dictionaries d LEFT OUTER JOIN cards c ON d.id = c.dictionary_id WHERE d.owner_id = ? AND d.owner_type = ? GROUP BY d.id, d.name ORDER BY d.name;
-            """;
-    public static final String SELECT_BY_ID_WITH_CARDS_TOTAL_QUERY = """
-            SELECT d.*, count(c.id) cards_total FROM dictionaries d LEFT OUTER JOIN cards c ON d.id = c.dictionary_id WHERE d.id = ? GROUP BY d.id, d.name ORDER BY d.name;
-            """;
-    public static final String COUNT_QUERY = "SELECT COUNT(d.name) FROM dictionaries d";
+    private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    DictionaryDao(LocalTxManager txManager) {
-        super(txManager);
+    @Autowired
+    public DictionaryDao(NamedParameterJdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
-    public Dictionary insert(Dictionary dictionary) throws DaoException {
-        try (var statement = prepareStatementForInsert(INSERT_QUERY)) {
-            statement.setString(1, dictionary.getName());
-            statement.setString(2, dictionary.getPicture());
-            statement.execute();
-            // get last inserted id
-            ResultSet keys = statement.getGeneratedKeys();
-            if (keys.next()) {
-                int dictionaryId = keys.getInt(1);
-                dictionary.setId(dictionaryId);
-            }
-        } catch (SQLException ex) {
-            throw new DaoException("Error while inserting a dictionary record", ex);
-        }
-        return dictionary;
+    public List<Dictionary> selectAllByOwnerId(OwnerId ownerId) {
+        String query = """
+                SELECT vocabs.vocab_id AS vocab_id,
+                       vocabs.name,
+                       vocabs.picture_url,
+                       vocabs.is_shared,
+                       COUNT(refs.word_ref) AS words_total
+                FROM vocabularies vocabs
+                LEFT JOIN vocab_has_words refs ON vocabs.vocab_id = refs.vocab_id
+                WHERE vocabs.owner_id = :ownerId AND vocabs.owner_type = :ownerType
+                GROUP BY vocabs.vocab_id, vocabs.name, vocabs.picture_url, vocabs.is_shared
+                ORDER BY vocabs.name
+                """;
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("ownerId", ownerId.ownerId())
+                .addValue("ownerType", ownerId.ownerType());
+
+        return jdbcTemplate.query(query, params, (rs, rowNum) -> new Dictionary(
+                rs.getInt("vocab_id"),
+                rs.getString("name"),
+                rs.getString("picture_url"),
+                rs.getBoolean("is_shared"),
+                rs.getInt("words_total")
+        ));
     }
 
-    @Override
-    public void delete(int dictionaryId) throws DaoException {
-        try (var statement = prepareStatement(DELETE_QUERY)) {
-            statement.setInt(1, dictionaryId);
-            statement.executeUpdate();
-        } catch (SQLException ex) {
-            throw new DaoException("Error while deleting a dictionary record", ex);
+    public Optional<Dictionary> selectById(int vocabId) {
+        String query = """
+                SELECT vocabs.vocab_id AS vocab_id,
+                       vocabs.name,
+                       vocabs.picture_url,
+                       vocabs.is_shared,
+                       COUNT(refs.word_ref) AS words_total
+                FROM vocabularies vocabs
+                LEFT JOIN vocab_has_words refs ON vocabs.vocab_id = refs.vocab_id
+                WHERE vocabs.vocab_id = :vocabId
+                GROUP BY vocabs.vocab_id, vocabs.name, vocabs.picture_url, vocabs.is_shared
+                """;
+        MapSqlParameterSource params = new MapSqlParameterSource("vocabId", vocabId);
+
+        try {
+            return Optional.ofNullable(jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> new Dictionary(
+                    rs.getInt("vocab_id"),
+                    rs.getString("name"),
+                    rs.getString("picture_url"),
+                    rs.getBoolean("is_shared"),
+                    rs.getInt("words_total")
+            )));
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
         }
     }
 
-    @Override
-    public int update(Dictionary dictionary) throws DaoException {
-        String query;
-        String paramValue;
-        if (StringUtils.hasText(dictionary.getName())) {
-            query = UPDATE_NAME_QUERY;
-            paramValue = dictionary.getName();
-        } else {
-            query = UPDATE_PIC_QUERY;
-            paramValue = dictionary.getPicture();
-        }
-        try (var statement = prepareStatement(query)) {
-            statement.setString(1, paramValue);
-            statement.setInt(2, dictionary.getId());
-            return statement.executeUpdate();
-        } catch (SQLException ex) {
-            throw new DaoException("Error while updating a dictionary record", ex);
-        }
+    public Dictionary insert(OwnerId ownerId, Dictionary dictionary) {
+        String query = """
+                INSERT INTO vocabularies (owner_id, owner_type, name, picture_url, is_shared, create_time)
+                VALUES (:ownerId, :ownerType, :name, :pictureUrl, false, current_timestamp)
+                RETURNING vocab_id, name, picture_url, is_shared, 0 AS words_total
+                """;
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("ownerId", ownerId.ownerId())
+                .addValue("ownerType", ownerId.ownerType())
+                .addValue("name", dictionary.getName())
+                .addValue("pictureUrl", dictionary.getPictureUrl());
+
+        return jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> new Dictionary(
+                rs.getInt("vocab_id"),
+                rs.getString("name"),
+                rs.getString("picture_url"),
+                rs.getBoolean("is_shared"),
+                rs.getInt("words_total")
+        ));
     }
 
-    public List<Dictionary> selectAllByOwnerId(OwnerId ownerId) throws DaoException {
-        ArrayList<Dictionary> dictionaries = new ArrayList<>();
-        try (var statement = prepareStatement(SELECT_ALL_WITH_CARDS_TOTAL_QUERY)) {
-            statement.setString(1, ownerId.ownerId());
-            statement.setString(2, ownerId.ownerType());
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                int id = resultSet.getInt(1);
-                String name = resultSet.getString(2);
-                String picture = resultSet.getString(3);
-                int cardsTotal = resultSet.getInt("cards_total");
-                dictionaries.add(new Dictionary(id, name, picture, cardsTotal));
-            }
-        } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving all dictionary records", ex);
-        }
-        return dictionaries;
+    public int rename(int vocabId, String name) {
+        String query = "UPDATE vocabularies SET name = :name WHERE vocab_id = :vocabId";
+        return jdbcTemplate.update(query, new MapSqlParameterSource()
+                .addValue("vocabId", vocabId)
+                .addValue("name", name));
     }
 
-    public int count() throws DaoException {
-        int count = -1;
-        try (var statement = getConnection().createStatement()) {
-            ResultSet resultSet = statement.executeQuery(COUNT_QUERY);
-            while (resultSet.next()) {
-                count = resultSet.getInt(1);
-            }
-        } catch (SQLException ex) {
-            throw new DaoException("Error while counting all dictionary records", ex);
-        }
-        return count;
+    public int updatePicture(int vocabId, String pictureUrl) {
+        String query = "UPDATE vocabularies SET picture_url = :pictureUrl WHERE vocab_id = :vocabId";
+        return jdbcTemplate.update(query, new MapSqlParameterSource()
+                .addValue("vocabId", vocabId)
+                .addValue("pictureUrl", pictureUrl));
     }
 
-    public Dictionary selectById(int dictionaryId) throws DaoException {
-        try (var statement = prepareStatement(SELECT_BY_ID_WITH_CARDS_TOTAL_QUERY)) {
-            statement.setInt(1, dictionaryId);
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                int id = resultSet.getInt(1);
-                String name = resultSet.getString(2);
-                String picture = resultSet.getString(3);
-                int cardsTotal = resultSet.getInt("cards_total");
-                return new Dictionary(id, name, picture, cardsTotal);
-            }
-        } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving a dictionary record", ex);
-        }
-        return null;
+    public int updateIsShared(int vocabId, boolean isShared) {
+        String query = "UPDATE vocabularies SET is_shared = :isShared WHERE vocab_id = :vocabId";
+        return jdbcTemplate.update(query, new MapSqlParameterSource()
+                .addValue("vocabId", vocabId)
+                .addValue("isShared", isShared));
     }
 
-    public void updateOwnerRelation(OwnerId user, Dictionary dictionary) throws DaoException {
-        try (var statement = prepareStatement("update dictionaries set owner_id = ?, owner_type = ? where id = ?")) {
-            statement.setString(1, user.ownerId());
-            statement.setString(2, user.ownerType());
-            statement.setInt(3, dictionary.getId());
-            statement.executeUpdate();
-        } catch (SQLException ex) {
-            throw new DaoException("Error while updating an owner relation to dictionary record", ex);
-        }
+    public void addWordsToVocabulary(int vocabId, Set<Integer> wordRefs) {
+        String query = """
+                INSERT INTO vocab_has_words (vocab_id, word_ref)
+                VALUES (:vocabId, :wordRef)
+                """;
+        jdbcTemplate.batchUpdate(query, wordRefs.stream()
+                .map(wordRef -> new MapSqlParameterSource()
+                        .addValue("vocabId", vocabId)
+                        .addValue("wordRef", wordRef))
+                .toArray(MapSqlParameterSource[]::new));
+    }
+
+    public void removeWordsFromVocabulary(int vocabId, Set<Integer> wordRefs) {
+        String query = """
+                DELETE FROM vocab_has_words
+                WHERE vocab_id = :vocabId AND word_ref = :wordRef
+                """;
+
+        jdbcTemplate.batchUpdate(query, wordRefs.stream()
+                .map(wordRef -> new MapSqlParameterSource()
+                        .addValue("vocabId", vocabId)
+                        .addValue("wordRef", wordRef))
+                .toArray(MapSqlParameterSource[]::new));
+    }
+
+    public Set<Integer> getWordRefs(int vocabId) {
+        String query = """
+                SELECT word_ref
+                FROM vocab_has_words
+                WHERE vocab_id = :vocabId
+                """;
+        MapSqlParameterSource params = new MapSqlParameterSource("vocabId", vocabId);
+        return jdbcTemplate.queryForStream(query, params, (rs, rowNum) -> rs.getInt("word_ref"))
+                .collect(Collectors.toSet());
+    }
+
+    public int deleteVocabularyById(int vocabId) {
+        // Delete related entries first
+        String deleteWordsRefs = "DELETE FROM vocab_has_words WHERE vocab_id = :vocabId";
+        jdbcTemplate.update(deleteWordsRefs, new MapSqlParameterSource("vocabId", vocabId));
+
+        // Delete the vocabulary entry
+        String deleteVocabulary = "DELETE FROM vocabularies WHERE vocab_id = :vocabId";
+        return jdbcTemplate.update(deleteVocabulary, new MapSqlParameterSource("vocabId", vocabId));
     }
 
 }
