@@ -14,10 +14,6 @@ public class DaoFactory {
         return new DaoFactory(txManager);
     }
 
-    public DictionaryDao getDictionaryDao() {
-        return new DictionaryDao(txManager);
-    }
-
     public WordDao getWordDao() {
         return new WordDao(txManager);
     }
