@@ -4,11 +4,11 @@ VALUES ('class001', 'Math 101', 'online', 'beginner', 'book.pdf', 'Basic math co
        ('class002', 'Science 101', 'offline', 'beginner', 'book.pdf', 'Basic science concepts', 'owner123', 'user'),
        ('class003', 'History 101', 'hybrid', 'advanced', 'slides.pdf', 'Detailed history concepts', 'owner456', 'user');
 
--- predefined data for wordsheet dao tests
-INSERT INTO word_sheet (id, class_id, name, is_shared)
-VALUES (1, 'class001', 'Vocabulary Basics', false),
-       (2, 'class001', 'Grammar 101', true),
-       (3, 'class002', 'Advanced Vocabulary', false);
+-- predefined data for vocabularies dao tests
+INSERT INTO vocabularies (vocab_id, owner_id, owner_type, name, is_shared)
+VALUES (101, 'class001', 'class', 'Vocabulary Basics', false),
+       (102, 'class001', 'class', 'Grammar 101', true),
+       (103, 'class002', 'class', 'Advanced Vocabulary', false);
 
 -- words table
 INSERT INTO words (id, word, part_of_speech)
@@ -24,16 +24,16 @@ VALUES (10, 'run', 'verb'),
        (19, 'slowly', 'adverb'),
        (20, 'happy', 'adjective');
 
--- wordsheet-to-words table
-INSERT INTO wordsheet_to_words (wordsheet_id, word_ref)
-VALUES (1, 10),
-       (1, 11),
-       (1, 12),
-       (1, 13),
-       (2, 14),
-       (2, 15),
-       (2, 16),
-       (2, 17),
-       (2, 18),
-       (2, 19),
-       (2, 20);
+-- vocab-has-words relation
+INSERT INTO vocab_has_words (vocab_id, word_ref)
+VALUES (101, 10),
+       (101, 11),
+       (101, 12),
+       (101, 13),
+       (102, 14),
+       (102, 15),
+       (102, 16),
+       (102, 17),
+       (102, 18),
+       (102, 19),
+       (102, 20);

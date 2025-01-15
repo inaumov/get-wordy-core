@@ -2,7 +2,7 @@ package get.wordy.core.api;
 
 import get.wordy.core.api.bean.ClassInfo;
 import get.wordy.core.api.bean.Word;
-import get.wordy.core.api.bean.WordsheetHeader;
+import get.wordy.core.api.bean.VocabHeader;
 import get.wordy.core.api.id.OwnerId;
 
 import java.util.List;
@@ -15,20 +15,20 @@ public interface IClassService {
 
     boolean deleteClass(OwnerId ownerId, String classId);
 
-    List<WordsheetHeader> getWordsheetList(OwnerId ownerId, String classId);
+    List<VocabHeader> getVocabularies(OwnerId ownerId, String classId);
 
-    WordsheetHeader createWordsheet(OwnerId ownerId, String classId, String name);
+    VocabHeader createVocabulary(OwnerId ownerId, String classId, String name);
 
-    boolean renameWordsheet(OwnerId ownerId, String classId, int wordsheetId, String name);
+    boolean renameVocabulary(OwnerId ownerId, String classId, int vocabId, String name);
 
-    boolean makeWordsheetIsShared(OwnerId ownerId, String classId, int wordsheetId, boolean isShared);
+    boolean makeVocabularyIsShared(OwnerId ownerId, String classId, int vocabId, boolean isShared);
 
-    boolean deleteWordsheet(OwnerId ownerId, String classId, int wordsheetId);
+    boolean deleteVocabulary(OwnerId ownerId, String classId, int vocabId);
 
-    List<Word> getWords(OwnerId ownerId, String classId, int wordsheetId);
+    List<Word> getWords(OwnerId ownerId, String classId, int vocabId);
 
-    Word addToWordsheet(OwnerId ownerId, String classId, int wordsheetId, int wordId);
+    Word addToVocabulary(OwnerId ownerId, String classId, int vocabId, int wordId);
 
-    boolean removeFromWordsheet(OwnerId ownerId, String classId, int wordsheetId, int wordId);
+    boolean removeFromVocabulary(OwnerId ownerId, String classId, int vocabId, int wordId);
 
 }
