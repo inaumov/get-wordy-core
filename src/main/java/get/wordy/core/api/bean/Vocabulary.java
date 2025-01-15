@@ -1,6 +1,6 @@
 package get.wordy.core.api.bean;
 
-public class Dictionary {
+public class Vocabulary {
 
     private int vocabId;
 
@@ -12,15 +12,15 @@ public class Dictionary {
 
     private int wordsTotal;
 
-    public Dictionary() {
+    public Vocabulary() {
     }
 
-    public Dictionary(String name, String pictureUrl) {
+    public Vocabulary(String name, String pictureUrl) {
         this.name = name;
         this.pictureUrl = pictureUrl;
     }
 
-    public Dictionary(int vocabId, String name, String pictureUrl, boolean isShared, int wordsTotal) {
+    public Vocabulary(int vocabId, String name, String pictureUrl, boolean isShared, int wordsTotal) {
         this.vocabId = vocabId;
         this.name = name;
         this.pictureUrl = pictureUrl;

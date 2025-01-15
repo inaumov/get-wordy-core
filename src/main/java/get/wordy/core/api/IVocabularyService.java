@@ -1,6 +1,6 @@
 package get.wordy.core.api;
 
-import get.wordy.core.api.bean.Dictionary;
+import get.wordy.core.api.bean.Vocabulary;
 import get.wordy.core.api.bean.Word;
 import get.wordy.core.api.id.OwnerId;
 
@@ -8,9 +8,9 @@ import java.util.List;
 
 public interface IVocabularyService {
 
-    List<Dictionary> getVocabularies(OwnerId ownerId);
+    List<Vocabulary> getVocabularies(OwnerId ownerId);
 
-    Dictionary createVocabulary(OwnerId ownerId, String name, String pictureUrl);
+    Vocabulary createVocabulary(OwnerId ownerId, String name, String pictureUrl);
 
     boolean renameVocabulary(OwnerId ownerId, int vocabId, String newName);
 

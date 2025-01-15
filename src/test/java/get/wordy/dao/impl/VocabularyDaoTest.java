@@ -1,9 +1,9 @@
 package get.wordy.dao.impl;
 
-import get.wordy.core.api.bean.Dictionary;
+import get.wordy.core.api.bean.Vocabulary;
 import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
-import get.wordy.core.dao.impl.DictionaryDao;
+import get.wordy.core.dao.impl.VocabularyDao;
 import get.wordy.dao.config.SpringJdbcConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -22,31 +22,31 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringJUnitConfig(classes = {DictionaryDao.class, SpringJdbcConfig.class})
+@SpringJUnitConfig(classes = {VocabularyDao.class, SpringJdbcConfig.class})
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Sql(scripts = "classpath:test-data.sql") // load predefined inserts
-public class DictionaryDaoTest {
+public class VocabularyDaoTest {
 
     private static final String LOGO_PNG = "http://logo.png";
 
     @Autowired
-    private DictionaryDao dictionaryDao;
+    private VocabularyDao vocabularyDao;
 
     @Test
     public void testSelectAllByClassId() {
         OwnerId classOwner = new OwnerId("class001", "class");
 
-        List<Dictionary> results = dictionaryDao.selectAllByOwnerId(classOwner);
+        List<Vocabulary> results = vocabularyDao.selectAllByOwnerId(classOwner);
         assertEquals(2, results.size());
 
-        Dictionary firstVocab = results.stream()
+        Vocabulary firstVocab = results.stream()
                 .filter(x -> x.getVocabId() == 101)
                 .findFirst().orElseThrow();
         assertEquals("Vocabulary Basics", firstVocab.getName());
         assertEquals(4, firstVocab.getWordsTotal()); // Assume 4 words in 1st vocab
 
-        Dictionary secondVocab = results.stream()
+        Vocabulary secondVocab = results.stream()
                 .filter(x -> x.getVocabId() == 102)
                 .findFirst().orElseThrow();
         assertEquals("Grammar 101", secondVocab.getName());
@@ -56,10 +56,10 @@ public class DictionaryDaoTest {
     @Test
     public void testInsert() {
         OwnerId classOwner = new OwnerId("class003", "class");
-        Dictionary dictionary = new Dictionary("New Vocabulary", LOGO_PNG);
+        Vocabulary vocabulary = new Vocabulary("New Vocabulary", LOGO_PNG);
 
         // Insert new vocabulary
-        Dictionary inserted = dictionaryDao.insert(classOwner, dictionary);
+        Vocabulary inserted = vocabularyDao.insert(classOwner, vocabulary);
         assertNotNull(inserted);
         assertEquals("New Vocabulary", inserted.getName());
         assertEquals(LOGO_PNG, inserted.getPictureUrl());
@@ -67,7 +67,7 @@ public class DictionaryDaoTest {
         assertEquals(0, inserted.getWordsTotal());
 
         // Verify presence in DB
-        List<Dictionary> results = dictionaryDao.selectAllByOwnerId(classOwner);
+        List<Vocabulary> results = vocabularyDao.selectAllByOwnerId(classOwner);
         assertEquals(1, results.size());
         assertEquals("New Vocabulary", results.getFirst().getName());
     }
@@ -75,11 +75,11 @@ public class DictionaryDaoTest {
     @Test
     public void testRename() {
         // rename vocabulary and verify
-        int updated = dictionaryDao.rename(101, "Updated Vocabulary Basics");
+        int updated = vocabularyDao.rename(101, "Updated Vocabulary Basics");
         assertEquals(1, updated);
 
         // verify in DB
-        Dictionary result = dictionaryDao.selectById(101)
+        Vocabulary result = vocabularyDao.selectById(101)
                 .orElseThrow();
         assertEquals("Updated Vocabulary Basics", result.getName());
     }
@@ -87,11 +87,11 @@ public class DictionaryDaoTest {
     @Test
     public void testUpdatePictureUrl() throws DaoException {
         // update an existed vocabulary
-        int updated = dictionaryDao.updatePicture(1, LOGO_PNG);
+        int updated = vocabularyDao.updatePicture(1, LOGO_PNG);
         assertEquals(1, updated);
 
         // verify after
-        Dictionary actual = dictionaryDao.selectById(1)
+        Vocabulary actual = vocabularyDao.selectById(1)
                 .orElseThrow();
         assertNotNull(actual);
         assertEquals(1, actual.getVocabId());
@@ -102,11 +102,11 @@ public class DictionaryDaoTest {
     @Test
     public void testSetIsShared() {
         // update sharing status and verify
-        int updated = dictionaryDao.updateIsShared(101, true);
+        int updated = vocabularyDao.updateIsShared(101, true);
         assertEquals(1, updated);
 
         // Verify in DB
-        Dictionary result = dictionaryDao.selectById(101)
+        Vocabulary result = vocabularyDao.selectById(101)
                 .orElseThrow();
         assertTrue(result.isShared());
     }
@@ -114,10 +114,10 @@ public class DictionaryDaoTest {
     @Test
     public void testSelectById() {
         // assume vocabulary id 101 exists in test-data.sql
-        Optional<Dictionary> vocabulary = dictionaryDao.selectById(101);
+        Optional<Vocabulary> vocabulary = vocabularyDao.selectById(101);
 
         assertTrue(vocabulary.isPresent());
-        Dictionary entity = vocabulary.get();
+        Vocabulary entity = vocabulary.get();
         assertEquals(101, entity.getVocabId());
         assertEquals("Vocabulary Basics", entity.getName());
         assertFalse(entity.isShared());
@@ -126,31 +126,31 @@ public class DictionaryDaoTest {
 
     @Test
     public void testSelectByIdNotFound() {
-        Optional<Dictionary> vocabulary = dictionaryDao.selectById(100500);
+        Optional<Vocabulary> vocabulary = vocabularyDao.selectById(100500);
 
         assertTrue(vocabulary.isEmpty());
     }
 
     @Test
     public void testDeleteVocabularyById() {
-        int deleted = dictionaryDao.deleteVocabularyById(101);
+        int deleted = vocabularyDao.deleteVocabularyById(101);
         assertEquals(1, deleted);
 
         // Verify vocabulary is deleted
-        Optional<Dictionary> deletedVocabulary = dictionaryDao.selectById(101);
+        Optional<Vocabulary> deletedVocabulary = vocabularyDao.selectById(101);
         assertTrue(deletedVocabulary.isEmpty());
 
         // Verify associated word references are deleted
-        Set<Integer> wordsRefs = dictionaryDao.getWordRefs(101);
+        Set<Integer> wordsRefs = vocabularyDao.getWordRefs(101);
         assertTrue(wordsRefs.isEmpty());
     }
 
     @ParameterizedTest
     @MethodSource("provideIdsAdd")
     public void testAddRefsToVocabulary(int vocabId, Set<Integer> toAdd, int expectedTotal) {
-        dictionaryDao.addWordsToVocabulary(vocabId, toAdd);
+        vocabularyDao.addWordsToVocabulary(vocabId, toAdd);
 
-        Set<Integer> wordsRefs = dictionaryDao.getWordRefs(vocabId);
+        Set<Integer> wordsRefs = vocabularyDao.getWordRefs(vocabId);
         assertEquals(expectedTotal, wordsRefs.size());
         // verify added references
         assertTrue(wordsRefs.containsAll(toAdd));
@@ -158,16 +158,16 @@ public class DictionaryDaoTest {
 
     @Test
     public void testRemoveRefsFromVocabulary() {
-        dictionaryDao.removeWordsFromVocabulary(101, Set.of(10, 13));
+        vocabularyDao.removeWordsFromVocabulary(101, Set.of(10, 13));
 
-        Set<Integer> wordsRefs = dictionaryDao.getWordRefs(101);
+        Set<Integer> wordsRefs = vocabularyDao.getWordRefs(101);
         assertEquals(Set.of(11, 12), wordsRefs);
     }
 
     @ParameterizedTest
     @MethodSource(value = "provideIdsGet")
     public void testGetRefsByVocabularyId(int vocabId, Set<Integer> expected) {
-        Set<Integer> wordsRefs = dictionaryDao.getWordRefs(vocabId);
+        Set<Integer> wordsRefs = vocabularyDao.getWordRefs(vocabId);
 
         assertNotNull(wordsRefs);
         assertEquals(expected, wordsRefs);

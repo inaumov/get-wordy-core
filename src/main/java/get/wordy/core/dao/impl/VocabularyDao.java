@@ -1,6 +1,6 @@
 package get.wordy.core.dao.impl;
 
-import get.wordy.core.api.bean.Dictionary;
+import get.wordy.core.api.bean.Vocabulary;
 import get.wordy.core.api.id.OwnerId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -53,20 +53,20 @@ import java.util.stream.Collectors;
  * Methods return results in a structured and efficient manner. Batch updates for word management
  * are implemented for performance, and transaction management is recommended for safety.
  *
- * @see Dictionary
+ * @see Vocabulary
  * @see OwnerId
  */
 @Repository
-public class DictionaryDao {
+public class VocabularyDao {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Autowired
-    public DictionaryDao(NamedParameterJdbcTemplate jdbcTemplate) {
+    public VocabularyDao(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<Dictionary> selectAllByOwnerId(OwnerId ownerId) {
+    public List<Vocabulary> selectAllByOwnerId(OwnerId ownerId) {
         String query = """
                 SELECT vocabs.vocab_id AS vocab_id,
                        vocabs.name,
@@ -83,7 +83,7 @@ public class DictionaryDao {
                 .addValue("ownerId", ownerId.ownerId())
                 .addValue("ownerType", ownerId.ownerType());
 
-        return jdbcTemplate.query(query, params, (rs, rowNum) -> new Dictionary(
+        return jdbcTemplate.query(query, params, (rs, rowNum) -> new Vocabulary(
                 rs.getInt("vocab_id"),
                 rs.getString("name"),
                 rs.getString("picture_url"),
@@ -92,7 +92,7 @@ public class DictionaryDao {
         ));
     }
 
-    public Optional<Dictionary> selectById(int vocabId) {
+    public Optional<Vocabulary> selectById(int vocabId) {
         String query = """
                 SELECT vocabs.vocab_id AS vocab_id,
                        vocabs.name,
@@ -107,7 +107,7 @@ public class DictionaryDao {
         MapSqlParameterSource params = new MapSqlParameterSource("vocabId", vocabId);
 
         try {
-            return Optional.ofNullable(jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> new Dictionary(
+            return Optional.ofNullable(jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> new Vocabulary(
                     rs.getInt("vocab_id"),
                     rs.getString("name"),
                     rs.getString("picture_url"),
@@ -119,7 +119,7 @@ public class DictionaryDao {
         }
     }
 
-    public Dictionary insert(OwnerId ownerId, Dictionary dictionary) {
+    public Vocabulary insert(OwnerId ownerId, Vocabulary vocabulary) {
         String query = """
                 INSERT INTO vocabularies (owner_id, owner_type, name, picture_url, is_shared, create_time)
                 VALUES (:ownerId, :ownerType, :name, :pictureUrl, false, current_timestamp)
@@ -128,10 +128,10 @@ public class DictionaryDao {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("ownerId", ownerId.ownerId())
                 .addValue("ownerType", ownerId.ownerType())
-                .addValue("name", dictionary.getName())
-                .addValue("pictureUrl", dictionary.getPictureUrl());
+                .addValue("name", vocabulary.getName())
+                .addValue("pictureUrl", vocabulary.getPictureUrl());
 
-        return jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> new Dictionary(
+        return jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> new Vocabulary(
                 rs.getInt("vocab_id"),
                 rs.getString("name"),
                 rs.getString("picture_url"),
