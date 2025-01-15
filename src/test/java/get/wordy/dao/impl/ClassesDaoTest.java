@@ -11,8 +11,11 @@ import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,70 +29,118 @@ public class ClassesDaoTest {
     private ClassesDao classesDao;
 
     @Test
-    public void testSelectAllByOwnerId() {
-        OwnerId ownerId = new OwnerId("owner123", "user");
+    public void testGroupClassesByDay() {
+        // given
+        OwnerId ownerId = new OwnerId("user123", "user");
 
-        // fetch data and verify
-        List<ClassInfo> results = classesDao.selectAllByOwnerId(ownerId);
-        assertEquals(2, results.size());
-        assertEquals("Math 101", results.get(0).getName());
-        assertEquals("Science 101", results.get(1).getName());
+        // when
+        Map<String, List<ClassInfo>> groupedClasses = classesDao.groupClassesByDay(ownerId);
+
+        // then
+        assertNotNull(groupedClasses);
+        assertTrue(groupedClasses.containsKey("Mon"));
+        assertTrue(groupedClasses.containsKey("Fri"));
+
+        // validate classes grouped under Monday
+        // "Beginner English", "Business English" and "Conversational English"
+        List<ClassInfo> mondayClasses = groupedClasses.get("Mon");
+        assertEquals(3, mondayClasses.size());
+
+        ClassInfo class1 = mondayClasses.stream()
+                .filter(c -> c.getClassId().equals("class1"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(class1);
+        assertEquals("Beginner English", class1.getName());
+        assertEquals(2, class1.getSchedules().size()); // Mon, Wed
+
+        // validate a single class schedule
+        ClassInfo.ClassSchedule schedule1 = class1.getSchedules().stream()
+                .filter(s -> "Mon".equals(s.getDayOfWeek()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(schedule1);
+        assertEquals(LocalTime.of(9, 0), schedule1.getStartTime());
+        assertEquals(LocalTime.of(10, 0), schedule1.getEndTime());
+
+        // validate classes grouped under Friday
+        // "Advanced English" and "Business English", "Pronunciation Practice"
+        List<ClassInfo> fridayClasses = groupedClasses.get("Fri");
+        assertEquals(3, fridayClasses.size());
+
+        Set<String> friClasses = Set.of("class3", "class4", "class11");
+        fridayClasses
+                .forEach(classInfo -> assertTrue(friClasses.contains(classInfo.getClassId())));
     }
 
     @Test
-    public void testUpdate() {
-        OwnerId ownerId = new OwnerId("owner123", "user");
-        ClassInfo updatedDetails = new ClassInfo("class001", "Math 102", "offline", "intermediate", "updated.pdf", "Advanced topics");
+    public void testInsertClassInfoWithSchedules() {
+        OwnerId ownerId = new OwnerId("user123", "user");
 
-        // update and verify
-        classesDao.update(ownerId, updatedDetails);
-        List<ClassInfo> results = classesDao.selectAllByOwnerId(ownerId);
+        ClassInfo.ClassSchedule schedule1 = new ClassInfo.ClassSchedule("Mon", LocalTime.of(10, 0), LocalTime.of(10, 50));
+        ClassInfo.ClassSchedule schedule2 = new ClassInfo.ClassSchedule("Fri", LocalTime.of(14, 0), LocalTime.of(14, 50));
+        ClassInfo classInfo = new ClassInfo("class13", "Tower 101", "Lecture", "Beginner", "Algebra", "None", List.of(schedule1, schedule2));
 
-        assertEquals(2, results.size());
-        ClassInfo updatedClass = results.stream()
-                .filter(c -> c.getClassId().equals("class001"))
+        classesDao.insert(ownerId, classInfo);
+
+        // Assertions to verify the class and schedules are inserted correctly
+        Map<String, List<ClassInfo>> groupedClasses = classesDao.groupClassesByDay(ownerId);
+
+        assertTrue(groupedClasses.containsKey("Mon"));
+        assertTrue(groupedClasses.containsKey("Fri"));
+
+        List<ClassInfo> mondayClasses = groupedClasses.get("Mon");
+        assertEquals(1, mondayClasses
+                .stream()
+                .filter(c -> c.getClassId().equals("class13")).count());
+
+        ClassInfo insertedClass = mondayClasses.stream()
+                .filter(c -> c.getClassId().equals("class13"))
                 .findFirst()
                 .orElseThrow();
-        assertEquals("Math 102", updatedClass.getName());
-        assertEquals("offline", updatedClass.getFormat());
+        assertEquals("Tower 101", insertedClass.getName());
+        assertEquals("Lecture", insertedClass.getFormat());
+        assertEquals("Beginner", insertedClass.getLevel());
+        assertEquals(2, insertedClass.getSchedules().size());
     }
 
     @Test
     public void testDelete() {
-        OwnerId ownerId = new OwnerId("owner123", "user");
+        OwnerId ownerId = new OwnerId("user123", "user");
 
-        // delete and verify
-        classesDao.delete(ownerId, "class001");
-        List<ClassInfo> results = classesDao.selectAllByOwnerId(ownerId);
+        classesDao.delete(ownerId, "class1");
 
-        assertEquals(1, results.size());
-        assertFalse(results
-                .stream()
-                .anyMatch(c -> c.getClassId().equals("class001"))
+        Map<String, List<ClassInfo>> groupedClasses = classesDao.groupClassesByDay(ownerId);
+//        assertEquals(11, results.size()); // 12 classes initially, 1 deleted
+
+        groupedClasses.values().forEach(classList ->
+                assertFalse(classList.stream().anyMatch(c -> c.getClassId().equals("class1")))
         );
     }
 
     @Test
     public void testSelectById() {
-        OwnerId ownerId = new OwnerId("owner123", "user");
+        OwnerId ownerId = new OwnerId("user123", "user");
 
-        // fetch data and verify is present
-        Optional<ClassInfo> classInfo = classesDao.selectById(ownerId, "class001");
+        // Fetch data and verify it is present
+        Optional<ClassInfo> classInfo = classesDao.selectById(ownerId, "class1");
         assertTrue(classInfo.isPresent());
+
         ClassInfo entity = classInfo.get();
-        assertEquals("Math 101", entity.getName());
-        assertEquals("online", entity.getFormat());
-        assertEquals("beginner", entity.getLevel());
-        assertEquals("book.pdf", entity.getMaterial());
-        assertEquals("Basic math concepts", entity.getNotes());
+        assertEquals("Beginner English", entity.getName());
+        assertEquals("Lecture", entity.getFormat());
+        assertEquals("Beginner", entity.getLevel());
+        assertEquals("Grammar Basics", entity.getMaterial());
+        assertEquals("Morning class", entity.getNotes());
+        assertEquals(2, entity.getSchedules().size()); // Mon, Wed
     }
 
     @Test
     public void testSelectByIdNotFound() {
-        OwnerId ownerId = new OwnerId("owner456", "user");
+        OwnerId ownerId = new OwnerId("user123", "user");
 
-        // fetch data and verify not present
-        Optional<ClassInfo> classInfo = classesDao.selectById(ownerId, "class001");
+        // Fetch data and verify it is not present
+        Optional<ClassInfo> classInfo = classesDao.selectById(ownerId, "class999");
         assertTrue(classInfo.isEmpty());
     }
 

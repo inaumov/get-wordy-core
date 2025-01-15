@@ -1,5 +1,8 @@
 package get.wordy.core.api.bean;
 
+import java.time.LocalTime;
+import java.util.List;
+
 public class ClassInfo {
 
     private String classId;
@@ -8,14 +11,16 @@ public class ClassInfo {
     private String level;
     private String material;
     private String notes;
+    private List<ClassSchedule> schedules;
 
-    public ClassInfo(String classId, String name, String format, String level, String material, String notes) {
+    public ClassInfo(String classId, String name, String format, String level, String material, String notes, List<ClassSchedule> schedules) {
         this.classId = classId;
         this.name = name;
         this.format = format;
         this.level = level;
         this.material = material;
         this.notes = notes;
+        this.schedules = schedules;
     }
 
     public String getClassId() {
@@ -64,6 +69,51 @@ public class ClassInfo {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public List<ClassSchedule> getSchedules() {
+        return schedules;
+    }
+
+    public void setSchedules(List<ClassSchedule> schedules) {
+        this.schedules = schedules;
+    }
+
+    public static class ClassSchedule {
+
+        private String dayOfWeek; // E.g., "Mon", "Tue"
+        private LocalTime startTime;
+        private LocalTime endTime;
+
+        public ClassSchedule(String dayOfWeek, LocalTime startTime, LocalTime endTime) {
+            this.dayOfWeek = dayOfWeek;
+            this.startTime = startTime;
+            this.endTime = endTime;
+        }
+
+        public String getDayOfWeek() {
+            return dayOfWeek;
+        }
+
+        public void setDayOfWeek(String dayOfWeek) {
+            this.dayOfWeek = dayOfWeek;
+        }
+
+        public LocalTime getStartTime() {
+            return startTime;
+        }
+
+        public void setStartTime(LocalTime startTime) {
+            this.startTime = startTime;
+        }
+
+        public LocalTime getEndTime() {
+            return endTime;
+        }
+
+        public void setEndTime(LocalTime endTime) {
+            this.endTime = endTime;
+        }
     }
 
 }
