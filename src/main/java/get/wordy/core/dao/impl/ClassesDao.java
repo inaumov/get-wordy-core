@@ -21,10 +21,10 @@ public class ClassesDao {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public Map<String, List<ClassInfo>> groupClassesByDay(OwnerId ownerId) {
+    public Map<String, ClassInfo> fetchAllClassesWithSchedules(OwnerId ownerId) {
         String query = """
-                SELECT cs.day_of_week, c.class_id, c.name, c.format, c.level, c.material, c.notes, 
-                       cs.start_time, cs.end_time
+                SELECT c.class_id, c.name, c.format, c.level, c.material, c.notes,
+                       cs.day_of_week, cs.start_time, cs.end_time
                 FROM class_info c
                 JOIN class_schedule cs ON c.class_id = cs.class_id
                 WHERE c.owner_id = :ownerId AND c.owner_type = :ownerType
@@ -37,18 +37,12 @@ public class ClassesDao {
 
         List<Map<String, Object>> results = jdbcTemplate.queryForList(query, params);
 
-        // map to group classes by day
-        Map<String, List<ClassInfo>> groupedClasses = new TreeMap<>();
-
-        // temporary map to track classes and their schedules
-        Map<String, ClassInfo> classMap = new HashMap<>();
-
+        // group schedules for the same class
+        Map<String, ClassInfo> classMap = new LinkedHashMap<>();
         for (Map<String, Object> row : results) {
-            String dayOfWeek = (String) row.get("day_of_week");
             String classId = (String) row.get("class_id");
-
             ClassInfo classInfo = classMap.computeIfAbsent(classId, id -> new ClassInfo(
-                    id,
+                    classId,
                     (String) row.get("name"),
                     (String) row.get("format"),
                     (String) row.get("level"),
@@ -59,16 +53,13 @@ public class ClassesDao {
 
             // add schedule to the class
             classInfo.getSchedules().add(new ClassInfo.ClassSchedule(
-                    dayOfWeek,
+                    ((String) row.get("day_of_week")).toLowerCase(),
                     ((Time) row.get("start_time")).toLocalTime(),
                     ((Time) row.get("end_time")).toLocalTime()
             ));
-
-            // add the class to the appropriate day group
-            groupedClasses.computeIfAbsent(dayOfWeek, k -> new ArrayList<>()).add(classInfo);
         }
 
-        return groupedClasses;
+        return classMap;
     }
 
     public ClassInfo insert(OwnerId ownerId, ClassInfo classInfo) {
@@ -90,7 +81,7 @@ public class ClassesDao {
 
         String scheduleInsertQuery = """
                 INSERT INTO class_schedule (class_id, day_of_week, start_time, end_time)
-                VALUES (:classId, :dayOfWeek, :startTime, :endTime)
+                VALUES (:classId, lower(:dayOfWeek), :startTime, :endTime)
                 """;
 
         for (ClassInfo.ClassSchedule schedule : classInfo.getSchedules()) {

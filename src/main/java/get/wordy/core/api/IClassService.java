@@ -7,10 +7,12 @@ import java.util.List;
 
 public interface IClassService {
 
-    List<ClassInfo> getClasses(OwnerId ownerId, String dayOfWeek);
+    List<ClassInfo> getClassesInfo(OwnerId ownerId);
 
-    ClassInfo saveClass(OwnerId ownerId, ClassInfo classInfo);
+    ClassInfo saveClassInfo(OwnerId ownerId, ClassInfo classInfo);
 
-    boolean deleteClass(OwnerId ownerId, String classId);
+    boolean deleteClassInfo(OwnerId ownerId, String classId);
+
+    ClassInfo findClassInfo(OwnerId ownerId, String classId);
 
 }

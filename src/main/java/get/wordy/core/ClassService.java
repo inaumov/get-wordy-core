@@ -10,6 +10,7 @@ import get.wordy.core.dao.impl.*;
 import get.wordy.core.db.LocalTxManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -21,7 +22,7 @@ public class ClassService implements IClassService {
     private ClassesDao classesDao;
     private LocalTxManager connection;
 
-    private final Map<OwnerId, List<ClassInfo>> classesListCache = new HashMap<>();
+    private final Map<OwnerId, Map<String, ClassInfo>> userClassesCache = new HashMap<>();
 
     @SuppressWarnings("unused")
     public ClassService() {
@@ -36,34 +37,30 @@ public class ClassService implements IClassService {
     }
 
     @Override
-    public List<ClassInfo> getClasses(OwnerId userId, String dayOfWeek) {
+    public List<ClassInfo> getClassesInfo(OwnerId userId) {
 
-        List<ClassInfo> cachedClassInfos = classesListCache.get(userId);
+        Map<String, ClassInfo> cachedClassInfos = userClassesCache.get(userId);
         if (cachedClassInfos != null && !cachedClassInfos.isEmpty()) {
-            return cachedClassInfos;
+            return List.copyOf(cachedClassInfos.values());
         }
 
-        List<ClassInfo> list;
+        // fetch from the database if not present in the cache
+        Map<String, ClassInfo> classIdIndex;
         try {
-            connection.open();
-            // fetch from the database if not present in the cache
-            // todo filter by day (a class can be assigned to several days)
-            list = classesDao.selectAllByOwnerId(userId);
-            connection.commit();
-
+            classIdIndex = classesDao.fetchAllClassesWithSchedules(userId);
             // update the cache
-            classesListCache.put(userId, list);
-        } catch (DaoException e) {
-            LOG.error("Error while getting list of class infos", e);
+            userClassesCache.put(userId, classIdIndex);
+        } catch (DataAccessException e) {
+            LOG.error("Error while getting list of classes info", e);
             return Collections.emptyList();
         } finally {
             connection.close();
         }
-        return list;
+        return List.copyOf(classIdIndex.values());
     }
 
     @Override
-    public ClassInfo saveClass(OwnerId userId, ClassInfo classInfo) {
+    public ClassInfo saveClassInfo(OwnerId userId, ClassInfo classInfo) {
         try {
             connection.open();
             ClassInfo inserted = classesDao.insert(userId, classInfo);
@@ -71,7 +68,7 @@ public class ClassService implements IClassService {
             putClassInfoToCache(userId, () -> classInfo);
             return inserted;
         } catch (DaoException e) {
-            LOG.error("Error while creating a new dictionary", e);
+            LOG.error("Error while saving a new class info", e);
             connection.rollback();
             return null;
         } finally {
@@ -80,16 +77,16 @@ public class ClassService implements IClassService {
     }
 
     @Override
-    public boolean deleteClass(OwnerId userId, String classId) {
+    public boolean deleteClassInfo(OwnerId ownerId, String classId) {
+        ClassInfo classInfo = findClassInfo(ownerId, classId);
         try {
-            ClassInfo classInfo = findClassInfo(userId, classId);
             connection.open();
-            classesDao.delete(userId, classId);
+            classesDao.delete(ownerId, classId);
             connection.commit();
-            classesListCache.get(userId).remove(classInfo);
+            userClassesCache.remove(ownerId);
         } catch (DaoException e) {
             connection.rollback();
-            LOG.error("Error while removing class by id = {}", classId, e);
+            LOG.error("Error while removing class info {} by id = {}", classInfo.getName(), classId, e);
             return false;
         } finally {
             connection.close();
@@ -97,38 +94,42 @@ public class ClassService implements IClassService {
         return true;
     }
 
-    private ClassInfo findClassInfo(OwnerId ownerId, String classId) {
-        return classesListCache.getOrDefault(ownerId, Collections.emptyList()).stream()
-                .filter(classInfo -> Objects.equals(classInfo.getClassId(), classId))
-                .findAny()
+    @Override
+    public ClassInfo findClassInfo(OwnerId ownerId, String classId) {
+        Map<String, ClassInfo> userClasses = userClassesCache.getOrDefault(ownerId, Collections.emptyMap());
+        return findClassById(userClasses, classId)
                 .orElseGet(() -> getClassInfoFromDb(ownerId, classId));
     }
 
     private ClassInfo getClassInfoFromDb(OwnerId ownerId, String classId) {
         Optional<ClassInfo> classInfo;
         try {
-            connection.open();
             classInfo = classesDao.selectById(ownerId, classId);
-            connection.commit();
         } catch (Exception e) {
             throw new ClassServiceException("Could not get class info with id = " + classId + " for owner " + ownerId, e);
         }
         if (classInfo.isEmpty()) {
-            throw new ClassInfoNotFoundException("Class with id = " + classId + " not found for owner " + ownerId);
+            throw new ClassInfoNotFoundException("Class info with id = " + classId + " not found for owner " + ownerId);
         }
         putClassInfoToCache(ownerId, classInfo::get);
         return classInfo.get();
     }
 
-    private void putClassInfoToCache(OwnerId ownerId, Supplier<ClassInfo> classDetailsSupplier) {
-        if (classesListCache.containsKey(ownerId)) {
-            List<ClassInfo> dictionaries = classesListCache.get(ownerId);
-            dictionaries.add(classDetailsSupplier.get());
+    private void putClassInfoToCache(OwnerId ownerId, Supplier<ClassInfo> classInfoSupplier) {
+        ClassInfo classInfo = classInfoSupplier.get();
+        if (userClassesCache.containsKey(ownerId)) {
+            Map<String, ClassInfo> classIdIndex = userClassesCache.get(ownerId);
+            classIdIndex.put(classInfo.getClassId(), classInfo);
         } else {
-            List<ClassInfo> newList = new ArrayList<>();
-            newList.add(classDetailsSupplier.get());
-            classesListCache.put(ownerId, newList);
+            Map<String, ClassInfo> classIdIndex = new HashMap<>();
+            classIdIndex.put(classInfo.getClassId(), classInfo);
+            userClassesCache.put(ownerId, classIdIndex);
         }
+    }
+
+    // efficiently find a class by classId from the reverse index
+    public Optional<ClassInfo> findClassById(Map<String, ClassInfo> classIdIndex, String classId) {
+        return Optional.ofNullable(classIdIndex.get(classId));
     }
 
 }

@@ -29,48 +29,46 @@ public class ClassesDaoTest {
     private ClassesDao classesDao;
 
     @Test
-    public void testGroupClassesByDay() {
+    public void testFetchAllClassesWithSchedules() {
         // given
         OwnerId ownerId = new OwnerId("user123", "user");
 
         // when
-        Map<String, List<ClassInfo>> groupedClasses = classesDao.groupClassesByDay(ownerId);
+        Map<String, ClassInfo> groupedClasses = classesDao.fetchAllClassesWithSchedules(ownerId);
 
         // then
         assertNotNull(groupedClasses);
-        assertTrue(groupedClasses.containsKey("Mon"));
-        assertTrue(groupedClasses.containsKey("Fri"));
+        assertEquals(12, groupedClasses.size());
+        assertTrue(groupedClasses.containsKey("class1"));
+        assertTrue(groupedClasses.containsKey("class3"));
 
-        // validate classes grouped under Monday
-        // "Beginner English", "Business English" and "Conversational English"
-        List<ClassInfo> mondayClasses = groupedClasses.get("Mon");
-        assertEquals(3, mondayClasses.size());
-
-        ClassInfo class1 = mondayClasses.stream()
-                .filter(c -> c.getClassId().equals("class1"))
-                .findFirst()
-                .orElse(null);
+        // Validate ClassInfo for "class1"
+        ClassInfo class1 = groupedClasses.get("class1");
         assertNotNull(class1);
         assertEquals("Beginner English", class1.getName());
         assertEquals(2, class1.getSchedules().size()); // Mon, Wed
 
-        // validate a single class schedule
-        ClassInfo.ClassSchedule schedule1 = class1.getSchedules().stream()
-                .filter(s -> "Mon".equals(s.getDayOfWeek()))
+        ClassInfo.ClassSchedule mondaySchedule = class1.getSchedules().stream()
+                .filter(s -> "mon".equals(s.getDayOfWeek()))
                 .findFirst()
                 .orElse(null);
-        assertNotNull(schedule1);
-        assertEquals(LocalTime.of(9, 0), schedule1.getStartTime());
-        assertEquals(LocalTime.of(10, 0), schedule1.getEndTime());
+        assertNotNull(mondaySchedule);
+        assertEquals(LocalTime.of(9, 0), mondaySchedule.getStartTime());
+        assertEquals(LocalTime.of(10, 0), mondaySchedule.getEndTime());
 
-        // validate classes grouped under Friday
-        // "Advanced English" and "Business English", "Pronunciation Practice"
-        List<ClassInfo> fridayClasses = groupedClasses.get("Fri");
-        assertEquals(3, fridayClasses.size());
+        // Validate ClassInfo for "class3"
+        ClassInfo class3 = groupedClasses.get("class3");
+        assertNotNull(class3);
+        assertEquals("Advanced English", class3.getName());
+        assertEquals(2, class3.getSchedules().size()); // Fri, Sat
 
-        Set<String> friClasses = Set.of("class3", "class4", "class11");
-        fridayClasses
-                .forEach(classInfo -> assertTrue(friClasses.contains(classInfo.getClassId())));
+        ClassInfo.ClassSchedule fridaySchedule = class3.getSchedules().stream()
+                .filter(s -> "fri".equals(s.getDayOfWeek()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(fridaySchedule);
+        assertEquals(LocalTime.of(10, 0), fridaySchedule.getStartTime());
+        assertEquals(LocalTime.of(11, 30), fridaySchedule.getEndTime());
     }
 
     @Test
@@ -83,25 +81,33 @@ public class ClassesDaoTest {
 
         classesDao.insert(ownerId, classInfo);
 
-        // Assertions to verify the class and schedules are inserted correctly
-        Map<String, List<ClassInfo>> groupedClasses = classesDao.groupClassesByDay(ownerId);
+        Map<String, ClassInfo> groupedClasses = classesDao.fetchAllClassesWithSchedules(ownerId);
 
-        assertTrue(groupedClasses.containsKey("Mon"));
-        assertTrue(groupedClasses.containsKey("Fri"));
+        assertTrue(groupedClasses.containsKey("class13"));
 
-        List<ClassInfo> mondayClasses = groupedClasses.get("Mon");
-        assertEquals(1, mondayClasses
-                .stream()
-                .filter(c -> c.getClassId().equals("class13")).count());
-
-        ClassInfo insertedClass = mondayClasses.stream()
-                .filter(c -> c.getClassId().equals("class13"))
-                .findFirst()
-                .orElseThrow();
+        ClassInfo insertedClass = groupedClasses.get("class13");
         assertEquals("Tower 101", insertedClass.getName());
         assertEquals("Lecture", insertedClass.getFormat());
         assertEquals("Beginner", insertedClass.getLevel());
         assertEquals(2, insertedClass.getSchedules().size());
+
+        // assertions to verify the class and schedules are inserted correctly
+
+        ClassInfo.ClassSchedule mondaySchedule = insertedClass.getSchedules().stream()
+                .filter(s -> "mon".equals(s.getDayOfWeek()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(mondaySchedule);
+        assertEquals(schedule1.getStartTime(), mondaySchedule.getStartTime());
+        assertEquals(schedule1.getEndTime(), mondaySchedule.getEndTime());
+
+        ClassInfo.ClassSchedule fridaySchedule = insertedClass.getSchedules().stream()
+                .filter(s -> "fri".equals(s.getDayOfWeek()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(fridaySchedule);
+        assertEquals(schedule2.getStartTime(), fridaySchedule.getStartTime());
+        assertEquals(schedule2.getEndTime(), fridaySchedule.getEndTime());
     }
 
     @Test
@@ -110,12 +116,10 @@ public class ClassesDaoTest {
 
         classesDao.delete(ownerId, "class1");
 
-        Map<String, List<ClassInfo>> groupedClasses = classesDao.groupClassesByDay(ownerId);
-//        assertEquals(11, results.size()); // 12 classes initially, 1 deleted
+        Map<String, ClassInfo> results = classesDao.fetchAllClassesWithSchedules(ownerId);
+        assertEquals(11, results.size()); // 12 classes initially, 1 deleted
 
-        groupedClasses.values().forEach(classList ->
-                assertFalse(classList.stream().anyMatch(c -> c.getClassId().equals("class1")))
-        );
+        assertFalse(results.containsKey("class1"));
     }
 
     @Test
