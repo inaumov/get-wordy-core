@@ -128,6 +128,8 @@ public class WordDao extends BaseDao<Word> {
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 var word = mapResultSetToWordEntity(resultSet);
+                word.setSentences(getSentencesFor(word.getId()));
+                word.setCollocations(getCollocationsFor(word.getId()));
                 words.add(word);
             }
         } catch (SQLException ex) {
