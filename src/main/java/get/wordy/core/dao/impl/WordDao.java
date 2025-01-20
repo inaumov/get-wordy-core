@@ -22,8 +22,8 @@ public class WordDao extends BaseDao<Word> {
     public static final String INSERT_WORD_BATCH_QUERY = "INSERT INTO words (word) VALUES (?)";
 
     // sentences and collocations
-    private static final String INSERT_SENTENCE_QUERY = "INSERT INTO in_context (word_id, example, matched_words) VALUES (?,?,?,?)";
-    private static final String INSERT_COLLOCATIONS_QUERY = "INSERT INTO collocations (word_id, example) VALUES (?,?,?)";
+    private static final String INSERT_SENTENCE_QUERY = "INSERT INTO in_context (word_id, example, matched_words) VALUES (?,?,?)";
+    private static final String INSERT_COLLOCATIONS_QUERY = "INSERT INTO collocations (word_id, example) VALUES (?,?)";
     private static final String SELECT_FROM_CONTEXT_QUERY = "SELECT * FROM in_context WHERE word_id=?";
     private static final String SELECT_COLLOCATIONS_QUERY = "SELECT * FROM collocations WHERE word_id=?";
     private static final String DELETE_FROM_CONTEXT_QUERY = "DELETE FROM in_context WHERE word_id=?";

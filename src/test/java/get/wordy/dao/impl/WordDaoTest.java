@@ -83,6 +83,8 @@ public class WordDaoTest extends BaseDaoTest {
             assertEquals(id, actual.getId());
             assertEquals("to test " + id, actual.getValue());
             assertEquals("transcription" + id, actual.getTranscription());
+            assertSentences(actual.getSentences(), wordDao.getSentencesFor(actual.getId()));
+            assertCollocations(actual.getCollocations(), wordDao.getCollocationsFor(actual.getId()));
             id++;
         }
     }
@@ -94,7 +96,7 @@ public class WordDaoTest extends BaseDaoTest {
         List<Word> wordsAfter = wordDao.selectAll(Set.of(1, 2, 3));
         assertNotNull(wordsAfter);
         assertEquals(PREDEFINED_WORDS_CNT - 1, wordsAfter.size());
-        assertTestData(wordsAfter, 1);
+        assertTestData(wordsAfter);
     }
 
     @Test
@@ -111,7 +113,7 @@ public class WordDaoTest extends BaseDaoTest {
         List<Word> words = wordDao.selectAll(Set.of(1, 2, 3, 4));
         assertNotNull(words);
         assertEquals(PREDEFINED_WORDS_CNT, words.size());
-        assertTestData(words, 1);
+        assertTestData(words);
     }
 
     @Test
@@ -138,8 +140,8 @@ public class WordDaoTest extends BaseDaoTest {
         assertNull(last.getMeaning());
     }
 
-    private static void assertTestData(List<Word> words, int startFromId) {
-        for (int i = 0, id = startFromId; i < words.size(); i++, id++) {
+    private static void assertTestData(List<Word> words) {
+        for (int i = 0, id = 1; i < words.size(); i++, id++) {
             Word next = words.get(i);
             assertEquals(id, next.getId());
             assertEquals("example" + id, next.getValue());
