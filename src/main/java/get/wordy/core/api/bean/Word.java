@@ -1,5 +1,6 @@
 package get.wordy.core.api.bean;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -10,8 +11,8 @@ public class Word {
     private String partOfSpeech;
     private String transcription;
     private String meaning;
-    private List<String> sentences;
-    private List<String> collocations;
+    private final List<InContext> sentences = new ArrayList<>();
+    private final List<String> collocations = new ArrayList<>();
 
     public Word() {
     }
@@ -48,22 +49,49 @@ public class Word {
         return new Word(id, value, partOfSpeech, transcription, meaning);
     }
 
-    public List<String> getSentences() {
-        return sentences;
+    public List<InContext> getSentences() {
+        return List.copyOf(sentences);
     }
 
-    public Word withSentences(List<String> sentences) {
-        this.sentences = sentences;
-        return this;
+    public List<String> getStrSentences() {
+        return sentences
+                .stream()
+                .map(InContext::getExample)
+                .toList();
+    }
+
+    public void addSentence(InContext sentence) {
+        sentences.add(sentence);
+    }
+
+    public void addStrSentence(String sentence) {
+        sentences.add(InContext.of(sentence));
+    }
+
+    public void setSentences(List<InContext> sentences) {
+        this.sentences.clear();
+        this.sentences.addAll(sentences);
+    }
+
+    public void setStrSentences(List<String> strSentences) {
+        this.sentences.clear();
+        this.sentences.addAll(strSentences
+                .stream()
+                .map(InContext::of)
+                .toList());
     }
 
     public List<String> getCollocations() {
-        return collocations;
+        return List.copyOf(collocations);
     }
 
-    public Word withCollocations(List<String> collocations) {
-        this.collocations = collocations;
-        return this;
+    public void addCollocation(String collocation) {
+        collocations.add(collocation);
+    }
+
+    public void setCollocations(List<String> collocations) {
+        this.collocations.clear();
+        this.collocations.addAll(collocations);
     }
 
     @Override

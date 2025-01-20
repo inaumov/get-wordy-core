@@ -1,5 +1,6 @@
 package get.wordy.dao.impl;
 
+import get.wordy.core.api.bean.InContext;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.api.bean.Word;
 import get.wordy.core.dao.impl.WordDao;
@@ -27,6 +28,10 @@ public class WordDaoTest extends BaseDaoTest {
     @Test
     public void testInsert() throws DaoException {
         Word word = new Word(0, "apple", "noun", "transcription", "Some text");
+        InContext testSentence = InContext.of("Test sentence")
+                .withMatchedWords("test");
+        word.addSentence(testSentence);
+        word.addCollocation("Test collocation");
 
         Word inserted = wordDao.insert(word);
         assertTrue(inserted.getId() >= EXPECTED_NEW_ID);
@@ -44,6 +49,8 @@ public class WordDaoTest extends BaseDaoTest {
                 assertEquals("noun", actual.getPartOfSpeech());
                 assertEquals("transcription", actual.getTranscription());
                 assertEquals("Some text", actual.getMeaning());
+                assertSentences(actual.getSentences(), wordDao.getSentencesFor(actual.getId()));
+                assertCollocations(actual.getCollocations(), wordDao.getCollocationsFor(actual.getId()));
             } else {
                 assertEquals(id, actual.getId());
                 assertEquals("example" + id, actual.getValue());
@@ -58,6 +65,11 @@ public class WordDaoTest extends BaseDaoTest {
         // update an existed word
         for (int id = 1; id <= PREDEFINED_WORDS_CNT; id++) {
             Word word = new Word(id, "to test " + id, "VERB", "transcription" + id, "test");
+            InContext testSentence = InContext.of("Test sentence")
+                    .withMatchedWords("test");
+            word.addSentence(testSentence);
+            word.addStrSentence("Test sentence 2");
+            word.addCollocation("Test collocation");
             int i = wordDao.update(word);
             assertEquals(1, i);
         }
@@ -152,6 +164,26 @@ public class WordDaoTest extends BaseDaoTest {
     void testGetWordNotExists() throws DaoException {
         var word = wordDao.selectById(100);
         assertNull(word);
+    }
+
+    private static void assertSentences(List<InContext> expectedSentences, List<InContext> actualSentences) {
+        assertNotNull(actualSentences);
+
+        for (int i = 0; i < expectedSentences.size(); i++) {
+            String expected = expectedSentences.get(i).getExample();
+            InContext actual = actualSentences.get(i);
+            assertEquals(expected, actual.getExample());
+        }
+    }
+
+    private static void assertCollocations(List<String> expectedCollocations, List<String> actualCollocations) {
+        assertNotNull(actualCollocations);
+
+        for (int i = 0; i < expectedCollocations.size(); i++) {
+            String expected = expectedCollocations.get(i);
+            String actual = actualCollocations.get(i);
+            assertEquals(expected, actual);
+        }
     }
 
 }
