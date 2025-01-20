@@ -39,7 +39,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     private LocalTxManager connection;
     private final Map<OwnerId, List<Vocabulary>> dictionariesCache = new HashMap<>();
     private final Map<Integer, Card> cardsCache = new HashMap<>();
-    private final Map<Integer, List<Word>> wordsCache = new HashMap<>();
+    private final Map<Integer, List<Word>> wordsInVocabularyCache = new HashMap<>();
 
     @SuppressWarnings("unused")
     public DictionaryService() {
@@ -195,10 +195,10 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
 
     @Override
     public List<Word> getWords(OwnerId ownerId, int vocabId) {
-        if (wordsCache.containsKey(vocabId)) {
-            List<Word> wordsheetItems = wordsCache.get(vocabId);
-            if (!CollectionUtils.isEmpty(wordsheetItems)) {
-                return wordsheetItems;
+        if (wordsInVocabularyCache.containsKey(vocabId)) {
+            List<Word> wordsInVocab = wordsInVocabularyCache.get(vocabId);
+            if (!CollectionUtils.isEmpty(wordsInVocab)) {
+                return wordsInVocab;
             }
         }
         List<Word> vocabulary;
@@ -214,7 +214,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
             connection.close();
         }
 
-        wordsCache.put(vocabId, vocabulary);
+        wordsInVocabularyCache.put(vocabId, vocabulary);
 
         return List.copyOf(vocabulary);
     }
@@ -477,8 +477,8 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
 
         Word word = new Word();
         word = word.withId(wordRef);
-        List<Word> wordsheetItems = wordsCache.get(vocabId);
-        wordsheetItems.add(word);
+        List<Word> wordsInVocab = wordsInVocabularyCache.get(vocabId);
+        wordsInVocab.add(word);
 
         vocabularyDao.addWordsToVocabulary(vocabId, Set.of(wordRef));
 
@@ -488,8 +488,8 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     @Override
     public boolean removeFromVocabulary(OwnerId ownerId, int vocabId, int wordRef) {
 
-        List<Word> wordsheetItems = wordsCache.get(vocabId);
-        wordsheetItems.removeIf(wordsheetItem -> wordsheetItem.getId() == wordRef);
+        List<Word> wordsInVocab = wordsInVocabularyCache.get(vocabId);
+        wordsInVocab.removeIf(wordEntity -> wordEntity.getId() == wordRef);
 
         vocabularyDao.removeWordsFromVocabulary(vocabId, Set.of(wordRef));
 
