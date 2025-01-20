@@ -1,7 +1,6 @@
 package get.wordy.dao.impl;
 
 import get.wordy.core.api.bean.Card;
-import get.wordy.core.api.bean.*;
 import get.wordy.core.api.bean.CardStatus;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.CardDao;
@@ -36,10 +35,6 @@ public class CardDaoTest extends BaseDaoTest {
         newCard.setDictionaryId(2);
         newCard.setScore(10);
         newCard.setStatus(CardStatus.POSTPONED);
-        Sentence testSentence = Sentence.of("Test sentence")
-                .withMatchedWords("test");
-        newCard.addSentence(testSentence);
-        newCard.addCollocation("Test collocation");
         newCard.setInsertedAt(Instant.now());
 
         // insert
@@ -67,11 +62,6 @@ public class CardDaoTest extends BaseDaoTest {
         updatedCard.setStatus(CardStatus.LEARNT);
         updatedCard.setScore(100);
         updatedCard.setUpdatedAt(Instant.now());
-        Sentence testSentence = Sentence.of("Test sentence")
-                .withMatchedWords("test");
-        updatedCard.addSentence(testSentence);
-        updatedCard.addStrSentence("Test sentence 2");
-        updatedCard.addCollocation("Test collocation");
         updatedCard.setInsertedAt(Instant.now());
 
         int i = cardDao.update(updatedCard);

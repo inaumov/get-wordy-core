@@ -180,8 +180,8 @@ public class CardHeadlineDao {
             List<String> sentences = Arrays.asList(cardSentences);
             List<String> collocations = Arrays.asList(cardCollocations);
 
-            cardData.setStrSentences(sentences);
-            cardData.setCollocations(collocations);
+            word.setStrSentences(sentences);
+            word.setCollocations(collocations);
 
             return cardData;
         }

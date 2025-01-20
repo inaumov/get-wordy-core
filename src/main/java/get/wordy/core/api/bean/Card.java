@@ -3,8 +3,6 @@ package get.wordy.core.api.bean;
 import get.wordy.core.dao.exception.InconsistentDataException;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 public class Card {
@@ -17,8 +15,6 @@ public class Card {
     private Instant insertedAt;
     private Instant updatedAt;
     private Word word;
-    private final List<Sentence> sentences = new ArrayList<>();
-    private final List<String> collocations = new ArrayList<>();
 
     public int getId() {
         return id;
@@ -87,51 +83,6 @@ public class Card {
         this.word = word;
     }
 
-    public List<Sentence> getSentences() {
-        return List.copyOf(sentences);
-    }
-
-    public List<String> getStrSentences() {
-        return sentences
-                .stream()
-                .map(Sentence::getExample)
-                .toList();
-    }
-
-    public void addSentence(Sentence sentence) {
-        sentences.add(sentence);
-    }
-
-    public void addStrSentence(String sentence) {
-        sentences.add(Sentence.of(sentence));
-    }
-
-    public void setSentences(List<Sentence> sentences) {
-        this.sentences.clear();
-        this.sentences.addAll(sentences);
-    }
-
-    public void setStrSentences(List<String> strSentences) {
-        this.sentences.clear();
-        this.sentences.addAll(strSentences
-                .stream()
-                .map(Sentence::of)
-                .toList());
-    }
-
-    public List<String> getCollocations() {
-        return List.copyOf(collocations);
-    }
-
-    public void addCollocation(String collocation) {
-        collocations.add(collocation);
-    }
-
-    public void setCollocations(List<String> collocations) {
-        this.collocations.clear();
-        this.collocations.addAll(collocations);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -141,14 +92,12 @@ public class Card {
 
         return this.id == that.id
                 && this.wordId == that.wordId
-                && this.dictionaryId == that.dictionaryId
-                && Objects.equals(this.sentences, that.sentences)
-                && Objects.equals(this.collocations, that.collocations);
+                && this.dictionaryId == that.dictionaryId;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, wordId, dictionaryId, sentences, collocations);
+        return Objects.hash(id, wordId, dictionaryId);
     }
 
 }

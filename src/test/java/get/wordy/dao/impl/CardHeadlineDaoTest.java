@@ -44,7 +44,7 @@ public class CardHeadlineDaoTest {
 
         String formattedInstant = DATE_TIME_FORMATTER.format(card.getInsertedAt());
 
-        List<String> sentences = card.getStrSentences();
+        List<String> sentences = card.getWord().getStrSentences();
         assertAll(
                 "Grouped assertions of Card Headline",
                 () -> assertThat(card.getId()).isEqualTo(1),
@@ -58,8 +58,8 @@ public class CardHeadlineDaoTest {
                 () -> assertEquals("Test sentence 1", sentences.getFirst()),
                 () -> assertEquals("Test sentence 4", sentences.getLast()),
 
-                () -> assertEquals(1, card.getCollocations().size()),
-                () -> assertEquals("collocation1", card.getCollocations().getFirst())
+                () -> assertEquals(1, card.getWord().getCollocations().size()),
+                () -> assertEquals("collocation1", card.getWord().getCollocations().getFirst())
         );
         Word word = card.getWord();
         assertNotNull(word);
@@ -85,7 +85,7 @@ public class CardHeadlineDaoTest {
 
         String formattedInstant = DATE_TIME_FORMATTER.format(card.getInsertedAt());
 
-        List<String> sentences = card.getStrSentences();
+        List<String> sentences = card.getWord().getStrSentences();
         assertAll(
                 "Grouped assertions of Card Headline",
                 () -> assertThat(card.getId()).isEqualTo(1),
@@ -99,8 +99,8 @@ public class CardHeadlineDaoTest {
                 () -> assertEquals("Test sentence 1", sentences.getFirst()),
                 () -> assertEquals("Test sentence 4", sentences.getLast()),
 
-                () -> assertEquals(1, card.getCollocations().size()),
-                () -> assertEquals("collocation1", card.getCollocations().getFirst())
+                () -> assertEquals(1, card.getWord().getCollocations().size()),
+                () -> assertEquals("collocation1", card.getWord().getCollocations().getFirst())
         );
         Word word = card.getWord();
         assertNotNull(word);
