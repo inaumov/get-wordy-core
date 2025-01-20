@@ -69,7 +69,7 @@ public class CardHeadlineDaoTest {
                 () -> assertEquals("example1", word.getValue()),
                 () -> assertEquals("ɪgˈzɑːmpl", word.getTranscription()),
                 () -> assertEquals("noun", word.getPartOfSpeech()),
-                () -> assertEquals("a word in dic 1", word.getMeaning())
+                () -> assertEquals("a word in vocab 1", word.getMeaning())
         );
     }
 
@@ -110,7 +110,7 @@ public class CardHeadlineDaoTest {
                 () -> assertEquals("example1", word.getValue()),
                 () -> assertEquals("ɪgˈzɑːmpl", word.getTranscription()),
                 () -> assertEquals("noun", word.getPartOfSpeech()),
-                () -> assertEquals("a word in dic 1", word.getMeaning())
+                () -> assertEquals("a word in vocab 1", word.getMeaning())
         );
     }
 
@@ -146,7 +146,7 @@ public class CardHeadlineDaoTest {
                 () -> assertEquals("example1", word.getValue()),
                 () -> assertEquals("ɪgˈzɑːmpl", word.getTranscription()),
                 () -> assertEquals("noun", word.getPartOfSpeech()),
-                () -> assertEquals("a word in dic 1", word.getMeaning())
+                () -> assertEquals("a word in vocab 1", word.getMeaning())
         );
     }
 

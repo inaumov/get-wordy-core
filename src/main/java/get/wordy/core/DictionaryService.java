@@ -326,52 +326,6 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     }
 
     @Override
-    public Card updateCard(int dictionaryId, Card card) {
-        int cardId = card.getId();
-        // needed for equality test
-        card.setDictionaryId(dictionaryId);
-
-        Card cachedCard = loadFullCardHeadlineFromDb(cardId);
-        Word cachedWord = cachedCard.getWord();
-
-        Word word = card.getWord();
-        boolean sameWord = Objects.equals(word, cachedWord);
-        boolean sameCard = Objects.equals(card, cachedCard);
-
-        if (sameWord && sameCard) {
-            LOG.debug("Nothing to update in a card {} from dictionary {}. Return", cardId, dictionaryId);
-            return card;
-        }
-
-        try {
-            connection.open();
-            if (!sameWord) {
-                int updated = wordDao.update(word);
-                // sync
-                if (updated == 0) {
-                    LOG.warn("Nothing has been updated for card id = {}", card.getId());
-                }
-            }
-            if (!sameCard) {
-                card = cardDao.updateRelations(card);
-            }
-            connection.commit();
-
-        } catch (DaoException e) {
-            LOG.error("Error while updating card, id = {}", cardId, e);
-            connection.rollback();
-            throw new DictionaryServiceException();
-        } finally {
-            connection.close();
-        }
-
-        // refresh in cache
-        cardsCache.put(cardId, card);
-
-        return card;
-    }
-
-    @Override
     public boolean deleteCard(OwnerId ownerId, int dictionaryId, int cardId) {
         findVocab(ownerId, dictionaryId);
         Card card = findCardById(cardId);

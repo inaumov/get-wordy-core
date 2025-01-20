@@ -1,7 +1,6 @@
 package get.wordy.core.dao.impl;
 
 import get.wordy.core.api.bean.*;
-import get.wordy.core.api.bean.Sentence;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.db.LocalTxManager;
 
@@ -42,14 +41,6 @@ public class CardDao extends BaseDao<Card> {
             SELECT * FROM cards WHERE dictionary_id=? ORDER BY create_time ASC
             """;
 
-    // context and collocations
-    private static final String INSERT_SENTENCE_QUERY = "INSERT INTO context (card_id, example, word_id, matched_words) VALUES (?,?,?,?)";
-    private static final String INSERT_COLLOCATIONS_QUERY = "INSERT INTO collocations (card_id, example, word_id) VALUES (?,?,?)";
-    private static final String SELECT_FROM_CONTEXT_QUERY = "SELECT * FROM context WHERE card_id=?";
-    private static final String SELECT_COLLOCATIONS_QUERY = "SELECT * FROM collocations WHERE card_id=?";
-    private static final String DELETE_FROM_CONTEXT_QUERY = "DELETE FROM context WHERE card_id=?";
-    private static final String DELETE_COLLOCATIONS_QUERY = "DELETE FROM collocations WHERE card_id=?";
-
     CardDao(LocalTxManager txManager) {
         super(txManager);
     }
@@ -66,8 +57,6 @@ public class CardDao extends BaseDao<Card> {
             ResultSet resultSet = statement.getGeneratedKeys();
             if (resultSet.next()) {
                 int cardId = resultSet.getInt(1);
-                insertSentences(cardId, card.getWordId(), card.getSentences());
-                insertCollocations(cardId, card.getWordId(), card.getCollocations());
                 card.setId(cardId);
             }
         } catch (SQLException ex) {
@@ -96,49 +85,6 @@ public class CardDao extends BaseDao<Card> {
         }
     }
 
-    private Set<Sentence> insertSentences(int cardId, int wordId, List<Sentence> sentences) throws DaoException {
-        try (var statement = prepareStatementForInsert(INSERT_SENTENCE_QUERY)) {
-            for (Sentence sentence : sentences) {
-                statement.setInt(1, cardId);
-                statement.setString(2, sentence.getExample());
-                statement.setInt(3, wordId);
-                statement.setString(4, sentence.getMatchedWords());
-                statement.addBatch();
-            }
-            statement.executeBatch();
-            // get inserted ids
-            ResultSet keys = statement.getGeneratedKeys();
-            Set<Sentence> records = new HashSet<>();
-            while (keys.next()) {
-                records.add(new Sentence(keys.getString("example"), keys.getInt("card_id")));
-            }
-            return records;
-        } catch (SQLException ex) {
-            throw new DaoException("Error while inserting sentence examples", ex);
-        }
-    }
-
-    private Set<Collocation> insertCollocations(int cardId, int wordId, List<String> collocations) throws DaoException {
-        try (var statement = prepareStatementForInsert(INSERT_COLLOCATIONS_QUERY)) {
-            for (String collocation : collocations) {
-                statement.setInt(1, cardId);
-                statement.setString(2, collocation);
-                statement.setInt(3, wordId);
-                statement.addBatch();
-            }
-            statement.executeBatch();
-            // get inserted records
-            ResultSet keys = statement.getGeneratedKeys();
-            Set<Collocation> records = new HashSet<>();
-            while (keys.next()) {
-                records.add(new Collocation(keys.getString("example"), keys.getInt("card_id")));
-            }
-            return records;
-        } catch (SQLException ex) {
-            throw new DaoException("Error while inserting collocation examples", ex);
-        }
-    }
-
     @Override
     public void delete(int cardId) throws DaoException {
         try (var statement = prepareStatement(DELETE_CARD_QUERY)) {
@@ -162,49 +108,7 @@ public class CardDao extends BaseDao<Card> {
         } catch (SQLException ex) {
             throw new DaoException("Error while updating card record", ex);
         }
-
-        deleteFromContext(card.getId());
-        deleteFromCollocations(card.getId());
-
-        insertSentences(card.getId(), card.getWordId(), card.getSentences());
-        insertCollocations(card.getId(), card.getWordId(), card.getCollocations());
-
         return records;
-    }
-
-    public Card updateRelations(Card card) throws DaoException {
-        try (var statement = prepareStatement(UPDATE_TIME_QUERY)) {
-            statement.setInt(1, card.getId());
-            statement.executeUpdate();
-        } catch (SQLException ex) {
-            throw new DaoException("Error while updating card record", ex);
-        }
-
-        deleteFromContext(card.getId());
-        deleteFromCollocations(card.getId());
-
-        insertSentences(card.getId(), card.getWordId(), card.getSentences());
-        insertCollocations(card.getId(), card.getWordId(), card.getCollocations());
-
-        return card;
-    }
-
-    private void deleteFromContext(int cardId) throws DaoException {
-        try (var statement = prepareStatement(DELETE_FROM_CONTEXT_QUERY)) {
-            statement.setInt(1, cardId);
-            statement.execute();
-        } catch (SQLException ex) {
-            throw new DaoException("Error while deleting context record", ex);
-        }
-    }
-
-    private void deleteFromCollocations(int cardId) throws DaoException {
-        try (var statement = prepareStatement(DELETE_COLLOCATIONS_QUERY)) {
-            statement.setInt(1, cardId);
-            statement.execute();
-        } catch (SQLException ex) {
-            throw new DaoException("Error while deleting collocation record", ex);
-        }
     }
 
     public List<Card> selectCardsForDictionary(int dictionaryId) throws DaoException {
@@ -279,38 +183,6 @@ public class CardDao extends BaseDao<Card> {
             return ids;
         }
         return buffer;
-    }
-
-    public List<Sentence> getSentencesFor(int cardId) throws DaoException {
-        ArrayList<Sentence> result = new ArrayList<>();
-        try (var statement = prepareStatement(SELECT_FROM_CONTEXT_QUERY)) {
-            statement.setInt(1, cardId);
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                String example = resultSet.getString("example");
-                Sentence sentence = new Sentence(example, cardId);
-                result.add(sentence);
-            }
-        } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving sentence examples for card with id = " + cardId, ex);
-        }
-        return result;
-    }
-
-    public List<Collocation> getCollocationsFor(int cardId) throws DaoException {
-        ArrayList<Collocation> collocations = new ArrayList<>();
-        try (var statement = prepareStatement(SELECT_COLLOCATIONS_QUERY)) {
-            statement.setInt(1, cardId);
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                String example = resultSet.getString("example");
-                Collocation collocation = new Collocation(example, cardId);
-                collocations.add(collocation);
-            }
-        } catch (SQLException ex) {
-            throw new DaoException("Error while selecting collocations for card with id = " + cardId, ex);
-        }
-        return collocations;
     }
 
     public Map<String, Integer> getScoreSummary(int dictionaryId) throws DaoException {
