@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,6 +19,8 @@ public class WordDaoTest extends BaseDaoTest {
 
     private WordDao wordDao;
 
+    private static final Random random = new Random();
+
     @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
@@ -27,7 +30,7 @@ public class WordDaoTest extends BaseDaoTest {
 
     @Test
     public void testInsert() throws DaoException {
-        Word word = new Word(0, "apple", "noun", "transcription", "Some text");
+        Word word = new Word("apple", "noun", "transcription", "Some text");
         InContext testSentence = InContext.of("Test sentence")
                 .withMatchedWords("test");
         word.addSentence(testSentence);
@@ -117,27 +120,39 @@ public class WordDaoTest extends BaseDaoTest {
     }
 
     @Test
-    public void testGenerateWords() throws Exception {
-        Set<String> strings = Set.of("singleton", "generated");
-        Set<Integer> generated = wordDao.generate(strings);
-        assertEquals(2, generated.size());
+    public void testAddWords() throws Exception {
+        // generate realistic test data
+        List<Word> words = generateTestData();
+        List<Word> copyReturned = wordDao.addWords(words);
+
+        List<Integer> generated = copyReturned
+                .stream()
+                .map(Word::getId)
+                .toList();
         Set<Integer> all = new HashSet<>();
         all.add(1);
         all.add(2);
         all.add(3);
         all.addAll(generated);
 
-        List<Word> words = wordDao.selectAll(all);
-        assertNotNull(words);
-        assertEquals(PREDEFINED_WORDS_CNT + 2, words.size());
+        List<Word> allWordsAfter = wordDao.selectAll(all);
+        assertNotNull(allWordsAfter);
+        assertEquals(PREDEFINED_WORDS_CNT + words.size(), allWordsAfter.size());
 
-        // validate at least one word
-        LinkedList<Word> newList = new LinkedList<>(words);
-        Word last = newList.getLast();
-        assertTrue(last.getId() >= EXPECTED_NEW_ID);
-        assertTrue(strings.contains(last.getValue()));
-        assertNull(last.getTranscription());
-        assertNull(last.getMeaning());
+        Map<String, Word> returnedWordsByValue = copyReturned.stream()
+                .collect(Collectors.toMap(Word::getValue, word -> word));
+
+        // now, check that each generated word is present in copyReturned
+        for (Word expectedWord : words) {
+            // look for the expected word in the returned map (by value or id)
+            assertTrue(returnedWordsByValue.containsKey(expectedWord.getValue()),
+                    "Missing word: " + expectedWord.getValue());
+
+            // optional: You could also assert that the ID matches if you want to be more specific:
+            Word actualWord = returnedWordsByValue.get(expectedWord.getValue());
+            assertTrue(actualWord.getId() >= EXPECTED_NEW_ID, "Word id should not be 0.");;
+            assertEquals(expectedWord.getValue(), actualWord.getValue(), "Word values should match.");
+        }
     }
 
     private static void assertTestData(List<Word> words) {
@@ -186,6 +201,42 @@ public class WordDaoTest extends BaseDaoTest {
             String actual = actualCollocations.get(i);
             assertEquals(expected, actual);
         }
+    }
+
+    public List<Word> generateTestData() {
+        // list of words to base the test data on
+        List<String> strings = List.of("Explain", "Plan", "Singleton", "Generated", "Impediments");
+        // generating realistic test data for words
+        return strings.stream()
+                .map(value -> {
+                    Word word = new Word(value, "noun", "some transcription", "a sample meaning");
+                    word.setStrSentences(generateSentences(value));
+                    word.setCollocations(generateCollocations(value));
+                    return word;
+                })
+                .toList();
+    }
+
+    private List<String> generateSentences(String wordValue) {
+        // generate some sentences that include the word (to make it more realistic)
+        return List.of(
+                "The " + wordValue + " is a common term used in the industry.",
+                "Many people find the " + wordValue + " concept difficult to understand.",
+                "It is crucial to grasp the idea of " + wordValue + " for better performance.",
+                wordValue + " is often misunderstood in discussions about technology."
+        );
+    }
+
+    private List<String> generateCollocations(String wordValue) {
+        // simple predefined collocations that can be related to the word
+        return switch (wordValue.toLowerCase()) {
+            case "explain" -> List.of("explain in detail", "explain clearly", "explain further");
+            case "plan" -> List.of("long-term plan", "strategic plan", "action plan");
+            case "singleton" -> List.of("singleton pattern", "singleton class", "singleton instance");
+            case "generated" -> List.of("generated data", "generated content", "automatically generated");
+            case "impediments" -> List.of("overcome impediments", "remove impediments", "impediments to success");
+            default -> List.of("common collocation");
+        };
     }
 
 }

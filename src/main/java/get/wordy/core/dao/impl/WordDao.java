@@ -6,11 +6,7 @@ import get.wordy.core.api.bean.Word;
 import get.wordy.core.db.LocalTxManager;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class WordDao extends BaseDao<Word> {
 
@@ -19,7 +15,6 @@ public class WordDao extends BaseDao<Word> {
     public static final String UPDATE_QUERY = "UPDATE words SET word = ?, part_of_speech = ?, transcription = ?, meaning = ? WHERE id = ?";
     public static final String SELECT_ALL_QUERY = "SELECT * FROM words WHERE id IN (%s)";
     public static final String SELECT_BY_ID_QUERY = "SELECT * FROM words WHERE id = ?";
-    public static final String INSERT_WORD_BATCH_QUERY = "INSERT INTO words (word) VALUES (?)";
 
     // sentences and collocations
     private static final String INSERT_SENTENCE_QUERY = "INSERT INTO in_context (word_id, example, matched_words) VALUES (?,?,?)";
@@ -33,7 +28,6 @@ public class WordDao extends BaseDao<Word> {
         super(txManager);
     }
 
-    @Override
     public Word insert(Word word) throws DaoException {
         try (var statement = prepareStatementForInsert(INSERT_QUERY)) {
             statement.setString(1, word.getValue());
@@ -55,26 +49,36 @@ public class WordDao extends BaseDao<Word> {
         return word;
     }
 
-    public Set<Integer> generate(Set<String> words) throws DaoException {
-        try (var statement = prepareStatementForInsert(INSERT_WORD_BATCH_QUERY)) {
-            for (String word : words) {
-                statement.setString(1, word);
-                statement.addBatch();
+    public List<Word> addWords(Collection<Word> words) throws DaoException {
+
+        // copy to collect sentences and collocations for bulk insertion later
+        List<Word> copyWithIds = new ArrayList<>();
+
+        try (var statement = prepareStatementForInsert(INSERT_QUERY)) {
+            for (Word word : words) {
+                statement.setString(1, word.getValue());
+                statement.setString(2, word.getPartOfSpeech());
+                statement.setString(3, word.getTranscription());
+                statement.setString(4, word.getMeaning());
+                statement.execute();
+                // get last inserted id
+                ResultSet keys = statement.getGeneratedKeys();
+                while (keys.next()) {
+                    int id = keys.getInt(1);
+                    copyWithIds.add(word.withId(id));
+                }
             }
-            statement.executeBatch();
-            // get last inserted id
-            ResultSet keys = statement.getGeneratedKeys();
-            Set<Integer> ids = new HashSet<>();
-            while (keys.next()) {
-                ids.add(keys.getInt(1));
-            }
-            return ids;
+
+            insertAllSentencesInBatch(copyWithIds);
+            insertAllCollocationsInBatch(copyWithIds);
+
         } catch (SQLException ex) {
             throw new DaoException("Error while generating word records", ex);
         }
+
+        return copyWithIds;
     }
 
-    @Override
     public void delete(int wordId) throws DaoException {
         try (var statement = prepareStatement(DELETE_QUERY)) {
             statement.setInt(1, wordId);
@@ -84,7 +88,6 @@ public class WordDao extends BaseDao<Word> {
         }
     }
 
-    @Override
     public int update(Word word) throws DaoException {
         int records = 0;
         try (var statement = prepareStatement(UPDATE_QUERY)) {
@@ -208,6 +211,25 @@ public class WordDao extends BaseDao<Word> {
         }
     }
 
+    public void insertAllSentencesInBatch(List<Word> words) throws DaoException {
+        if (words.isEmpty()) {
+            return;
+        }
+        try (var statement = prepareStatementForInsert(INSERT_SENTENCE_QUERY)) {
+            for (Word word : words) {
+                for (InContext sentence : word.getSentences()) {
+                    statement.setInt(1, word.getId());
+                    statement.setString(2, sentence.getExample());
+                    statement.setString(3, sentence.getMatchedWords());
+                    statement.addBatch();
+                }
+            }
+            statement.executeBatch();
+        } catch (SQLException ex) {
+            throw new DaoException("Error while inserting sentence examples", ex);
+        }
+    }
+
     private void insertCollocations(int wordId, List<String> collocations) throws DaoException {
         try (var statement = prepareStatementForInsert(INSERT_COLLOCATIONS_QUERY)) {
             for (String collocation : collocations) {
@@ -220,6 +242,25 @@ public class WordDao extends BaseDao<Word> {
             throw new DaoException("Error while inserting collocation examples", ex);
         }
     }
+
+    public void insertAllCollocationsInBatch(List<Word> words) throws DaoException {
+        if (words.isEmpty()) {
+            return;
+        }
+        try (var statement = prepareStatementForInsert(INSERT_COLLOCATIONS_QUERY)) {
+            for (Word word : words) {
+                for (String collocation : word.getCollocations()) {
+                    statement.setInt(1, word.getId());
+                    statement.setString(2, collocation);
+                    statement.addBatch();
+                }
+            }
+            statement.executeBatch();
+        } catch (SQLException ex) {
+            throw new DaoException("Error while inserting collocation examples", ex);
+        }
+    }
+
 
     private void deleteFromContext(int wordId) throws DaoException {
         try (var statement = prepareStatement(DELETE_FROM_CONTEXT_QUERY)) {

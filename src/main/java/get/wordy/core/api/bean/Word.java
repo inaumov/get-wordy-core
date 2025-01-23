@@ -17,12 +17,16 @@ public class Word {
     public Word() {
     }
 
-    public Word(int id, String value, String partOfSpeech, String transcription, String meaning) {
-        this.id = id;
+    public Word(String value, String partOfSpeech, String transcription, String meaning) {
         this.value = value;
         this.partOfSpeech = partOfSpeech;
         this.transcription = transcription;
         this.meaning = meaning;
+    }
+
+    public Word(int id, String value, String partOfSpeech, String transcription, String meaning) {
+        this(value, partOfSpeech, transcription, meaning);
+        this.id = id;
     }
 
     public int getId() {
@@ -46,7 +50,8 @@ public class Word {
     }
 
     public Word withId(int id) {
-        return new Word(id, value, partOfSpeech, transcription, meaning);
+        this.id = id;
+        return this;
     }
 
     public List<InContext> getSentences() {
