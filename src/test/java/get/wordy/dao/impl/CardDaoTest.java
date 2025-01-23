@@ -165,9 +165,8 @@ public class CardDaoTest extends BaseDaoTest {
     public void testGenerateCards() throws DaoException {
         int dictionaryId = 2;
         Set<Integer> wordIds = Set.of(3); // abandoned word IDs
-        Set<Integer> cardIds = cardDao.generateEmptyCards(dictionaryId, wordIds);
+        cardDao.addNewCards(dictionaryId, wordIds);
         // assert
-        assertFalse(cardIds.isEmpty());
         List<Card> cards = cardDao.selectCardsForDictionary(dictionaryId);
         assertNotNull(cards);
         assertEquals(2, cards.size());

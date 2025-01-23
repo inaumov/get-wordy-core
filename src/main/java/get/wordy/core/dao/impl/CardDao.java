@@ -12,9 +12,6 @@ public class CardDao extends BaseDao<Card> {
     private static final String INSERT_CARD_QUERY = """
             INSERT INTO cards (dictionary_id, word_id, status) VALUES (?,?,?)
             """;
-    private static final String GENERATE_EMPTY_CARDS_QUERY = """
-            INSERT INTO cards (dictionary_id, word_id) VALUES (?,?)
-            """;
     private static final String DELETE_CARD_QUERY = "DELETE FROM cards WHERE id=?";
     private static final String UPDATE_CARD_QUERY = """
             UPDATE cards SET status=?,score=?,word_id=?,dictionary_id=?,last_update_time=NOW() WHERE id=?
@@ -65,23 +62,17 @@ public class CardDao extends BaseDao<Card> {
         return card;
     }
 
-    public Set<Integer> generateEmptyCards(int dictionaryId, Set<Integer> wordIds) throws DaoException {
-        try (var statement = prepareStatementForInsert(GENERATE_EMPTY_CARDS_QUERY)) {
+    public void addNewCards(int dictionaryId, Set<Integer> wordIds) throws DaoException {
+        try (var statement = prepareStatementForInsert(INSERT_CARD_QUERY)) {
             for (Integer wordId : wordIds) {
                 statement.setInt(1, dictionaryId);
                 statement.setInt(2, wordId);
+                statement.setString(3, CardStatus.DEFAULT_STATUS.name());
                 statement.addBatch();
             }
             statement.executeBatch();
-            // get last inserted id
-            ResultSet keys = statement.getGeneratedKeys();
-            Set<Integer> ids = new HashSet<>();
-            while (keys.next()) {
-                ids.add(keys.getInt(1));
-            }
-            return ids;
         } catch (SQLException ex) {
-            throw new DaoException("Error while generating card records", ex);
+            throw new DaoException("Error while generating new cards", ex);
         }
     }
 

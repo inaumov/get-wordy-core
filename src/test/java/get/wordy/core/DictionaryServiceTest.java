@@ -600,17 +600,25 @@ public class DictionaryServiceTest {
         expect(wordMock87.getValue()).andReturn("generated").anyTimes();
         replay(wordMock87);
 
-        Set<String> words = Set.of("singleton", "generated");
         Set<Integer> wordIds = Set.of(42, 87);
-        expect(wordDaoMock.generate(words)).andReturn(wordIds).once();
-        expect(cardDaoMock.generateEmptyCards(anyInt(), eq(wordIds)))
-                .andReturn(Set.of(15, 16)).once();
+        cardDaoMock.addNewCards(anyInt(), eq(wordIds));
+        expectLastCall().once();
         expect(wordDaoMock.selectAll(wordIds))
                 .andReturn(List.of(wordMock42, wordMock87));
         expectLastCall().once();
+        cardDaoMock.selectCardsForDictionary(DICTIONARY_ID);
+        Card card98 = new Card();
+        card98.setId(98);
+        card98.setDictionaryId(DICTIONARY_ID);
+        card98.setWordId(42);
+        Card card99 = new Card();
+        card99.setId(99);
+        card99.setDictionaryId(DICTIONARY_ID);
+        card99.setWordId(87);
+        expectLastCall().andReturn(List.of(card98, card99)).once();
         replay(wordDaoMock, cardDaoMock);
 
-        List<Card> done = dictionaryService.generateCards(JOHN_DOE, DICTIONARY_ID, words);
+        List<Card> done = dictionaryService.generateCards(JOHN_DOE, DICTIONARY_ID, wordIds);
         assertFalse(done.isEmpty());
 
         verify(wordDaoMock, cardDaoMock);

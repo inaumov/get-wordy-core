@@ -21,7 +21,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -536,46 +535,27 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
         return card;
     }
 
-    @Override
-    public List<Card> generateCards(OwnerId ownerId, int dictionaryId, Set<String> words) {
-        try {
-            Vocabulary vocabulary = findVocab(ownerId, dictionaryId);
-            int cnt = words.size();
-            connection.open();
-            Set<Integer> generatedIds = wordDao.generate(words);
-            if (generatedIds.size() != cnt) {
-                throw new IllegalStateException();
-            }
-            Set<Integer> cardIds = cardDao.generateEmptyCards(vocabulary.getVocabId(), generatedIds);
-            if (cardIds.size() != cnt) {
-                throw new IllegalStateException();
-            }
+    public List<Card> generateCards(OwnerId ownerId, int dictionaryId, Set<Integer> wordRefs) {
+        Vocabulary vocabulary = findVocab(ownerId, dictionaryId);
 
-            List<Word> wordList = wordDao.selectAll(generatedIds);
+        try {
+            connection.open();
+            cardDao.addNewCards(vocabulary.getVocabId(), wordRefs);
             connection.commit();
+
+            List<Word> wordList = wordDao.selectAll(wordRefs);
 
             Map<Integer, Word> wordsMap = wordList
                     .stream()
                     .collect(Collectors.toMap(Word::getId, Function.identity()));
-
-            Iterator<Integer> wordIds = generatedIds.iterator();
-
-            List<Card> result = new ArrayList<>();
-            for (Integer cardId : cardIds) {
-                Integer wordId = wordIds.next();
-                Card card = new Card();
-                card.setWordId(wordId);
-                card.setWord(wordsMap.get(wordId));
-                card.setDictionaryId(dictionaryId);
-                card.setId(cardId);
-                card.setStatus(CardStatus.DEFAULT_STATUS);
-                card.setInsertedAt(Instant.now());
-                card.setScore(0);
-                result.add(card);
+            // refresh
+            List<Card> result = cardDao.selectCardsForDictionary(dictionaryId);
+            for (Card card : result) {
+                card.setWord(wordsMap.get(card.getWordId()));
             }
             return result;
         } catch (DaoException e) {
-            LOG.error("Error while generating cards without definitions, dictionaryId = {}", dictionaryId, e);
+            LOG.error("Error while generating cards by dictionaryId = {}", dictionaryId, e);
             connection.rollback();
             return Collections.emptyList();
         } finally {

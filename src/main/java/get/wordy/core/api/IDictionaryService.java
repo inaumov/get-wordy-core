@@ -27,7 +27,7 @@ public interface IDictionaryService {
 
     boolean increaseScoreUp(int dictionaryId, int[] cardIds, int repetitions);
 
-    List<Card> generateCards(OwnerId ownerId, int dictionaryId, Set<String> words);
+    List<Card> generateCards(OwnerId ownerId, int dictionaryId, Set<Integer> wordRefs);
 
     Score getScoreSummary(OwnerId ownerId, int dictionaryId);
 
