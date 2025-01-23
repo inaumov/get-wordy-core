@@ -13,9 +13,6 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlConfig;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-
 import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_CLASS;
 
 @Sql(
@@ -38,11 +35,6 @@ public abstract class BaseDaoTest {
     @BeforeEach
     public void setUp() throws Exception {
         txManager.open();
-
-        DatabaseMetaData metaData = txManager.get().getMetaData();
-        if (metaData.supportsTransactionIsolationLevel(Connection.TRANSACTION_READ_UNCOMMITTED)) {
-            txManager.get().setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
-        }
     }
 
     @AfterEach
