@@ -154,10 +154,10 @@ public class CardHeadlineDaoTest {
     void getSentencesFor() {
         // Define test data
         int cardIdExpected = 1;
-        int[] cardIds = {1, 3, 4};
+        int[] wordIds = {1, 3, 4};
 
         // Execute DAO method
-        Map<Integer, List<Sentence>> result = cardHeadlineDao.getSentencesFor(cardIds);
+        Map<Integer, List<Sentence>> result = cardHeadlineDao.getSentencesFor(wordIds);
 
         assertEquals(1, result.size());
         assertTrue(result.containsKey(cardIdExpected));

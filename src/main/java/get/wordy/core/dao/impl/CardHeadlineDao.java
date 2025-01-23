@@ -105,7 +105,9 @@ public class CardHeadlineDao {
                 cards.id, words.id;
             """;
 
-    private static final String SELECT_FROM_CONTEXT_QUERY = "SELECT * FROM in_context WHERE matched_words IS NOT NULL AND word_id IN (:cardIds)";
+    private static final String SELECT_SENTENCES_FOR_EXERCISE_QUERY = """
+        SELECT * FROM in_context WHERE matched_words IS NOT NULL AND word_id IN (:wordIds)
+    """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -133,13 +135,13 @@ public class CardHeadlineDao {
         return jdbcTemplate.query(GET_CARDS_FOR_EXERCISE, parameters, new ExerciseRowMapper());
     }
 
-    public Map<Integer, List<Sentence>> getSentencesFor(int... cardIds) {
+    public Map<Integer, List<Sentence>> getSentencesFor(int... wordIds) {
         MapSqlParameterSource parameters = new MapSqlParameterSource();
-        List<Integer> integers = Arrays.stream(cardIds)
+        List<Integer> integers = Arrays.stream(wordIds)
                 .boxed()
                 .toList();
-        parameters.addValue("cardIds", integers);
-        return jdbcTemplate.query(SELECT_FROM_CONTEXT_QUERY, parameters, new SentencesMapper());
+        parameters.addValue("wordIds", integers);
+        return jdbcTemplate.query(SELECT_SENTENCES_FOR_EXERCISE_QUERY, parameters, new SentencesMapper());
     }
 
     private static class FullCardRowMapper implements RowMapper<Card> {
@@ -233,7 +235,7 @@ public class CardHeadlineDao {
             }
             return result
                     .stream()
-                    .collect(Collectors.groupingBy(Sentence::getCardId));
+                    .collect(Collectors.groupingBy(Sentence::getWordId));
         }
     }
 
