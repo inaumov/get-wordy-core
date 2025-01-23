@@ -58,3 +58,6 @@ VALUES (101, 10),
        (102, 18),
        (102, 19),
        (102, 20);
+
+SELECT setval('words_id_seq', (SELECT MAX(id) FROM words));
+SELECT setval('dictionaries_id_seq', (SELECT MAX(vocab_id) FROM vocabularies));
