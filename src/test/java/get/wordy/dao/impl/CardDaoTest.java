@@ -2,6 +2,7 @@ package get.wordy.dao.impl;
 
 import get.wordy.core.api.bean.Card;
 import get.wordy.core.api.bean.CardStatus;
+import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.CardDao;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +18,6 @@ public class CardDaoTest extends BaseDaoTest {
 
     private static final int PREDEFINED_CARDS_CNT = 2;
     private static final int EXPECTED_NEW_ID = 3;
-    private static final int DEFAULT_SCORE = 50;
 
     private CardDao cardDao;
 
@@ -33,8 +33,8 @@ public class CardDaoTest extends BaseDaoTest {
         Card newCard = new Card();
         newCard.setWordId(3);
         newCard.setDictionaryId(2);
-        newCard.setScore(10);
-        newCard.setStatus(CardStatus.POSTPONED);
+        newCard.setScore(0);
+        newCard.setStatus(CardStatus.TO_LEARN);
         newCard.setInsertedAt(Instant.now());
 
         // insert
@@ -50,29 +50,12 @@ public class CardDaoTest extends BaseDaoTest {
         assertTrue(actual.getId() >= EXPECTED_NEW_ID);
         assertEquals(3, actual.getWordId());
         assertEquals(2, actual.getDictionaryId());
-        assertEquals(CardStatus.POSTPONED, actual.getStatus());
-    }
-
-    @Test
-    public void testUpdate() throws DaoException {
-        Card updatedCard = new Card();
-        updatedCard.setId(2); // the last
-        updatedCard.setWordId(2);
-        updatedCard.setDictionaryId(2);
-        updatedCard.setStatus(CardStatus.LEARNT);
-        updatedCard.setScore(100);
-        updatedCard.setUpdatedAt(Instant.now());
-        updatedCard.setInsertedAt(Instant.now());
-
-        int i = cardDao.update(updatedCard);
-        assertEquals(1, i);
-
-        assertCards(2);
+        assertEquals(CardStatus.TO_LEARN, actual.getStatus());
     }
 
     @Test
     public void testDelete() throws DaoException {
-        cardDao.delete(2);
+        cardDao.delete(new OwnerId("", ""), 2);
         // update list
         List<Card> cards = cardDao.selectCardsForDictionary(2);
         assertNotNull(cards);
@@ -80,13 +63,13 @@ public class CardDaoTest extends BaseDaoTest {
     }
 
     @Test
-    public void testLoadCardHeadline() throws DaoException {
+    public void testGetCard() throws DaoException {
         Card first = cardDao.selectById(1);
         assertNotNull(first);
         assertEquals(1, first.getId());
         assertEquals(1, first.getWordId());
         assertEquals(1, first.getDictionaryId());
-        assertEquals(CardStatus.EDIT, first.getStatus());
+        assertEquals(CardStatus.TO_LEARN, first.getStatus());
 
         Card second = cardDao.selectById(2);
         assertNotNull(second);
@@ -101,34 +84,37 @@ public class CardDaoTest extends BaseDaoTest {
     @Test
     public void testSelectCardIdsForExercise() throws DaoException {
         // test no cards
-        int[] ids1 = cardDao.selectCardIdsForExercise(1, PREDEFINED_CARDS_CNT);
-        assertNotNull(ids1);
-        assertEquals(0, ids1.length);
+        int[] idsFromVocab1 = cardDao.selectCardIdsForExercise(1, PREDEFINED_CARDS_CNT);
+        assertNotNull(idsFromVocab1);
+        assertEquals(1, idsFromVocab1.length);
+        assertEquals(1, idsFromVocab1[0]); // card id
         // test 1 cards to learn
-        int[] ids2 = cardDao.selectCardIdsForExercise(2, PREDEFINED_CARDS_CNT);
-        assertNotNull(ids2);
-        assertEquals(1, ids2.length);
-        assertEquals(2, ids2[0]);
+        int[] idsFromVocab2 = cardDao.selectCardIdsForExercise(2, PREDEFINED_CARDS_CNT);
+        assertNotNull(idsFromVocab2);
+        assertEquals(1, idsFromVocab2.length);
+        assertEquals(2, idsFromVocab2[0]); // card id
     }
 
     @Test
     public void testShowStatistic() throws DaoException {
         Map<String, Integer> score = cardDao.getScoreSummary(1);
-        assertEquals(1, score.get(CardStatus.EDIT.name()));
+        assertEquals(1, score.get(CardStatus.TO_LEARN.name()));
     }
 
     @Test
-    public void testResetStatistics() throws DaoException {
-        cardDao.resetScore(1, CardStatus.DEFAULT_STATUS);
+    public void testResetScore() throws DaoException {
+        cardDao.updateScore(1, 0);
+        cardDao.updateStatus(1, CardStatus.DEFAULT_STATUS);
 
         List<Card> cards = cardDao.selectCardsForDictionary(1);
-        assertStatus(cards);
+        Card first = cards.getFirst();
+        assertEquals(0, first.getScore());
+        assertEquals(CardStatus.TO_LEARN, first.getStatus());
     }
 
     @Test
     public void testSelectAllForDictionary() throws DaoException {
         IntStream expectedIds = IntStream.of(1, 2);
-        EnumSet<CardStatus> expectedStatuses = EnumSet.of(CardStatus.DEFAULT_STATUS, CardStatus.TO_LEARN);
 
         PrimitiveIterator.OfInt iterator = expectedIds.iterator();
         while (iterator.hasNext()) {
@@ -143,14 +129,41 @@ public class CardDaoTest extends BaseDaoTest {
             assertEquals(id, card.getId());
             assertEquals(id, card.getWordId());
             assertEquals(id, card.getDictionaryId());
-            assertTrue(expectedStatuses.remove(card.getStatus()));
+            assertEquals(CardStatus.DEFAULT_STATUS, card.getStatus());
             assertEquals(50, card.getScore());
         }
-        assertTrue(expectedStatuses.isEmpty());
     }
 
-    private void assertCards(int dictionaryId) throws DaoException {
+    @Test
+    public void testAddCards() throws DaoException {
+        int dictionaryId = 2;
+        Set<Integer> wordIds = Set.of(3); // new words Refs
+        cardDao.addCards(dictionaryId, wordIds);
+
+        // assert
         List<Card> cards = cardDao.selectCardsForDictionary(dictionaryId);
+        assertNotNull(cards);
+        assertEquals(2, cards.size());
+
+        Card first = cards.getFirst();
+        assertEquals(2, first.getId());
+        assertEquals(dictionaryId, first.getDictionaryId());
+        assertEquals(2, first.getWordId());
+
+        Card actual = cards.getLast();
+        assertTrue(actual.getId() >= EXPECTED_NEW_ID);
+        assertEquals(dictionaryId, actual.getDictionaryId());
+        assertEquals(3, actual.getWordId());
+        assertTrue(first.getInsertedAt().isBefore(actual.getInsertedAt())); // oldest first
+    }
+
+    @Test
+    void updateStatus() throws DaoException {
+        int updatedCnt = cardDao.updateStatus(2, CardStatus.LEARNT);
+        assertEquals(1, updatedCnt);
+
+        // verify
+        List<Card> cards = cardDao.selectCardsForDictionary(2);
         assertNotNull(cards);
         assertEquals(1, cards.size());
         Card actual = cards.getFirst();
@@ -162,67 +175,32 @@ public class CardDaoTest extends BaseDaoTest {
     }
 
     @Test
-    public void testGenerateCards() throws DaoException {
-        int dictionaryId = 2;
-        Set<Integer> wordIds = Set.of(3); // abandoned word IDs
-        cardDao.addNewCards(dictionaryId, wordIds);
-        // assert
-        List<Card> cards = cardDao.selectCardsForDictionary(dictionaryId);
-        assertNotNull(cards);
-        assertEquals(2, cards.size());
-
-        Card first = cards.getFirst();
-        assertEquals(2, first.getId());
-
-        Card actual = cards.getLast();
-        assertTrue(actual.getId() >= EXPECTED_NEW_ID);
-        assertTrue(first.getInsertedAt().isBefore(actual.getInsertedAt())); // oldest first
-    }
-
-    @Test
-    void updateStatus() throws DaoException {
-        int i = cardDao.updateStatus(2, CardStatus.LEARNT, 100);
-        assertEquals(1, i);
-        assertCards(2);
-    }
-
-    @Test
     void batchUpdateScores() throws DaoException {
         Card card1 = new Card();
         card1.setId(1); // the last
-        card1.setStatus(CardStatus.TO_LEARN);
+        card1.setStatus(CardStatus.POSTPONED);
         card1.setScore(25);
         Card card2 = new Card();
         card2.setId(2); // the last
-        card2.setStatus(CardStatus.TO_LEARN);
+        card2.setStatus(CardStatus.POSTPONED);
         card2.setScore(80);
 
         cardDao.batchUpdateScores(List.of(card1, card2));
+        cardDao.batchUpdateStatuses(List.of(card1, card2));
 
         // assert
         Card actual = cardDao.selectCardsForDictionary(1)
                 .getFirst();
         assertEquals(1, actual.getId());
-        assertEquals(CardStatus.TO_LEARN, actual.getStatus());
+        assertEquals(1, actual.getWordId());
+        assertEquals(CardStatus.POSTPONED, actual.getStatus());
         assertEquals(25, actual.getScore());
         actual = cardDao.selectCardsForDictionary(2)
                 .getFirst();
         assertEquals(2, actual.getId());
-        assertEquals(CardStatus.TO_LEARN, actual.getStatus());
+        assertEquals(2, actual.getWordId());
+        assertEquals(CardStatus.POSTPONED, actual.getStatus());
         assertEquals(80, actual.getScore());
-    }
-
-    private static void assertStatus(List<Card> cards) {
-        for (Card card : cards) {
-            assertSame(CardStatus.DEFAULT_STATUS, card.getStatus());
-            if (CardStatus.DEFAULT_STATUS == CardStatus.LEARNT) {
-                assertEquals(100, card.getScore());
-            } else if (CardStatus.DEFAULT_STATUS == CardStatus.EDIT) {
-                assertEquals(0, card.getScore());
-            } else {
-                assertEquals(DEFAULT_SCORE, card.getScore());
-            }
-        }
     }
 
 }

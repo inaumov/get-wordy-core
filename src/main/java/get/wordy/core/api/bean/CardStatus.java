@@ -7,7 +7,7 @@ public enum CardStatus {
     TO_LEARN(2),
     LEARNT(3);
 
-    public static final CardStatus DEFAULT_STATUS = CardStatus.EDIT;
+    public static final CardStatus DEFAULT_STATUS = CardStatus.TO_LEARN;
 
     private int index;
 

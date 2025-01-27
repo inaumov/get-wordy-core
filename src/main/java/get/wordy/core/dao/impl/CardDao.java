@@ -1,6 +1,7 @@
 package get.wordy.core.dao.impl;
 
 import get.wordy.core.api.bean.*;
+import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.db.LocalTxManager;
 
@@ -13,20 +14,15 @@ public class CardDao extends BaseDao<Card> {
             INSERT INTO cards (dictionary_id, word_id, status) VALUES (?,?,?)
             """;
     private static final String DELETE_CARD_QUERY = "DELETE FROM cards WHERE id=?";
-    private static final String UPDATE_CARD_QUERY = """
-            UPDATE cards SET status=?,score=?,word_id=?,dictionary_id=?,last_update_time=NOW() WHERE id=?
-            """;
+
     private static final String SELECT_CARD_QUERY = """
-            SELECT id, status, score, create_time, last_update_time, word_id, dictionary_id FROM cards WHERE id=?
-            """;
-    private static final String RESET_SCORE_QUERY = """
-            UPDATE cards SET score=?, status=?, last_update_time=NOW() WHERE id=?
+            SELECT * FROM cards WHERE id=?
             """;
     private static final String UPDATE_STATUS_QUERY = """
-            UPDATE cards SET status=?,score=?, last_update_time=NOW() WHERE id=?
+            UPDATE cards SET status=?, last_update_time=NOW() WHERE id=?
             """;
-    private static final String UPDATE_TIME_QUERY = """
-            UPDATE cards SET last_update_time=NOW() WHERE id=?
+    private static final String UPDATE_SCORE_QUERY = """
+            UPDATE cards SET score=?, last_update_time=NOW() WHERE id=?
             """;
     private static final String SCORE_SUMMARY_QUERY = """
             SELECT status, COUNT(status) FROM cards WHERE dictionary_id=? GROUP BY status
@@ -34,7 +30,7 @@ public class CardDao extends BaseDao<Card> {
     private static final String SELECT_FOR_EXERCISE_QUERY = """
             SELECT id FROM cards WHERE dictionary_id=? AND status=? ORDER BY create_time LIMIT ?
             """;
-    private static final String SELECT_ALL_CARDS_BY_DIC = """
+    private static final String CARDS_IN_PROGRESS_QUERY = """
             SELECT * FROM cards WHERE dictionary_id=? ORDER BY create_time ASC
             """;
 
@@ -42,7 +38,6 @@ public class CardDao extends BaseDao<Card> {
         super(txManager);
     }
 
-    @Override
     public Card insert(Card card) throws DaoException {
         try (var statement = prepareStatementForInsert(INSERT_CARD_QUERY)) {
             CardStatus status = card.getStatus();
@@ -62,7 +57,7 @@ public class CardDao extends BaseDao<Card> {
         return card;
     }
 
-    public void addNewCards(int dictionaryId, Set<Integer> wordIds) throws DaoException {
+    public void addCards(int dictionaryId, Set<Integer> wordIds) throws DaoException {
         try (var statement = prepareStatementForInsert(INSERT_CARD_QUERY)) {
             for (Integer wordId : wordIds) {
                 statement.setInt(1, dictionaryId);
@@ -76,8 +71,7 @@ public class CardDao extends BaseDao<Card> {
         }
     }
 
-    @Override
-    public void delete(int cardId) throws DaoException {
+    public void delete(OwnerId ownerId, int cardId) throws DaoException {
         try (var statement = prepareStatement(DELETE_CARD_QUERY)) {
             statement.setInt(1, cardId);
             statement.execute();
@@ -86,25 +80,9 @@ public class CardDao extends BaseDao<Card> {
         }
     }
 
-    @Override
-    public int update(Card card) throws DaoException {
-        int records = 0;
-        try (var statement = prepareStatement(UPDATE_CARD_QUERY)) {
-            statement.setString(1, card.getStatus().name());
-            statement.setInt(2, card.getScore());
-            statement.setInt(3, card.getWordId());
-            statement.setInt(4, card.getDictionaryId());
-            statement.setInt(5, card.getId());
-            records = statement.executeUpdate();
-        } catch (SQLException ex) {
-            throw new DaoException("Error while updating card record", ex);
-        }
-        return records;
-    }
-
     public List<Card> selectCardsForDictionary(int dictionaryId) throws DaoException {
         ArrayList<Card> data = new ArrayList<>();
-        try (var statement = prepareStatement(SELECT_ALL_CARDS_BY_DIC)) {
+        try (var statement = prepareStatement(CARDS_IN_PROGRESS_QUERY)) {
             statement.setInt(1, dictionaryId);
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
@@ -192,39 +170,49 @@ public class CardDao extends BaseDao<Card> {
         return statuses;
     }
 
-    public void resetScore(int cardId, CardStatus status) throws DaoException {
-        try (var statement = prepareStatement(RESET_SCORE_QUERY)) {
-            statement.setInt(1, 0);
-            statement.setString(2, status.name());
-            statement.setInt(3, cardId);
-            statement.executeUpdate();
-        } catch (SQLException ex) {
-            throw new DaoException("Error while resetting score for a card", ex);
-        }
-    }
-
-    public int updateStatus(int cardId, CardStatus status, int score) throws DaoException {
+    public int updateStatus(int cardId, CardStatus status) throws DaoException {
         try (var statement = prepareStatement(UPDATE_STATUS_QUERY)) {
             statement.setString(1, status.name());
-            statement.setInt(2, score);
-            statement.setInt(3, cardId);
+            statement.setInt(2, cardId);
             return statement.executeUpdate();
         } catch (SQLException ex) {
-            throw new DaoException("Error while updating status and score", ex);
+            throw new DaoException("Error while updating status", ex);
         }
     }
 
-    public void batchUpdateScores(List<Card> cards) throws DaoException {
+    public int updateScore(int cardId, int score) throws DaoException {
+        try (var statement = prepareStatement(UPDATE_SCORE_QUERY)) {
+            statement.setInt(1, score);
+            statement.setInt(2, cardId);
+            return statement.executeUpdate();
+        } catch (SQLException ex) {
+            throw new DaoException("Error while updating score", ex);
+        }
+    }
+
+    public void batchUpdateStatuses(List<Card> cards) throws DaoException {
         try (var statement = prepareStatement(UPDATE_STATUS_QUERY)) {
             for (Card card : cards) {
                 statement.setString(1, card.getStatus().name());
-                statement.setInt(2, card.getScore());
-                statement.setInt(3, card.getId());
+                statement.setInt(2, card.getId());
                 statement.addBatch();
             }
             statement.executeBatch();
         } catch (SQLException ex) {
-            throw new DaoException("Error while updating statuses and scores in batch", ex);
+            throw new DaoException("Error while updating statuses in batch", ex);
+        }
+    }
+
+    public void batchUpdateScores(List<Card> cards) throws DaoException {
+        try (var statement = prepareStatement(UPDATE_SCORE_QUERY)) {
+            for (Card card : cards) {
+                statement.setInt(1, card.getScore());
+                statement.setInt(2, card.getId());
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        } catch (SQLException ex) {
+            throw new DaoException("Error while updating scores in batch", ex);
         }
     }
 

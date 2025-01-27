@@ -19,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.function.Function;
@@ -289,16 +288,15 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     }
 
     @Override
-    public Card addCard(int dictionaryId, Card card) {
+    public Card addCard(OwnerId ownerId, int dictionaryId, int wordId) {
+        Card card = new Card();
+        card.setDictionaryId(dictionaryId);
+        card.setWordId(wordId);
+        card.setStatus(CardStatus.TO_LEARN);
+
         try {
             connection.open();
-            Word word = wordDao.insert(card.getWord());
-            card.setDictionaryId(dictionaryId);
-            card.setWordId(word.getId());
-            card.setWord(word);
-            if (isReadyToLearn(word)) {
-                card.setStatus(CardStatus.TO_LEARN);
-            }
+
             Card insertedCard = cardDao.insert(card);
 
             connection.commit();
@@ -318,21 +316,12 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
         }
     }
 
-    private static boolean isReadyToLearn(Word word) {
-        return StringUtils.hasText(word.getValue())
-                && StringUtils.hasText(word.getPartOfSpeech())
-                && StringUtils.hasText(word.getMeaning());
-    }
-
     @Override
-    public boolean deleteCard(OwnerId ownerId, int dictionaryId, int cardId) {
-        findVocab(ownerId, dictionaryId);
+    public boolean deleteCard(OwnerId ownerId, int cardId) {
         Card card = findCardById(cardId);
         try {
             connection.open();
-
-            cardDao.delete(cardId);
-            wordDao.delete(card.getWordId());
+            cardDao.delete(ownerId, card.getId());
             connection.commit();
             cardsCache.remove(cardId);
         } catch (DaoException e) {
@@ -371,34 +360,6 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     }
 
     @Override
-    public boolean changeStatus(int cardId, CardStatus newStatus) {
-        Card card = findCardById(cardId);
-        if (card == null) {
-            return false;
-        }
-        card.setStatus(newStatus);
-
-        if (newStatus == CardStatus.LEARNT) {
-            card.setScore(100);
-        } else if (newStatus == CardStatus.EDIT) {
-            card.setScore(0);
-        }
-
-        try {
-            connection.open();
-            cardDao.updateStatus(cardId, newStatus, card.getScore());
-            connection.commit();
-        } catch (DaoException e) {
-            LOG.error("Error while changing card status, id = {}", cardId, e);
-            connection.rollback();
-            return false;
-        } finally {
-            connection.close();
-        }
-        return true;
-    }
-
-    @Override
     public Score getScoreSummary(OwnerId ownerId, int dictionaryId) {
         try {
             Vocabulary vocabulary = findVocab(ownerId, dictionaryId);
@@ -420,11 +381,13 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     }
 
     @Override
-    public boolean resetScore(int cardId) {
-        // todo: check permission to dictionary
+    public boolean resetScore(OwnerId ownerId, int cardId) {
+        Card card = findCardById(cardId);
+        LOG.info("Resetting score for a card id = {}", cardId);
         try {
             connection.open();
-            cardDao.resetScore(cardId, CardStatus.TO_LEARN);
+            cardDao.updateStatus(card.getId(), CardStatus.TO_LEARN);
+            cardDao.updateScore(card.getId(), 0);
             connection.commit();
         } catch (DaoException e) {
             LOG.error("Error while resetting score for card, id = {}", cardId, e);
@@ -437,12 +400,13 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     }
 
     @Override
-    public boolean increaseScoreUp(final int dictionaryId, int[] cardIds, int repetitions) {
+    public boolean increaseScoreUp(OwnerId ownerId, int[] cardIds, int repetitions) {
         // omit duplicates if any
         int[] uniqueCardIds = Arrays.stream(cardIds)
                 .distinct()
                 .toArray();
         List<Card> cards = new ArrayList<>();
+        List<Card> onlyLearnt = new ArrayList<>();
         for (int cardId : uniqueCardIds) {
             Card card = findCardById(cardId);
 
@@ -453,6 +417,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
             if (score > 99) {
                 score = 100;
                 card.setStatus(CardStatus.LEARNT);
+                onlyLearnt.add(card);
             }
             card.setScore(score);
             cards.add(card);
@@ -460,6 +425,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
         try {
             connection.open();
             cardDao.batchUpdateScores(cards);
+            cardDao.batchUpdateStatuses(onlyLearnt);
             connection.commit();
         } catch (DaoException e) {
             LOG.error("Error while increasing scores up for cards with id = {}", cardIds, e);
@@ -522,11 +488,9 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     private Card loadCardFromDb(int cardId) {
         Card card;
         try {
-            connection.open();
             card = cardDao.selectById(cardId);
-            connection.commit();
         } catch (DaoException e) {
-            LOG.error("Error while loading a card with id = {}", cardId, e);
+            LOG.error("Error while loading a card by id = {}", cardId, e);
             throw new DictionaryServiceException();
         }
         if (card == null) {
@@ -535,12 +499,13 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
         return card;
     }
 
+    @Override
     public List<Card> generateCards(OwnerId ownerId, int dictionaryId, Set<Integer> wordRefs) {
         Vocabulary vocabulary = findVocab(ownerId, dictionaryId);
 
         try {
             connection.open();
-            cardDao.addNewCards(vocabulary.getVocabId(), wordRefs);
+            cardDao.addCards(vocabulary.getVocabId(), wordRefs);
             connection.commit();
 
             List<Word> wordList = wordDao.selectAll(wordRefs);

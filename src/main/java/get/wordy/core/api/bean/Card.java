@@ -92,12 +92,14 @@ public class Card {
 
         return this.id == that.id
                 && this.wordId == that.wordId
-                && this.dictionaryId == that.dictionaryId;
+                && this.dictionaryId == that.dictionaryId
+                && this.status == that.status
+                && this.score == that.score;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, wordId, dictionaryId);
+        return Objects.hash(id, wordId, dictionaryId, status, score);
     }
 
 }

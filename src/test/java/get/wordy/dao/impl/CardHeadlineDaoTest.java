@@ -48,6 +48,7 @@ public class CardHeadlineDaoTest {
         assertAll(
                 "Grouped assertions of Card Headline",
                 () -> assertThat(card.getId()).isEqualTo(1),
+                () -> assertThat(card.getDictionaryId()).isEqualTo(1),
                 () -> assertThat(card.getWordId()).isEqualTo(1),
                 () -> assertThat(card.getScore()).isEqualTo(50),
                 () -> assertThat(card.getStatus()).isEqualTo(CardStatus.DEFAULT_STATUS),
@@ -89,6 +90,7 @@ public class CardHeadlineDaoTest {
         assertAll(
                 "Grouped assertions of Card Headline",
                 () -> assertThat(card.getId()).isEqualTo(1),
+                () -> assertThat(card.getDictionaryId()).isEqualTo(1),
                 () -> assertThat(card.getWordId()).isEqualTo(1),
                 () -> assertThat(card.getScore()).isEqualTo(50),
                 () -> assertThat(card.getStatus()).isEqualTo(CardStatus.DEFAULT_STATUS),

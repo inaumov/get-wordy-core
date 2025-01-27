@@ -13,17 +13,17 @@ import get.wordy.core.dao.impl.WordDao;
 import get.wordy.core.db.LocalTxManager;
 import get.wordy.core.api.bean.wrapper.Score;
 import org.easymock.*;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.*;
 
 import static org.easymock.EasyMock.*;
+import static org.easymock.EasyMock.capture;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(EasyMockExtension.class)
@@ -277,6 +277,8 @@ public class DictionaryServiceTest {
 
         Card cardMock = strictMock(Card.class);
         expect(cardMock.getId()).andReturn(1);
+        expect(cardMock.getDictionaryId()).andReturn(1);
+        expect(cardMock.getWordId()).andReturn(1);
         replay(cardMock);
 
         expect(headlineDaoMock.getCardsForDictionary(DICTIONARY_ID))
@@ -360,7 +362,6 @@ public class DictionaryServiceTest {
         List<Exercise> cards = dictionaryService.getCardsForExercise(JOHN_DOE, 1, 10);
         assertEquals(3, cards.size());
         for (Exercise card : cards) {
-            assertTrue(card.getCardId() > 0);
             assertTrue(card.getWordId() > 0);
             assertNotNull(card.getWord());
             assertFalse(card.getSentences().isEmpty());
@@ -392,41 +393,22 @@ public class DictionaryServiceTest {
     public void testSaveNewCard() throws Exception {
         replayTxCommited();
 
-        Vocabulary vocabularyMock = createDictionaryMock();
-        replay(vocabularyMock);
-        addDictionaryToCache(vocabularyMock);
-
-        Word wordMock = strictMock(Word.class);
-        replay(wordMock);
-
-        Word insertedWordMock = strictMock(Word.class);
-        expect(insertedWordMock.getId()).andReturn(1);
-        expect(insertedWordMock.getValue()).andReturn("banana");
-        expect(insertedWordMock.getPartOfSpeech()).andReturn("noun");
-        expect(insertedWordMock.getMeaning()).andReturn(null);
-        replay(insertedWordMock);
-
-        Card cardMock = strictMock(Card.class);
-        expect(cardMock.getWord()).andReturn(wordMock);
-        cardMock.setDictionaryId(DICTIONARY_ID);
-        cardMock.setWordId(1);
-        cardMock.setWord(insertedWordMock);
-        replay(cardMock);
-
         Card insertedCardMock = strictMock(Card.class);
         expect(insertedCardMock.getId()).andReturn(1);
         replay(insertedCardMock);
 
-        wordDaoMock.insert(wordMock);
-        expectLastCall().andAnswer(() -> insertedWordMock);
-        cardDaoMock.insert(cardMock);
+        Capture<Card> cardCapture = Capture.newInstance();
+        cardDaoMock.insert(capture(cardCapture));
         expectLastCall().andAnswer(() -> insertedCardMock);
-        replay(wordDaoMock, cardDaoMock);
+        replay(cardDaoMock);
 
-        Card done = dictionaryService.addCard(DICTIONARY_ID, cardMock);
+        Card done = dictionaryService.addCard(JOHN_DOE, DICTIONARY_ID, 105);
         assertNotNull(done);
+        Assertions.assertEquals(DICTIONARY_ID, cardCapture.getValue().getDictionaryId());
+        Assertions.assertEquals(105, cardCapture.getValue().getWordId());
+        Assertions.assertEquals(CardStatus.TO_LEARN, cardCapture.getValue().getStatus());
 
-        verify(wordDaoMock, cardDaoMock);
+        verify(cardDaoMock);
     }
 
     @Test
@@ -440,76 +422,18 @@ public class DictionaryServiceTest {
         replayTxCommited();
 
         Card cardMock = strictMock(Card.class);
-        expect(cardMock.getWordId()).andStubReturn(1);
+        expect(cardMock.getId()).andStubReturn(1);
         replay(cardMock);
         addCardToCache(1, cardMock);
 
-        cardDaoMock.delete(1);
+        cardDaoMock.delete(JOHN_DOE, 1);
         expectLastCall().once();
         replay(cardDaoMock);
 
-        boolean done = dictionaryService.deleteCard(JOHN_DOE, DICTIONARY_ID, 1);
+        boolean done = dictionaryService.deleteCard(JOHN_DOE, 1);
         assertTrue(done);
 
         verify(cardMock);
-        verify(cardDaoMock);
-    }
-
-    @Test
-    public void testChangeStatusWhenThrowDaoException() throws Exception {
-        replayTxRollback();
-
-        Card cardMock = strictMock(Card.class);
-        cardMock.setStatus(CardStatus.DEFAULT_STATUS);
-        cardMock.setScore(0);
-        expect(cardMock.getScore()).andReturn(0);
-        replay(cardMock);
-
-        addCardToCache(1, cardMock);
-
-        cardDaoMock.updateStatus(1, CardStatus.DEFAULT_STATUS, 0);
-        expectLastCall().andStubThrow(new DaoException("changeStatus", null));
-        replay(cardDaoMock);
-
-        boolean done = dictionaryService.changeStatus(1, CardStatus.DEFAULT_STATUS);
-        assertFalse(done);
-
-        verify(cardDaoMock);
-    }
-
-    @ParameterizedTest
-    @CsvSource(value = {"EDIT,0", "LEARNT,100"})
-    public void testChangeStatusWhenResetRating(CardStatus cardStatus, int score) throws Exception {
-        Card cardMock = strictMock(Card.class);
-        cardMock.setStatus(cardStatus);
-        cardMock.setScore(score);
-        expect(cardMock.getScore()).andReturn(score);
-        replay(cardMock);
-        addCardToCache(1, cardMock);
-        doChangeStatusTest(1, cardStatus, score);
-    }
-
-    @ParameterizedTest
-    @CsvSource(value = {"TO_LEARN,50", "POSTPONED,20"})
-    public void testChangeStatusWhenKeepRating(CardStatus cardStatus, int score) throws Exception {
-        Card cardMock = strictMock(Card.class);
-        cardMock.setStatus(cardStatus);
-        expect(cardMock.getScore()).andReturn(score);
-        replay(cardMock);
-        addCardToCache(1, cardMock);
-        doChangeStatusTest(1, cardStatus, score);
-    }
-
-    private void doChangeStatusTest(int cardId, CardStatus status, int score) throws Exception {
-        replayTxCommited();
-
-        cardDaoMock.updateStatus(cardId, status, score);
-        expectLastCall().andReturn(1);
-        replay(cardDaoMock);
-
-        boolean done = dictionaryService.changeStatus(cardId, status);
-        assertTrue(done);
-
         verify(cardDaoMock);
     }
 
@@ -521,13 +445,12 @@ public class DictionaryServiceTest {
         addDictionaryToCache(vocabularyMock);
         replay(vocabularyMock);
 
-        expect(cardDaoMock.getScoreSummary(DICTIONARY_ID)).andReturn(Map.of("EDIT", 1, "LEARNT", 3));
+        expect(cardDaoMock.getScoreSummary(DICTIONARY_ID)).andReturn(Map.of("POSTPONED", 1, "LEARNT", 3));
         replay(cardDaoMock);
 
         Score score = dictionaryService.getScoreSummary(JOHN_DOE, DICTIONARY_ID);
-        assertEquals(1, score.getEditCnt());
         assertEquals(0, score.getToLearnCnt());
-        assertEquals(0, score.getPostponedCnt());
+        assertEquals(1, score.getPostponedCnt());
         assertEquals(3, score.getLearntCnt());
         assertEquals(4, score.getTotalCount());
         assertNotNull(score);
@@ -543,19 +466,52 @@ public class DictionaryServiceTest {
         replay(vocabularyMock);
         addDictionaryToCache(vocabularyMock);
 
-        cardDaoMock.resetScore(1, CardStatus.TO_LEARN);
-        expectLastCall().once();
+        Card cardMock = strictMock(Card.class);
+        expect(cardMock.getId()).andStubReturn(1);
+        replay(cardMock);
+        addCardToCache(1, cardMock);
+
+        cardDaoMock.updateStatus(1, CardStatus.TO_LEARN);
+        expectLastCall().andReturn(1).once();
+
+        cardDaoMock.updateScore(1, 0);
+        expectLastCall().andReturn(1).once();
 
         replay(cardDaoMock);
 
-        boolean done = dictionaryService.resetScore(1);
+        boolean done = dictionaryService.resetScore(JOHN_DOE, 1);
         assertTrue(done);
 
         verify(cardDaoMock);
     }
 
     @Test
-    public void testIncreaseScoreUpAndOneReaches100Percents() throws Exception {
+    public void testResetScoreWhenThrowDaoException() throws Exception {
+        replayTxRollback();
+
+        Card cardMock = strictMock(Card.class);
+        expect(cardMock.getId()).andReturn(1).anyTimes();
+        expect(cardMock.getScore()).andReturn(0);
+        expect(cardMock.getStatus()).andReturn(CardStatus.TO_LEARN);
+        cardMock.setScore(0);
+        replay(cardMock);
+
+        addCardToCache(1, cardMock);
+
+        cardDaoMock.updateStatus(1, CardStatus.DEFAULT_STATUS);
+        expectLastCall().andReturn(1);
+        cardDaoMock.updateScore(1, 0);
+        expectLastCall().andStubThrow(new DaoException("resetScore", null));
+        replay(cardDaoMock);
+
+        boolean done = dictionaryService.resetScore(JOHN_DOE, 1);
+        assertFalse(done);
+
+        verify(cardDaoMock);
+    }
+
+    @Test
+    public void testIncreaseScoreUpAndOneReachesFinalScore() throws Exception {
         replayTxCommited();
 
         Card cardMock1 = strictMock(Card.class);
@@ -573,10 +529,11 @@ public class DictionaryServiceTest {
         addCardToCache(2, cardMock2);
 
         cardDaoMock.batchUpdateScores(List.of(cardMock1, cardMock2));
+        cardDaoMock.batchUpdateStatuses(List.of(cardMock2));
         expectLastCall().once();
         replay(cardDaoMock);
 
-        boolean done = dictionaryService.increaseScoreUp(1, new int[]{1, 2, 2, 2, 1}, 10);
+        boolean done = dictionaryService.increaseScoreUp(JOHN_DOE, new int[]{1, 2, 2, 2, 1}, 10);
         assertTrue(done);
 
         verify(cardMock1, cardDaoMock);
@@ -601,7 +558,7 @@ public class DictionaryServiceTest {
         replay(wordMock87);
 
         Set<Integer> wordIds = Set.of(42, 87);
-        cardDaoMock.addNewCards(anyInt(), eq(wordIds));
+        cardDaoMock.addCards(anyInt(), eq(wordIds));
         expectLastCall().once();
         expect(wordDaoMock.selectAll(wordIds))
                 .andReturn(List.of(wordMock42, wordMock87));
