@@ -1,4 +1,4 @@
-truncate table context;
+truncate table in_context;
 truncate table collocations;
 truncate table cards cascade;
 truncate table words cascade;
@@ -14,13 +14,13 @@ insert into words (id, word, part_of_speech, transcription, meaning) values (3, 
 insert into cards (id, score, create_time, last_update_time, dictionary_id, word_id) values (1, 50, '2014-08-17 17:40:03', CURRENT_TIMESTAMP, 1, 1 );
 insert into cards (id, score, create_time, last_update_time, dictionary_id, word_id, status) values (2, 50, '2014-08-17 17:40:04', CURRENT_TIMESTAMP, 2, 2, 'TO_LEARN');
 
-insert into collocations (card_id, example, word_id) values (1, 'collocation1', 1);
-insert into collocations (card_id, example, word_id) values (2, 'collocation2', 2);
+insert into collocations (word_id, example) values (1, 'collocation1');
+insert into collocations (word_id, example) values (2, 'collocation2');
 
-insert into context (card_id, example, word_id, matched_words) values (1, 'Test sentence 1', 1, 'sentence 1');
-insert into context (card_id, example, word_id) values (2, 'Test sentence 2', 2);
-insert into context (card_id, example, word_id) values (1, 'Test sentence 3', 1);
-insert into context (card_id, example, word_id, matched_words) values (1, 'Test sentence 4', 1, 'sentence 4');
+insert into in_context (word_id, example, matched_words) values (1, 'Test sentence 1', 'sentence 1');
+insert into in_context (word_id, example) values (2, 'Test sentence 2');
+insert into in_context (word_id, example) values (1, 'Test sentence 3');
+insert into in_context (word_id, example, matched_words) values (1, 'Test sentence 4', 'sentence 4');
 
 update vocabularies set owner_id = 'john-123', owner_type = 'user' where vocab_id = 1;
 update vocabularies set owner_id = 'class-42', owner_type = 'class' where vocab_id = 2;

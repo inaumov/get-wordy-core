@@ -4,17 +4,25 @@ import java.util.Objects;
 
 public class Sentence {
 
+    private int wordId;
     private String example;
-    private int cardId;
     private String matchedWords;
 
     public Sentence(String fullSentence) {
         this.example = fullSentence;
     }
 
-    public Sentence(String example, int cardId) {
+    public Sentence(String example, int wordId) {
+        this.wordId = wordId;
         this.example = example;
-        this.cardId = cardId;
+    }
+
+    public int getWordId() {
+        return wordId;
+    }
+
+    public void setWordId(int wordId) {
+        this.wordId = wordId;
     }
 
     public String getExample() {
@@ -27,14 +35,6 @@ public class Sentence {
 
     public String getMatchedWords() {
         return matchedWords;
-    }
-
-    public int getCardId() {
-        return cardId;
-    }
-
-    public void setCardId(int cardId) {
-        this.cardId = cardId;
     }
 
     public Sentence withMatchedWords(String matchedWords) {
@@ -53,13 +53,14 @@ public class Sentence {
 
         Sentence sentence = (Sentence) o;
 
-        return Objects.equals(example, sentence.example)
+        return wordId == sentence.wordId
+                && Objects.equals(example, sentence.example)
                 && Objects.equals(matchedWords, sentence.matchedWords);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(example, matchedWords);
+        return Objects.hash(wordId, example, matchedWords);
     }
 
 }

@@ -44,7 +44,7 @@ public class CardHeadlineDaoTest {
 
         String formattedInstant = DATE_TIME_FORMATTER.format(card.getInsertedAt());
 
-        List<String> sentences = card.getStrSentences();
+        List<String> sentences = card.getWord().getStrSentences();
         assertAll(
                 "Grouped assertions of Card Headline",
                 () -> assertThat(card.getId()).isEqualTo(1),
@@ -58,8 +58,8 @@ public class CardHeadlineDaoTest {
                 () -> assertEquals("Test sentence 1", sentences.getFirst()),
                 () -> assertEquals("Test sentence 4", sentences.getLast()),
 
-                () -> assertEquals(1, card.getCollocations().size()),
-                () -> assertEquals("collocation1", card.getCollocations().getFirst())
+                () -> assertEquals(1, card.getWord().getCollocations().size()),
+                () -> assertEquals("collocation1", card.getWord().getCollocations().getFirst())
         );
         Word word = card.getWord();
         assertNotNull(word);
@@ -85,7 +85,7 @@ public class CardHeadlineDaoTest {
 
         String formattedInstant = DATE_TIME_FORMATTER.format(card.getInsertedAt());
 
-        List<String> sentences = card.getStrSentences();
+        List<String> sentences = card.getWord().getStrSentences();
         assertAll(
                 "Grouped assertions of Card Headline",
                 () -> assertThat(card.getId()).isEqualTo(1),
@@ -99,8 +99,8 @@ public class CardHeadlineDaoTest {
                 () -> assertEquals("Test sentence 1", sentences.getFirst()),
                 () -> assertEquals("Test sentence 4", sentences.getLast()),
 
-                () -> assertEquals(1, card.getCollocations().size()),
-                () -> assertEquals("collocation1", card.getCollocations().getFirst())
+                () -> assertEquals(1, card.getWord().getCollocations().size()),
+                () -> assertEquals("collocation1", card.getWord().getCollocations().getFirst())
         );
         Word word = card.getWord();
         assertNotNull(word);
@@ -154,10 +154,10 @@ public class CardHeadlineDaoTest {
     void getSentencesFor() {
         // Define test data
         int cardIdExpected = 1;
-        int[] cardIds = {1, 3, 4};
+        int[] wordIds = {1, 3, 4};
 
         // Execute DAO method
-        Map<Integer, List<Sentence>> result = cardHeadlineDao.getSentencesFor(cardIds);
+        Map<Integer, List<Sentence>> result = cardHeadlineDao.getSentencesFor(wordIds);
 
         assertEquals(1, result.size());
         assertTrue(result.containsKey(cardIdExpected));

@@ -411,8 +411,6 @@ public class DictionaryServiceTest {
         cardMock.setDictionaryId(DICTIONARY_ID);
         cardMock.setWordId(1);
         cardMock.setWord(insertedWordMock);
-        expect(cardMock.getStrSentences()).andReturn(List.of("Test sentence"));
-        expect(cardMock.getCollocations()).andReturn(List.of("Test collocation"));
         replay(cardMock);
 
         Card insertedCardMock = strictMock(Card.class);
@@ -428,48 +426,6 @@ public class DictionaryServiceTest {
         Card done = dictionaryService.addCard(DICTIONARY_ID, cardMock);
         assertNotNull(done);
 
-        verify(wordDaoMock, cardDaoMock);
-    }
-
-    @Test
-    public void testUpdateCard() throws Exception {
-        replayTxCommited();
-
-        int cardId = 1;
-        Word wordMock = strictMock(Word.class);
-        replay(wordMock);
-
-        Card cardMock = strictMock(Card.class);
-        expect(cardMock.getWord()).andReturn(wordMock);
-        expectLastCall().once();
-        replay(cardMock);
-        addCardToCache(cardId, cardMock);
-
-        Word wordForUpdMock = strictMock(Word.class);
-        expect(wordForUpdMock.getId()).andReturn(1);
-        replay(wordForUpdMock);
-
-        Card cardForUpdMock = strictMock(Card.class);
-        expect(cardForUpdMock.getId()).andReturn(cardId);
-        cardForUpdMock.setDictionaryId(DICTIONARY_ID);
-        expectLastCall().once();
-        expect(cardForUpdMock.getWord()).andReturn(wordForUpdMock);
-        cardForUpdMock.setWord(wordMock);
-        expectLastCall().once();
-        replay(cardForUpdMock);
-
-        headlineDaoMock.getCardById(cardId);
-        expectLastCall().andAnswer(() -> cardMock);
-        wordDaoMock.update(wordForUpdMock);
-        expectLastCall().andReturn(1);
-        cardDaoMock.updateRelations(cardForUpdMock);
-        expectLastCall().andAnswer(() -> cardMock);
-        replay(headlineDaoMock, wordDaoMock, cardDaoMock);
-
-        Card done = dictionaryService.updateCard(DICTIONARY_ID, cardForUpdMock);
-        assertNotNull(done);
-
-        verify(wordMock, cardMock);
         verify(wordDaoMock, cardDaoMock);
     }
 

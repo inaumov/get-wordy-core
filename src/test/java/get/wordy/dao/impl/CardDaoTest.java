@@ -1,8 +1,6 @@
 package get.wordy.dao.impl;
 
 import get.wordy.core.api.bean.Card;
-import get.wordy.core.api.bean.Collocation;
-import get.wordy.core.api.bean.Sentence;
 import get.wordy.core.api.bean.CardStatus;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.CardDao;
@@ -37,10 +35,6 @@ public class CardDaoTest extends BaseDaoTest {
         newCard.setDictionaryId(2);
         newCard.setScore(10);
         newCard.setStatus(CardStatus.POSTPONED);
-        Sentence testSentence = Sentence.of("Test sentence")
-                .withMatchedWords("test");
-        newCard.addSentence(testSentence);
-        newCard.addCollocation("Test collocation");
         newCard.setInsertedAt(Instant.now());
 
         // insert
@@ -57,8 +51,6 @@ public class CardDaoTest extends BaseDaoTest {
         assertEquals(3, actual.getWordId());
         assertEquals(2, actual.getDictionaryId());
         assertEquals(CardStatus.POSTPONED, actual.getStatus());
-        assertSentences(newCard.getSentences(), cardDao.getSentencesFor(actual.getId()));
-        assertCollocations(newCard.getCollocations(), cardDao.getCollocationsFor(actual.getId()));
     }
 
     @Test
@@ -70,11 +62,6 @@ public class CardDaoTest extends BaseDaoTest {
         updatedCard.setStatus(CardStatus.LEARNT);
         updatedCard.setScore(100);
         updatedCard.setUpdatedAt(Instant.now());
-        Sentence testSentence = Sentence.of("Test sentence")
-                .withMatchedWords("test");
-        updatedCard.addSentence(testSentence);
-        updatedCard.addStrSentence("Test sentence 2");
-        updatedCard.addCollocation("Test collocation");
         updatedCard.setInsertedAt(Instant.now());
 
         int i = cardDao.update(updatedCard);
@@ -172,31 +159,6 @@ public class CardDaoTest extends BaseDaoTest {
         assertEquals(2, actual.getWordId());
         assertEquals(2, actual.getDictionaryId());
         assertEquals(CardStatus.LEARNT, actual.getStatus());
-
-        assertSentences(actual.getSentences(), cardDao.getSentencesFor(actual.getId()));
-        assertCollocations(actual.getCollocations(), cardDao.getCollocationsFor(actual.getId()));
-    }
-
-    private static void assertSentences(List<Sentence> expectedSentences, List<Sentence> actualSentences) {
-        assertNotNull(actualSentences);
-
-        for (int i = 0; i < expectedSentences.size(); i++) {
-            String expected = expectedSentences.get(i).getExample();
-            Sentence actual = actualSentences.get(i);
-            assertEquals(expected, actual.getExample());
-            assertTrue(actual.getCardId() > 2, "actual: " + actual.getCardId());
-        }
-    }
-
-    private static void assertCollocations(List<String> expectedCollocations, List<Collocation> actualCollocations) {
-        assertNotNull(actualCollocations);
-
-        for (int i = 0; i < expectedCollocations.size(); i++) {
-            String expected = expectedCollocations.get(i);
-            Collocation actual = actualCollocations.get(i);
-            assertEquals(expected, actual.getExample());
-            assertTrue(actual.getCardId() > 2, "actual: " + actual.getCardId());
-        }
     }
 
     @Test

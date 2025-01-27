@@ -36,16 +36,16 @@ public class CardHeadlineDao {
                 words.part_of_speech,
                 words.transcription,
                 words.meaning,
-                array_remove(array_agg(DISTINCT context.example), NULL) AS card_sentences,
+                array_remove(array_agg(DISTINCT in_context.example), NULL) AS card_sentences,
                 array_remove(array_agg(DISTINCT collocations.example), NULL) AS card_collocations
             FROM
                 cards
             JOIN
                 words ON cards.word_id = words.id
             LEFT JOIN
-                context ON cards.id = context.card_id
+                in_context ON cards.word_id = in_context.word_id
             LEFT JOIN
-                collocations ON cards.id = collocations.card_id
+                collocations ON cards.word_id = collocations.word_id
             WHERE
                 cards.dictionary_id = :dictionaryId
             GROUP BY
@@ -65,16 +65,16 @@ public class CardHeadlineDao {
                 words.part_of_speech,
                 words.transcription,
                 words.meaning,
-                array_remove(array_agg(DISTINCT context.example), NULL) AS card_sentences,
+                array_remove(array_agg(DISTINCT in_context.example), NULL) AS card_sentences,
                 array_remove(array_agg(DISTINCT collocations.example), NULL) AS card_collocations
             FROM
                 cards
             JOIN
                 words ON cards.word_id = words.id
             LEFT JOIN
-                context ON cards.id = context.card_id
+                in_context ON cards.word_id = in_context.word_id
             LEFT JOIN
-                collocations ON cards.id = collocations.card_id
+                collocations ON cards.word_id = collocations.word_id
             WHERE
                 cards.id = :cardId -- Specify the card ID to retrieve
             GROUP BY
@@ -90,22 +90,24 @@ public class CardHeadlineDao {
                 words.transcription,
                 words.meaning,
                 array_remove(
-                    array_agg(DISTINCT 'example:' || context.example || ';' || 'matchedWords:' || context.matched_words),
+                    array_agg(DISTINCT 'example:' || in_context.example || ';' || 'matchedWords:' || in_context.matched_words),
                     NULL
                 ) AS exercise_sentences
             FROM
                 cards
-                    JOIN
+            JOIN
                 words ON cards.word_id = words.id
-                    LEFT JOIN
-                context ON cards.id = context.card_id
+            LEFT JOIN
+                in_context ON cards.word_id = in_context.word_id
             WHERE
                 cards.id IN (:cardIds)
             GROUP BY
                 cards.id, words.id;
             """;
 
-    private static final String SELECT_FROM_CONTEXT_QUERY = "SELECT * FROM context WHERE matched_words IS NOT NULL AND card_id IN (:cardIds)";
+    private static final String SELECT_SENTENCES_FOR_EXERCISE_QUERY = """
+        SELECT * FROM in_context WHERE matched_words IS NOT NULL AND word_id IN (:wordIds)
+    """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -133,13 +135,13 @@ public class CardHeadlineDao {
         return jdbcTemplate.query(GET_CARDS_FOR_EXERCISE, parameters, new ExerciseRowMapper());
     }
 
-    public Map<Integer, List<Sentence>> getSentencesFor(int... cardIds) {
+    public Map<Integer, List<Sentence>> getSentencesFor(int... wordIds) {
         MapSqlParameterSource parameters = new MapSqlParameterSource();
-        List<Integer> integers = Arrays.stream(cardIds)
+        List<Integer> integers = Arrays.stream(wordIds)
                 .boxed()
                 .toList();
-        parameters.addValue("cardIds", integers);
-        return jdbcTemplate.query(SELECT_FROM_CONTEXT_QUERY, parameters, new SentencesMapper());
+        parameters.addValue("wordIds", integers);
+        return jdbcTemplate.query(SELECT_SENTENCES_FOR_EXERCISE_QUERY, parameters, new SentencesMapper());
     }
 
     private static class FullCardRowMapper implements RowMapper<Card> {
@@ -180,8 +182,8 @@ public class CardHeadlineDao {
             List<String> sentences = Arrays.asList(cardSentences);
             List<String> collocations = Arrays.asList(cardCollocations);
 
-            cardData.setStrSentences(sentences);
-            cardData.setCollocations(collocations);
+            word.setStrSentences(sentences);
+            word.setCollocations(collocations);
 
             return cardData;
         }
@@ -224,16 +226,16 @@ public class CardHeadlineDao {
         public Map<Integer, List<Sentence>> extractData(ResultSet rs) throws SQLException, DataAccessException {
             List<Sentence> result = new ArrayList<>();
             while (rs.next()) {
-                int cardId = rs.getInt("card_id");
+                int wordId = rs.getInt("word_id");
                 String example = rs.getString("example");
                 String matchedWords = rs.getString("matched_words");
-                Sentence sentence = new Sentence(example, cardId)
+                Sentence sentence = new Sentence(example, wordId)
                         .withMatchedWords(matchedWords);
                 result.add(sentence);
             }
             return result
                     .stream()
-                    .collect(Collectors.groupingBy(Sentence::getCardId));
+                    .collect(Collectors.groupingBy(Sentence::getWordId));
         }
     }
 

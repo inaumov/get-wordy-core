@@ -17,8 +17,6 @@ public interface IDictionaryService {
 
     Card addCard(int dictionaryId, Card card);
 
-    Card updateCard(int dictionaryId, Card card);
-
     Card loadCard(int cardId);
 
     boolean deleteCard(OwnerId ownerId, int dictionaryId, int cardId);
