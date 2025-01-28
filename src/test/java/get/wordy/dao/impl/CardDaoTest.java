@@ -32,7 +32,7 @@ public class CardDaoTest extends BaseDaoTest {
     public void testInsert() throws DaoException {
         Card newCard = new Card();
         newCard.setWordId(3);
-        newCard.setDictionaryId(2);
+        newCard.setVocabId(2);
         newCard.setScore(0);
         newCard.setStatus(CardStatus.TO_LEARN);
         newCard.setInsertedAt(Instant.now());
@@ -49,7 +49,7 @@ public class CardDaoTest extends BaseDaoTest {
         assertNotNull(actual);
         assertTrue(actual.getId() >= EXPECTED_NEW_ID);
         assertEquals(3, actual.getWordId());
-        assertEquals(2, actual.getDictionaryId());
+        assertEquals(2, actual.getVocabId());
         assertEquals(CardStatus.TO_LEARN, actual.getStatus());
     }
 
@@ -68,14 +68,14 @@ public class CardDaoTest extends BaseDaoTest {
         assertNotNull(first);
         assertEquals(1, first.getId());
         assertEquals(1, first.getWordId());
-        assertEquals(1, first.getDictionaryId());
+        assertEquals(1, first.getVocabId());
         assertEquals(CardStatus.TO_LEARN, first.getStatus());
 
         Card second = cardDao.selectById(2);
         assertNotNull(second);
         assertEquals(2, second.getId());
         assertEquals(2, second.getWordId());
-        assertEquals(2, second.getDictionaryId());
+        assertEquals(2, second.getVocabId());
         assertEquals(CardStatus.TO_LEARN, second.getStatus());
 
         assertTrue(first.getInsertedAt().isBefore(second.getInsertedAt())); // oldest first
@@ -119,7 +119,7 @@ public class CardDaoTest extends BaseDaoTest {
         PrimitiveIterator.OfInt iterator = expectedIds.iterator();
         while (iterator.hasNext()) {
             int id = iterator.nextInt();
-            // check names of all dictionaries before insertion
+            // check names of all vocabularies before insertion
             Collection<Card> cards = cardDao.selectCardsForDictionary(id);
             assertNotNull(cards);
             assertEquals(1, cards.size());
@@ -128,7 +128,7 @@ public class CardDaoTest extends BaseDaoTest {
             Card card = it.next();
             assertEquals(id, card.getId());
             assertEquals(id, card.getWordId());
-            assertEquals(id, card.getDictionaryId());
+            assertEquals(id, card.getVocabId());
             assertEquals(CardStatus.DEFAULT_STATUS, card.getStatus());
             assertEquals(50, card.getScore());
         }
@@ -147,12 +147,12 @@ public class CardDaoTest extends BaseDaoTest {
 
         Card first = cards.getFirst();
         assertEquals(2, first.getId());
-        assertEquals(dictionaryId, first.getDictionaryId());
+        assertEquals(dictionaryId, first.getVocabId());
         assertEquals(2, first.getWordId());
 
         Card actual = cards.getLast();
         assertTrue(actual.getId() >= EXPECTED_NEW_ID);
-        assertEquals(dictionaryId, actual.getDictionaryId());
+        assertEquals(dictionaryId, actual.getVocabId());
         assertEquals(3, actual.getWordId());
         assertTrue(first.getInsertedAt().isBefore(actual.getInsertedAt())); // oldest first
     }
@@ -170,7 +170,7 @@ public class CardDaoTest extends BaseDaoTest {
         assertNotNull(actual);
         assertEquals(2, actual.getId());
         assertEquals(2, actual.getWordId());
-        assertEquals(2, actual.getDictionaryId());
+        assertEquals(2, actual.getVocabId());
         assertEquals(CardStatus.LEARNT, actual.getStatus());
     }
 

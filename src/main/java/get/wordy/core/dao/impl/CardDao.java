@@ -11,7 +11,7 @@ import java.util.*;
 public class CardDao extends BaseDao<Card> {
 
     private static final String INSERT_CARD_QUERY = """
-            INSERT INTO cards (dictionary_id, word_id, status) VALUES (?,?,?)
+            INSERT INTO cards (vocab_id, word_id, status) VALUES (?,?,?)
             """;
     private static final String DELETE_CARD_QUERY = "DELETE FROM cards WHERE id=?";
 
@@ -25,13 +25,13 @@ public class CardDao extends BaseDao<Card> {
             UPDATE cards SET score=?, last_update_time=NOW() WHERE id=?
             """;
     private static final String SCORE_SUMMARY_QUERY = """
-            SELECT status, COUNT(status) FROM cards WHERE dictionary_id=? GROUP BY status
+            SELECT status, COUNT(status) FROM cards WHERE vocab_id=? GROUP BY status
             """;
     private static final String SELECT_FOR_EXERCISE_QUERY = """
-            SELECT id FROM cards WHERE dictionary_id=? AND status=? ORDER BY create_time LIMIT ?
+            SELECT id FROM cards WHERE vocab_id=? AND status=? ORDER BY create_time LIMIT ?
             """;
     private static final String CARDS_IN_PROGRESS_QUERY = """
-            SELECT * FROM cards WHERE dictionary_id=? ORDER BY create_time ASC
+            SELECT * FROM cards WHERE vocab_id=? ORDER BY create_time ASC
             """;
 
     CardDao(LocalTxManager txManager) {
@@ -41,7 +41,7 @@ public class CardDao extends BaseDao<Card> {
     public Card insert(Card card) throws DaoException {
         try (var statement = prepareStatementForInsert(INSERT_CARD_QUERY)) {
             CardStatus status = card.getStatus();
-            statement.setInt(1, card.getDictionaryId());
+            statement.setInt(1, card.getVocabId());
             statement.setInt(2, card.getWordId());
             statement.setString(3, status != null ? status.name() : null);
             statement.execute();
@@ -57,10 +57,10 @@ public class CardDao extends BaseDao<Card> {
         return card;
     }
 
-    public void addCards(int dictionaryId, Set<Integer> wordIds) throws DaoException {
+    public void addCards(int vocabId, Set<Integer> wordIds) throws DaoException {
         try (var statement = prepareStatementForInsert(INSERT_CARD_QUERY)) {
             for (Integer wordId : wordIds) {
-                statement.setInt(1, dictionaryId);
+                statement.setInt(1, vocabId);
                 statement.setInt(2, wordId);
                 statement.setString(3, CardStatus.DEFAULT_STATUS.name());
                 statement.addBatch();
@@ -80,10 +80,10 @@ public class CardDao extends BaseDao<Card> {
         }
     }
 
-    public List<Card> selectCardsForDictionary(int dictionaryId) throws DaoException {
+    public List<Card> selectCardsForDictionary(int vocabId) throws DaoException {
         ArrayList<Card> data = new ArrayList<>();
         try (var statement = prepareStatement(CARDS_IN_PROGRESS_QUERY)) {
-            statement.setInt(1, dictionaryId);
+            statement.setInt(1, vocabId);
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 Card card = new Card();
@@ -91,7 +91,7 @@ public class CardDao extends BaseDao<Card> {
                 data.add(card);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving card records for dictionary id", ex);
+            throw new DaoException("Error while retrieving card records for vocabulary id", ex);
         }
         return data;
     }
@@ -124,16 +124,16 @@ public class CardDao extends BaseDao<Card> {
             destination.setUpdatedAt(updateTime.toInstant());
         }
         destination.setWordId(resultSet.getInt("word_id"));
-        destination.setDictionaryId(resultSet.getInt("dictionary_id"));
+        destination.setVocabId(resultSet.getInt("vocab_id"));
     }
 
-    public int[] selectCardIdsForExercise(int dictionaryId, int limit) throws DaoException {
+    public int[] selectCardIdsForExercise(int vocabId, int limit) throws DaoException {
 
         int[] buffer = new int[limit]; // initial array with the largest possible capacity;
         int cnt = 0; // retrieved amount
 
         try (var statement = prepareStatement(SELECT_FOR_EXERCISE_QUERY)) {
-            statement.setInt(1, dictionaryId);
+            statement.setInt(1, vocabId);
             statement.setString(2, CardStatus.TO_LEARN.name());
             statement.setInt(3, limit);
             ResultSet resultSet = statement.executeQuery();
@@ -154,10 +154,10 @@ public class CardDao extends BaseDao<Card> {
         return buffer;
     }
 
-    public Map<String, Integer> getScoreSummary(int dictionaryId) throws DaoException {
+    public Map<String, Integer> getScoreSummary(int vocabId) throws DaoException {
         Map<String, Integer> statuses = new HashMap<>();
         try (var statement = prepareStatement(SCORE_SUMMARY_QUERY)) {
-            statement.setInt(1, dictionaryId);
+            statement.setInt(1, vocabId);
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 String status = resultSet.getString("status");
@@ -165,7 +165,7 @@ public class CardDao extends BaseDao<Card> {
                 statuses.put(status, count);
             }
         } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving score summary for dictionary", ex);
+            throw new DaoException("Error while retrieving score summary for vocabulary", ex);
         }
         return statuses;
     }

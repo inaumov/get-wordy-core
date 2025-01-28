@@ -277,7 +277,7 @@ public class DictionaryServiceTest {
 
         Card cardMock = strictMock(Card.class);
         expect(cardMock.getId()).andReturn(1);
-        expect(cardMock.getDictionaryId()).andReturn(1);
+        expect(cardMock.getVocabId()).andReturn(1);
         expect(cardMock.getWordId()).andReturn(1);
         replay(cardMock);
 
@@ -404,7 +404,7 @@ public class DictionaryServiceTest {
 
         Card done = dictionaryService.addCard(JOHN_DOE, DICTIONARY_ID, 105);
         assertNotNull(done);
-        Assertions.assertEquals(DICTIONARY_ID, cardCapture.getValue().getDictionaryId());
+        Assertions.assertEquals(DICTIONARY_ID, cardCapture.getValue().getVocabId());
         Assertions.assertEquals(105, cardCapture.getValue().getWordId());
         Assertions.assertEquals(CardStatus.TO_LEARN, cardCapture.getValue().getStatus());
 
@@ -566,11 +566,11 @@ public class DictionaryServiceTest {
         cardDaoMock.selectCardsForDictionary(DICTIONARY_ID);
         Card card98 = new Card();
         card98.setId(98);
-        card98.setDictionaryId(DICTIONARY_ID);
+        card98.setVocabId(DICTIONARY_ID);
         card98.setWordId(42);
         Card card99 = new Card();
         card99.setId(99);
-        card99.setDictionaryId(DICTIONARY_ID);
+        card99.setVocabId(DICTIONARY_ID);
         card99.setWordId(87);
         expectLastCall().andReturn(List.of(card98, card99)).once();
         replay(wordDaoMock, cardDaoMock);

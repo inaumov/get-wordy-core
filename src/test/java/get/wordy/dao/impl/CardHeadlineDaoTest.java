@@ -33,10 +33,10 @@ public class CardHeadlineDaoTest {
     @Test
     public void testGetCardsForDictionary() {
         // Define test data
-        int dictionaryId = 1; // Example dictionary ID for testing
+        int vocabId = 1;
 
         // Execute DAO method
-        List<Card> cards = cardHeadlineDao.getCardsForDictionary(dictionaryId);
+        List<Card> cards = cardHeadlineDao.getCardsForDictionary(vocabId);
 
         // Assert results
         assertEquals(1, cards.size());
@@ -48,7 +48,7 @@ public class CardHeadlineDaoTest {
         assertAll(
                 "Grouped assertions of Card Headline",
                 () -> assertThat(card.getId()).isEqualTo(1),
-                () -> assertThat(card.getDictionaryId()).isEqualTo(1),
+                () -> assertThat(card.getVocabId()).isEqualTo(1),
                 () -> assertThat(card.getWordId()).isEqualTo(1),
                 () -> assertThat(card.getScore()).isEqualTo(50),
                 () -> assertThat(card.getStatus()).isEqualTo(CardStatus.DEFAULT_STATUS),
@@ -90,7 +90,7 @@ public class CardHeadlineDaoTest {
         assertAll(
                 "Grouped assertions of Card Headline",
                 () -> assertThat(card.getId()).isEqualTo(1),
-                () -> assertThat(card.getDictionaryId()).isEqualTo(1),
+                () -> assertThat(card.getVocabId()).isEqualTo(1),
                 () -> assertThat(card.getWordId()).isEqualTo(1),
                 () -> assertThat(card.getScore()).isEqualTo(50),
                 () -> assertThat(card.getStatus()).isEqualTo(CardStatus.DEFAULT_STATUS),

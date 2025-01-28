@@ -218,14 +218,14 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     }
 
     @Override
-    public List<Card> getCards(OwnerId ownerId, int dictionaryId) {
+    public List<Card> getCards(OwnerId ownerId, int vocabId) {
         List<Card> cardListFull;
         try {
             connection.open();
-            cardListFull = cardHeadlineDao.getCardsForDictionary(findVocab(ownerId, dictionaryId).getVocabId());
+            cardListFull = cardHeadlineDao.getCardsForDictionary(findVocab(ownerId, vocabId).getVocabId());
             connection.commit();
         } catch (DaoException e) {
-            LOG.error("Error while loading all cards in dictionary by id = {}", dictionaryId, e);
+            LOG.error("Error while loading all cards in vocabulary by id = {}", vocabId, e);
             return Collections.emptyList();
         } finally {
             connection.close();
@@ -242,11 +242,11 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     }
 
     @Override
-    public List<Exercise> getCardsForExercise(OwnerId ownerId, int dictionaryId, int limit) {
+    public List<Exercise> getCardsForExercise(OwnerId ownerId, int vocabId, int limit) {
         List<Exercise> exercises = new ArrayList<>();
         try {
             connection.open();
-            int[] cardIds = cardDao.selectCardIdsForExercise(dictionaryId, limit);
+            int[] cardIds = cardDao.selectCardIdsForExercise(vocabId, limit);
             LOG.info("Selected card ids for exercise from database = {}", cardIds);
             if (cardIds == null || cardIds.length == 0) {
                 return Collections.emptyList();
@@ -279,7 +279,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
                 exercises.addAll(cardsForExercise);
             }
         } catch (DaoException e) {
-            LOG.error("Error while loading exercise cards set for dictionary, id = {}", dictionaryId, e);
+            LOG.error("Error while loading cards for exercise by vocab id = {}", vocabId, e);
             return Collections.emptyList();
         } finally {
             connection.close();
@@ -288,9 +288,9 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     }
 
     @Override
-    public Card addCard(OwnerId ownerId, int dictionaryId, int wordId) {
+    public Card addCard(OwnerId ownerId, int vocabId, int wordId) {
         Card card = new Card();
-        card.setDictionaryId(dictionaryId);
+        card.setVocabId(vocabId);
         card.setWordId(wordId);
         card.setStatus(CardStatus.TO_LEARN);
 
@@ -308,7 +308,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
                 throw new DictionaryServiceException();
             }
         } catch (DaoException e) {
-            LOG.error("Error while saving a card into dictionary", e);
+            LOG.error("Error while saving a new card", e);
             connection.rollback();
             throw new DictionaryServiceException();
         } finally {
@@ -360,9 +360,9 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     }
 
     @Override
-    public Score getScoreSummary(OwnerId ownerId, int dictionaryId) {
+    public Score getScoreSummary(OwnerId ownerId, int vocabId) {
         try {
-            Vocabulary vocabulary = findVocab(ownerId, dictionaryId);
+            Vocabulary vocabulary = findVocab(ownerId, vocabId);
             Score score = new Score();
             connection.open();
             Map<String, Integer> result = cardDao.getScoreSummary(vocabulary.getVocabId());
@@ -373,7 +373,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
             }
             return score;
         } catch (DaoException e) {
-            LOG.error("Error while getting total score summary for dictionary, id = {}", dictionaryId, e);
+            LOG.error("Error while getting total score summary for vocabulary, id = {}", vocabId, e);
             return null;
         } finally {
             connection.close();
@@ -461,11 +461,11 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
         return true;
     }
 
-    private Vocabulary findVocab(OwnerId ownerId, int dictionaryId) {
+    private Vocabulary findVocab(OwnerId ownerId, int vocabId) {
         return dictionariesCache.getOrDefault(ownerId, Collections.emptyList()).stream()
-                .filter(vocabulary -> vocabulary.getVocabId() == dictionaryId)
+                .filter(vocabulary -> vocabulary.getVocabId() == vocabId)
                 .findAny()
-                .orElseGet(() -> loadVocabFromDb(ownerId, dictionaryId));
+                .orElseGet(() -> loadVocabFromDb(ownerId, vocabId));
     }
 
     private Vocabulary loadVocabFromDb(OwnerId ownerId, int vocabId) {
@@ -500,8 +500,8 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     }
 
     @Override
-    public List<Card> generateCards(OwnerId ownerId, int dictionaryId, Set<Integer> wordRefs) {
-        Vocabulary vocabulary = findVocab(ownerId, dictionaryId);
+    public List<Card> generateCards(OwnerId ownerId, int vocabId, Set<Integer> wordRefs) {
+        Vocabulary vocabulary = findVocab(ownerId, vocabId);
 
         try {
             connection.open();
@@ -514,13 +514,13 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
                     .stream()
                     .collect(Collectors.toMap(Word::getId, Function.identity()));
             // refresh
-            List<Card> result = cardDao.selectCardsForDictionary(dictionaryId);
+            List<Card> result = cardDao.selectCardsForDictionary(vocabId);
             for (Card card : result) {
                 card.setWord(wordsMap.get(card.getWordId()));
             }
             return result;
         } catch (DaoException e) {
-            LOG.error("Error while generating cards by dictionaryId = {}", dictionaryId, e);
+            LOG.error("Error while generating cards by vocabId = {}", vocabId, e);
             connection.rollback();
             return Collections.emptyList();
         } finally {

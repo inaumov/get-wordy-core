@@ -26,7 +26,7 @@ public class CardHeadlineDao {
     private static final String ALL_JOINS_QUERY = """
             SELECT
                 cards.id AS card_id,
-                cards.dictionary_id AS dictionary_id,
+                cards.vocab_id,
                 cards.status,
                 cards.score,
                 cards.create_time,
@@ -47,7 +47,7 @@ public class CardHeadlineDao {
             LEFT JOIN
                 collocations ON cards.word_id = collocations.word_id
             WHERE
-                cards.dictionary_id = :dictionaryId
+                cards.vocab_id = :vocabId
             GROUP BY
                 cards.id, words.id
             """;
@@ -55,7 +55,7 @@ public class CardHeadlineDao {
     private static final String GET_CARD_HEADLINE = """
             SELECT
                 cards.id AS card_id,
-                cards.dictionary_id AS dictionary_id,
+                cards.vocab_id,
                 cards.status,
                 cards.score,
                 cards.create_time,
@@ -116,8 +116,8 @@ public class CardHeadlineDao {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<Card> getCardsForDictionary(int dictionaryId) {
-        MapSqlParameterSource parameters = new MapSqlParameterSource("dictionaryId", dictionaryId);
+    public List<Card> getCardsForDictionary(int vocabId) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource("vocabId", vocabId);
         return jdbcTemplate.query(ALL_JOINS_QUERY, parameters, new FullCardRowMapper());
     }
 
@@ -149,14 +149,14 @@ public class CardHeadlineDao {
         @Override
         public Card mapRow(ResultSet rs, int rowNum) throws SQLException {
             int cardId = rs.getInt("card_id");
-            int dictionaryId = rs.getInt("dictionary_id");
+            int vocabId = rs.getInt("vocab_id");
             String status = rs.getString("status");
             int score = rs.getInt("score");
             int wordId = rs.getInt("word_id");
 
             Card cardData = new Card();
             cardData.setId(cardId);
-            cardData.setDictionaryId(dictionaryId);
+            cardData.setVocabId(vocabId);
             cardData.setStatus(CardStatus.valueOf(status));
             cardData.setScore(score);
             cardData.setWordId(wordId);
