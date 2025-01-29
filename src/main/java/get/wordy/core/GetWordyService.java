@@ -1,6 +1,6 @@
 package get.wordy.core;
 
-import get.wordy.core.api.IDictionaryService;
+import get.wordy.core.api.IUserCardsService;
 import get.wordy.core.api.IVocabularyService;
 import get.wordy.core.api.bean.*;
 import get.wordy.core.api.bean.Vocabulary;
@@ -26,9 +26,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class DictionaryService implements IDictionaryService, IVocabularyService {
+public class GetWordyService implements IUserCardsService, IVocabularyService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DictionaryService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GetWordyService.class);
 
     private VocabularyDao vocabularyDao;
     private WordDao wordDao;
@@ -40,15 +40,15 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     private final Map<Integer, List<Word>> wordsInVocabularyCache = new HashMap<>();
 
     @SuppressWarnings("unused")
-    public DictionaryService() {
+    public GetWordyService() {
     }
 
     @SuppressWarnings("unused")
-    public DictionaryService(VocabularyDao vocabularyDao,
-                             WordDao wordDao,
-                             CardDao cardDao,
-                             CardHeadlineDao cardHeadlineDao,
-                             LocalTxManager connection
+    public GetWordyService(VocabularyDao vocabularyDao,
+                           WordDao wordDao,
+                           CardDao cardDao,
+                           CardHeadlineDao cardHeadlineDao,
+                           LocalTxManager connection
     ) {
         this.vocabularyDao = vocabularyDao;
         this.wordDao = wordDao;

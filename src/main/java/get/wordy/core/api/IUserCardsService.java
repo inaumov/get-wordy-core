@@ -8,7 +8,7 @@ import get.wordy.core.api.id.OwnerId;
 import java.util.List;
 import java.util.Set;
 
-public interface IDictionaryService {
+public interface IUserCardsService {
 
     List<Card> getCards(OwnerId ownerId, int vocabId);
 

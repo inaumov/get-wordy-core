@@ -27,7 +27,7 @@ import static org.easymock.EasyMock.capture;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(EasyMockExtension.class)
-public class DictionaryServiceTest {
+public class GetWordyServiceTest {
 
     private static final int VOCAB_ID = 42;
     private static final String VOCAB_NAME = "Default";
@@ -47,7 +47,7 @@ public class DictionaryServiceTest {
     private LocalTxManager connectionMock;
 
     @TestSubject
-    private DictionaryService sut;
+    private GetWordyService sut;
 
     @BeforeEach
     public void setUp() {
