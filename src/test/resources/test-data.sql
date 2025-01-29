@@ -25,6 +25,9 @@ insert into in_context (word_id, example, matched_words) values (1, 'Test senten
 update vocabularies set owner_id = 'john-123', owner_type = 'user' where vocab_id = 1;
 update vocabularies set owner_id = 'class-42', owner_type = 'class' where vocab_id = 2;
 
+update cards set user_id = 'user123' where vocab_id = 1;
+update cards set user_id = 'user123' where vocab_id = 2;
+
 -- updates on vocab API
 INSERT INTO vocabularies (vocab_id, owner_id, owner_type, name, is_shared)
 VALUES (101, 'class001', 'class', 'Vocabulary Basics', false),

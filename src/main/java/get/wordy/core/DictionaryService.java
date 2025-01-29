@@ -246,7 +246,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
         List<Exercise> exercises = new ArrayList<>();
         try {
             connection.open();
-            int[] cardIds = cardDao.selectCardIdsForExercise(vocabId, limit);
+            int[] cardIds = cardDao.selectCardIdsForExercise(ownerId, vocabId, limit);
             LOG.info("Selected card ids for exercise from database = {}", cardIds);
             if (cardIds == null || cardIds.length == 0) {
                 return Collections.emptyList();
@@ -297,7 +297,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
         try {
             connection.open();
 
-            Card insertedCard = cardDao.insert(card);
+            Card insertedCard = cardDao.insert(ownerId, card);
 
             connection.commit();
             int cardId = insertedCard.getId();
@@ -365,7 +365,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
             Vocabulary vocabulary = findVocab(ownerId, vocabId);
             Score score = new Score();
             connection.open();
-            Map<String, Integer> result = cardDao.getScoreSummary(vocabulary.getVocabId());
+            Map<String, Integer> result = cardDao.getScoreSummary(ownerId, vocabulary.getVocabId());
             connection.commit();
             Set<String> statuses = result.keySet();
             for (String status : statuses) {
@@ -400,7 +400,8 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     }
 
     @Override
-    public boolean increaseScoreUp(OwnerId ownerId, int[] cardIds, int repetitions) {
+    public boolean increaseScoreUp(OwnerId ownerId, int vocabId, int[] cardIds, int repetitions) {
+        Vocabulary vocabulary = findVocab(ownerId, vocabId);
         // omit duplicates if any
         int[] uniqueCardIds = Arrays.stream(cardIds)
                 .distinct()
@@ -409,7 +410,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
         List<Card> onlyLearnt = new ArrayList<>();
         for (int cardId : uniqueCardIds) {
             Card card = findCardById(cardId);
-
+            // todo get all cards by vocabId -> filter and iterate over it
             int diff = 100 / repetitions;
             int score = card.getScore();
             score += diff;
@@ -505,7 +506,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
 
         try {
             connection.open();
-            cardDao.addCards(vocabulary.getVocabId(), wordRefs);
+            cardDao.addCards(ownerId, vocabulary.getVocabId(), wordRefs);
             connection.commit();
 
             List<Word> wordList = wordDao.selectAll(wordRefs);
@@ -514,7 +515,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
                     .stream()
                     .collect(Collectors.toMap(Word::getId, Function.identity()));
             // refresh
-            List<Card> result = cardDao.selectCardsForDictionary(vocabId);
+            List<Card> result = cardDao.selectCardsForDictionary(ownerId, vocabId);
             for (Card card : result) {
                 card.setWord(wordsMap.get(card.getWordId()));
             }

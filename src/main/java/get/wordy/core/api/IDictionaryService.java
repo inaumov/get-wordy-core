@@ -22,7 +22,7 @@ public interface IDictionaryService {
 
     boolean resetScore(OwnerId ownerId, int cardId);
 
-    boolean increaseScoreUp(OwnerId ownerId, int[] cardIds, int repetitions);
+    boolean increaseScoreUp(OwnerId ownerId, int vocabId, int[] cardIds, int repetitions);
 
     List<Card> generateCards(OwnerId ownerId, int vocabId, Set<Integer> wordRefs);
 

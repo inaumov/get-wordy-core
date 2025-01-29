@@ -1,0 +1,2 @@
+ALTER TABLE cards
+    ADD COLUMN user_id VARCHAR(50);

@@ -302,7 +302,7 @@ public class DictionaryServiceTest {
         addDictionaryToCache(vocabularyMock);
 
         int[] selectedIds = {8, 1, 3};
-        expect(cardDaoMock.selectCardIdsForExercise(anyInt(), anyInt()))
+        expect(cardDaoMock.selectCardIdsForExercise(eq(JOHN_DOE), anyInt(), anyInt()))
                 .andReturn(selectedIds)
                 .once();
 
@@ -330,7 +330,7 @@ public class DictionaryServiceTest {
         addDictionaryToCache(vocabularyMock);
 
         int[] selectedIds = {8, 1, 3};
-        expect(cardDaoMock.selectCardIdsForExercise(anyInt(), anyInt()))
+        expect(cardDaoMock.selectCardIdsForExercise(eq(JOHN_DOE), anyInt(), anyInt()))
                 .andReturn(selectedIds)
                 .once();
 
@@ -398,7 +398,7 @@ public class DictionaryServiceTest {
         replay(insertedCardMock);
 
         Capture<Card> cardCapture = Capture.newInstance();
-        cardDaoMock.insert(capture(cardCapture));
+        cardDaoMock.insert(eq(JOHN_DOE), capture(cardCapture));
         expectLastCall().andAnswer(() -> insertedCardMock);
         replay(cardDaoMock);
 
@@ -445,7 +445,7 @@ public class DictionaryServiceTest {
         addDictionaryToCache(vocabularyMock);
         replay(vocabularyMock);
 
-        expect(cardDaoMock.getScoreSummary(DICTIONARY_ID)).andReturn(Map.of("POSTPONED", 1, "LEARNT", 3));
+        expect(cardDaoMock.getScoreSummary(JOHN_DOE, DICTIONARY_ID)).andReturn(Map.of("POSTPONED", 1, "LEARNT", 3));
         replay(cardDaoMock);
 
         Score score = dictionaryService.getScoreSummary(JOHN_DOE, DICTIONARY_ID);
@@ -533,7 +533,8 @@ public class DictionaryServiceTest {
         expectLastCall().once();
         replay(cardDaoMock);
 
-        boolean done = dictionaryService.increaseScoreUp(JOHN_DOE, new int[]{1, 2, 2, 2, 1}, 10);
+        int[] cardIdsSubmit = {1, 2, 2, 2, 1};
+        boolean done = dictionaryService.increaseScoreUp(JOHN_DOE, DICTIONARY_ID, cardIdsSubmit, 10);
         assertTrue(done);
 
         verify(cardMock1, cardDaoMock);
@@ -558,12 +559,12 @@ public class DictionaryServiceTest {
         replay(wordMock87);
 
         Set<Integer> wordIds = Set.of(42, 87);
-        cardDaoMock.addCards(anyInt(), eq(wordIds));
+        cardDaoMock.addCards(eq(JOHN_DOE), anyInt(), eq(wordIds));
         expectLastCall().once();
         expect(wordDaoMock.selectAll(wordIds))
                 .andReturn(List.of(wordMock42, wordMock87));
         expectLastCall().once();
-        cardDaoMock.selectCardsForDictionary(DICTIONARY_ID);
+        cardDaoMock.selectCardsForDictionary(JOHN_DOE, DICTIONARY_ID);
         Card card98 = new Card();
         card98.setId(98);
         card98.setVocabId(DICTIONARY_ID);
