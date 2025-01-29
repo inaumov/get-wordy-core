@@ -445,7 +445,7 @@ public class DictionaryServiceTest {
         addDictionaryToCache(vocabularyMock);
         replay(vocabularyMock);
 
-        expect(cardDaoMock.getScoreSummary(JOHN_DOE, DICTIONARY_ID)).andReturn(Map.of("POSTPONED", 1, "LEARNT", 3));
+        expect(cardDaoMock.getScoreSummary(JOHN_DOE, DICTIONARY_ID)).andReturn(Map.of("DEFERRED", 1, "LEARNT", 3));
         replay(cardDaoMock);
 
         Score score = dictionaryService.getScoreSummary(JOHN_DOE, DICTIONARY_ID);
@@ -513,6 +513,9 @@ public class DictionaryServiceTest {
     @Test
     public void testIncreaseScoreUpAndOneReachesFinalScore() throws Exception {
         replayTxCommited();
+        Vocabulary vocabularyMock = createDictionaryMock();
+        replay(vocabularyMock);
+        addDictionaryToCache(vocabularyMock);
 
         Card cardMock1 = strictMock(Card.class);
         expect(cardMock1.getScore()).andReturn(10).once();

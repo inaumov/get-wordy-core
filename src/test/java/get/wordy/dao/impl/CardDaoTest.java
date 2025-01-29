@@ -191,11 +191,11 @@ public class CardDaoTest extends BaseDaoTest {
         OwnerId ownerId = new OwnerId("user123", "user");
         Card card1 = new Card();
         card1.setId(1); // the last
-        card1.setStatus(CardStatus.POSTPONED);
+        card1.setStatus(CardStatus.DEFERRED);
         card1.setScore(25);
         Card card2 = new Card();
         card2.setId(2); // the last
-        card2.setStatus(CardStatus.POSTPONED);
+        card2.setStatus(CardStatus.DEFERRED);
         card2.setScore(80);
 
         cardDao.batchUpdateScores(List.of(card1, card2));
@@ -206,13 +206,13 @@ public class CardDaoTest extends BaseDaoTest {
                 .getFirst();
         assertEquals(1, actual.getId());
         assertEquals(1, actual.getWordId());
-        assertEquals(CardStatus.POSTPONED, actual.getStatus());
+        assertEquals(CardStatus.DEFERRED, actual.getStatus());
         assertEquals(25, actual.getScore());
         actual = cardDao.selectCardsForDictionary(ownerId, 2)
                 .getFirst();
         assertEquals(2, actual.getId());
         assertEquals(2, actual.getWordId());
-        assertEquals(CardStatus.POSTPONED, actual.getStatus());
+        assertEquals(CardStatus.DEFERRED, actual.getStatus());
         assertEquals(80, actual.getScore());
     }
 

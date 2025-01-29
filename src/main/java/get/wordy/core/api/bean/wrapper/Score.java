@@ -48,7 +48,7 @@ public class Score {
         switch (cardStatus) {
             case LEARNT -> this.setLearntCnt(count);
             case TO_LEARN -> this.setToLearnCnt(count);
-            case POSTPONED -> this.setPostponedCnt(count);
+            case DEFERRED -> this.setPostponedCnt(count);
         }
     }
 
