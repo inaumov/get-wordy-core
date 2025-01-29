@@ -1,6 +1,5 @@
 package get.wordy.core.dao.impl;
 
-import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.db.LocalTxManager;
 
 import java.sql.Connection;
@@ -27,15 +26,5 @@ public abstract class BaseDao<T> {
     PreparedStatement prepareStatementForInsert(String query) throws SQLException {
         return getConnection().prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
     }
-
-    // crud
-
-    public abstract T insert(T record) throws DaoException;
-
-    public abstract T selectById(int recordId) throws DaoException;
-
-    public abstract int update(T record) throws DaoException;
-
-    public abstract void delete(int recordId) throws DaoException;
 
 }

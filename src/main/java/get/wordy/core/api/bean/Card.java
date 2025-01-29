@@ -8,7 +8,7 @@ import java.util.Objects;
 public class Card {
 
     private int id;
-    private int dictionaryId;
+    private int vocabId;
     private int wordId;
     private CardStatus status = CardStatus.DEFAULT_STATUS;
     private int score;
@@ -24,12 +24,12 @@ public class Card {
         this.id = cardId;
     }
 
-    public int getDictionaryId() {
-        return dictionaryId;
+    public int getVocabId() {
+        return vocabId;
     }
 
-    public void setDictionaryId(int dictionaryId) {
-        this.dictionaryId = dictionaryId;
+    public void setVocabId(int vocabId) {
+        this.vocabId = vocabId;
     }
 
     public int getWordId() {
@@ -92,12 +92,14 @@ public class Card {
 
         return this.id == that.id
                 && this.wordId == that.wordId
-                && this.dictionaryId == that.dictionaryId;
+                && this.vocabId == that.vocabId
+                && this.status == that.status
+                && this.score == that.score;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, wordId, dictionaryId);
+        return Objects.hash(id, wordId, vocabId, status, score);
     }
 
 }

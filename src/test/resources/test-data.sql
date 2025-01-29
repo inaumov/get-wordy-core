@@ -4,15 +4,15 @@ truncate table cards cascade;
 truncate table words cascade;
 truncate table vocabularies cascade;
 
-insert into vocabularies (vocab_id, name) values (1, 'dictionary1');
-insert into vocabularies (vocab_id, name) values (2, 'dictionary2');
+insert into vocabularies (vocab_id, name) values (1, 'vocabulary1');
+insert into vocabularies (vocab_id, name) values (2, 'other vocabulary');
 
 insert into words (id, word, part_of_speech, transcription, meaning) values (1, 'example1', 'noun', 'ɪgˈzɑːmpl', 'a word in vocab 1');
 insert into words (id, word, part_of_speech, transcription, meaning) values (2, 'example2', 'noun', 'ɪgˈzɑːmpl', 'other word in vocab 2');
 insert into words (id, word, part_of_speech, transcription, meaning) values (3, 'example3', 'noun', 'ɪgˈzɑːmpl', 'not assigned word');
 
-insert into cards (id, score, create_time, last_update_time, dictionary_id, word_id) values (1, 50, '2014-08-17 17:40:03', CURRENT_TIMESTAMP, 1, 1 );
-insert into cards (id, score, create_time, last_update_time, dictionary_id, word_id, status) values (2, 50, '2014-08-17 17:40:04', CURRENT_TIMESTAMP, 2, 2, 'TO_LEARN');
+insert into cards (id, score, create_time, last_update_time, vocab_id, word_id, status) values (1, 50, '2014-08-17 17:40:03', CURRENT_TIMESTAMP, 1, 1, 'TO_LEARN');
+insert into cards (id, score, create_time, last_update_time, vocab_id, word_id, status) values (2, 50, '2014-08-17 17:40:04', CURRENT_TIMESTAMP, 2, 2, 'TO_LEARN');
 
 insert into collocations (word_id, example) values (1, 'collocation1');
 insert into collocations (word_id, example) values (2, 'collocation2');
@@ -24,6 +24,9 @@ insert into in_context (word_id, example, matched_words) values (1, 'Test senten
 
 update vocabularies set owner_id = 'john-123', owner_type = 'user' where vocab_id = 1;
 update vocabularies set owner_id = 'class-42', owner_type = 'class' where vocab_id = 2;
+
+update cards set user_id = 'user123' where vocab_id = 1;
+update cards set user_id = 'user123' where vocab_id = 2;
 
 -- updates on vocab API
 INSERT INTO vocabularies (vocab_id, owner_id, owner_type, name, is_shared)
