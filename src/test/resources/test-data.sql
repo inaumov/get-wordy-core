@@ -4,8 +4,8 @@ truncate table cards cascade;
 truncate table words cascade;
 truncate table vocabularies cascade;
 
-insert into vocabularies (vocab_id, name) values (1, 'dictionary1');
-insert into vocabularies (vocab_id, name) values (2, 'dictionary2');
+insert into vocabularies (vocab_id, name) values (1, 'vocabulary1');
+insert into vocabularies (vocab_id, name) values (2, 'other vocabulary');
 
 insert into words (id, word, part_of_speech, transcription, meaning) values (1, 'example1', 'noun', 'ɪgˈzɑːmpl', 'a word in vocab 1');
 insert into words (id, word, part_of_speech, transcription, meaning) values (2, 'example2', 'noun', 'ɪgˈzɑːmpl', 'other word in vocab 2');

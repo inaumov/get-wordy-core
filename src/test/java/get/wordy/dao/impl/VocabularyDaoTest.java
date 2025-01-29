@@ -97,7 +97,7 @@ public class VocabularyDaoTest {
                 .orElseThrow();
         assertNotNull(actual);
         assertEquals(1, actual.getVocabId());
-        assertEquals("dictionary1", actual.getName());
+        assertEquals("vocabulary1", actual.getName());
         assertEquals(LOGO_PNG, actual.getPictureUrl());
     }
 

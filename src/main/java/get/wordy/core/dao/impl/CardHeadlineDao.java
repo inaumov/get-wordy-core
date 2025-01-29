@@ -116,7 +116,7 @@ public class CardHeadlineDao {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<Card> getCardsForDictionary(int vocabId) {
+    public List<Card> getCards(int vocabId) {
         MapSqlParameterSource parameters = new MapSqlParameterSource("vocabId", vocabId);
         return jdbcTemplate.query(ALL_JOINS_QUERY, parameters, new FullCardRowMapper());
     }

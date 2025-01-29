@@ -4,24 +4,23 @@ import get.wordy.core.api.bean.CardStatus;
 
 public class Score {
 
-    private int postponedCnt, toLearnCnt, learntCnt;
+    private int deferredCnt, toLearnCnt, learntCnt;
 
-    public Score(int postponed, int toLearn, int learnt) {
-        this.setPostponedCnt(postponed);
+    public Score(int deferred, int toLearn, int learnt) {
+        this.setDeferredCnt(deferred);
         this.setToLearnCnt(toLearn);
         this.setLearntCnt(learnt);
     }
 
     public Score() {
-        ;
     }
 
-    public void setPostponedCnt(int postponedCnt) {
-        this.postponedCnt = postponedCnt;
+    public void setDeferredCnt(int deferredCnt) {
+        this.deferredCnt = deferredCnt;
     }
 
-    public int getPostponedCnt() {
-        return postponedCnt;
+    public int getDeferredCnt() {
+        return deferredCnt;
     }
 
     public void setToLearnCnt(int toLearnCnt) {
@@ -41,14 +40,14 @@ public class Score {
     }
 
     public int getTotalCount() {
-        return postponedCnt + toLearnCnt + learntCnt;
+        return deferredCnt + toLearnCnt + learntCnt;
     }
 
-    public void setScoreCount(CardStatus cardStatus, int count) {
+    public void withScoreCount(CardStatus cardStatus, int count) {
         switch (cardStatus) {
             case LEARNT -> this.setLearntCnt(count);
             case TO_LEARN -> this.setToLearnCnt(count);
-            case DEFERRED -> this.setPostponedCnt(count);
+            case DEFERRED -> this.setDeferredCnt(count);
         }
     }
 

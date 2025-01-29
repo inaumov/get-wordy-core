@@ -35,7 +35,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     private CardDao cardDao;
     private CardHeadlineDao cardHeadlineDao;
     private LocalTxManager connection;
-    private final Map<OwnerId, List<Vocabulary>> dictionariesCache = new HashMap<>();
+    private final Map<OwnerId, List<Vocabulary>> userVocabsCache = new HashMap<>();
     private final Map<Integer, Card> cardsCache = new HashMap<>();
     private final Map<Integer, List<Word>> wordsInVocabularyCache = new HashMap<>();
 
@@ -60,7 +60,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     @Override
     public List<Vocabulary> getVocabularies(OwnerId ownerId) {
 
-        List<Vocabulary> vocabularies = dictionariesCache.get(ownerId);
+        List<Vocabulary> vocabularies = userVocabsCache.get(ownerId);
         if (vocabularies != null && !vocabularies.isEmpty()) {
             return vocabularies;
         }
@@ -71,9 +71,9 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
             list = vocabularyDao.selectAllByOwnerId(ownerId);
 
             // update the cache
-            dictionariesCache.put(ownerId, list);
+            userVocabsCache.put(ownerId, list);
         } catch (DataAccessException e) {
-            LOG.error("Error while loading dictionaries", e);
+            LOG.error("Error while loading vocabularies", e);
             return Collections.emptyList();
         }
         return list;
@@ -179,7 +179,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
             connection.open();
             vocabularyDao.deleteVocabularyById(vocabId);
             connection.commit();
-            dictionariesCache.get(ownerId)
+            userVocabsCache.get(ownerId)
                     .remove(vocabulary);
         } catch (DaoException | DataAccessException e) {
             connection.rollback();
@@ -222,7 +222,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
         List<Card> cardListFull;
         try {
             connection.open();
-            cardListFull = cardHeadlineDao.getCardsForDictionary(findVocab(ownerId, vocabId).getVocabId());
+            cardListFull = cardHeadlineDao.getCards(findVocab(ownerId, vocabId).getVocabId());
             connection.commit();
         } catch (DaoException e) {
             LOG.error("Error while loading all cards in vocabulary by id = {}", vocabId, e);
@@ -369,7 +369,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
             connection.commit();
             Set<String> statuses = result.keySet();
             for (String status : statuses) {
-                score.setScoreCount(CardStatus.valueOf(status), result.get(status));
+                score.withScoreCount(CardStatus.valueOf(status), result.get(status));
             }
             return score;
         } catch (DaoException e) {
@@ -463,7 +463,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     }
 
     private Vocabulary findVocab(OwnerId ownerId, int vocabId) {
-        return dictionariesCache.getOrDefault(ownerId, Collections.emptyList()).stream()
+        return userVocabsCache.getOrDefault(ownerId, Collections.emptyList()).stream()
                 .filter(vocabulary -> vocabulary.getVocabId() == vocabId)
                 .findAny()
                 .orElseGet(() -> loadVocabFromDb(ownerId, vocabId));
@@ -515,7 +515,7 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
                     .stream()
                     .collect(Collectors.toMap(Word::getId, Function.identity()));
             // refresh
-            List<Card> result = cardDao.selectCardsForDictionary(ownerId, vocabId);
+            List<Card> result = cardDao.selectCards(ownerId, vocabId);
             for (Card card : result) {
                 card.setWord(wordsMap.get(card.getWordId()));
             }
@@ -530,13 +530,13 @@ public class DictionaryService implements IDictionaryService, IVocabularyService
     }
 
     private void putToCache(OwnerId ownerId, Supplier<Vocabulary> vocabulary) {
-        if (dictionariesCache.containsKey(ownerId)) {
-            List<Vocabulary> dictionaries = dictionariesCache.get(ownerId);
-            dictionaries.add(vocabulary.get());
+        if (userVocabsCache.containsKey(ownerId)) {
+            List<Vocabulary> vocabularies = userVocabsCache.get(ownerId);
+            vocabularies.add(vocabulary.get());
         } else {
             List<Vocabulary> newList = new ArrayList<>();
             newList.add(vocabulary.get());
-            dictionariesCache.put(ownerId, newList);
+            userVocabsCache.put(ownerId, newList);
         }
     }
 

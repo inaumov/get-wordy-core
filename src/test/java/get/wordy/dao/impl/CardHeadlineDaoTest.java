@@ -31,12 +31,12 @@ public class CardHeadlineDaoTest {
     private CardHeadlineDao cardHeadlineDao;
 
     @Test
-    public void testGetCardsForDictionary() {
+    public void testGetCards() {
         // Define test data
         int vocabId = 1;
 
         // Execute DAO method
-        List<Card> cards = cardHeadlineDao.getCardsForDictionary(vocabId);
+        List<Card> cards = cardHeadlineDao.getCards(vocabId);
 
         // Assert results
         assertEquals(1, cards.size());

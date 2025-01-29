@@ -83,7 +83,7 @@ public class CardDao extends BaseDao<Card> {
         }
     }
 
-    public List<Card> selectCardsForDictionary(OwnerId ownerId, int vocabId) throws DaoException {
+    public List<Card> selectCards(OwnerId ownerId, int vocabId) throws DaoException {
         ArrayList<Card> data = new ArrayList<>();
         try (var statement = prepareStatement(CARDS_IN_PROGRESS_QUERY)) {
             statement.setInt(1, vocabId);

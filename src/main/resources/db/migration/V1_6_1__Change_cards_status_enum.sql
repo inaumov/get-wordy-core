@@ -3,6 +3,9 @@ UPDATE cards
 SET status = 'DEFERRED'
 WHERE status = 'POSTPONED';
 
+-- Drop all that in 'EDIT' status
+DELETE FROM cards where status = 'EDIT';
+
 -- Drop the old constraint and add the new one
 ALTER TABLE cards
     DROP CONSTRAINT cards_status_check;
