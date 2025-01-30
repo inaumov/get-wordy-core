@@ -24,7 +24,7 @@ public class WordDao extends BaseDao<Word> {
     private static final String DELETE_FROM_CONTEXT_QUERY = "DELETE FROM in_context WHERE word_id=?";
     private static final String DELETE_COLLOCATIONS_QUERY = "DELETE FROM collocations WHERE word_id=?";
 
-    WordDao(LocalTxManager txManager) {
+    public WordDao(LocalTxManager txManager) {
         super(txManager);
     }
 
