@@ -128,7 +128,7 @@ public class ClassService implements IClassService {
     }
 
     // efficiently find a class by classId from the reverse index
-    public Optional<ClassInfo> findClassById(Map<String, ClassInfo> classIdIndex, String classId) {
+    private Optional<ClassInfo> findClassById(Map<String, ClassInfo> classIdIndex, String classId) {
         return Optional.ofNullable(classIdIndex.get(classId));
     }
 

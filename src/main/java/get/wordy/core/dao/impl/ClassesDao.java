@@ -1,6 +1,7 @@
 package get.wordy.core.dao.impl;
 
 import get.wordy.core.api.bean.ClassInfo;
+import get.wordy.core.api.bean.ClassSchedule;
 import get.wordy.core.api.id.OwnerId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -52,7 +53,7 @@ public class ClassesDao {
             ));
 
             // add schedule to the class
-            classInfo.getSchedules().add(new ClassInfo.ClassSchedule(
+            classInfo.getSchedules().add(new ClassSchedule(
                     ((String) row.get("day_of_week")).toLowerCase(),
                     ((Time) row.get("start_time")).toLocalTime(),
                     ((Time) row.get("end_time")).toLocalTime()
@@ -84,7 +85,7 @@ public class ClassesDao {
                 VALUES (:classId, lower(:dayOfWeek), :startTime, :endTime)
                 """;
 
-        for (ClassInfo.ClassSchedule schedule : classInfo.getSchedules()) {
+        for (ClassSchedule schedule : classInfo.getSchedules()) {
             MapSqlParameterSource scheduleParams = new MapSqlParameterSource()
                     .addValue("classId", classInfo.getClassId())
                     .addValue("dayOfWeek", schedule.getDayOfWeek())
@@ -154,7 +155,7 @@ public class ClassesDao {
                     rs.getString("notes"),
                     new ArrayList<>()
             ))).map(x -> {
-                List<ClassInfo.ClassSchedule> schedules = jdbcTemplate.query(scheduleQuery, params, (rs, rowNum) -> new ClassInfo.ClassSchedule(
+                List<ClassSchedule> schedules = jdbcTemplate.query(scheduleQuery, params, (rs, rowNum) -> new ClassSchedule(
                         rs.getString("day_of_week"),
                         rs.getTime("start_time").toLocalTime(),
                         rs.getTime("end_time").toLocalTime()
@@ -165,6 +166,64 @@ public class ClassesDao {
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
+    }
+
+    public List<ClassInfo> selectByIds(Collection<String> classIds) {
+        if (classIds == null || classIds.isEmpty()) {
+            // Return empty list if no classIds are provided
+            return new ArrayList<>();
+        }
+
+        String query = """
+                SELECT ci.class_id, ci.name, ci.format, ci.level, ci.material, ci.notes,
+                       cs.day_of_week, cs.start_time, cs.end_time
+                FROM class_info ci
+                LEFT JOIN class_schedule cs ON ci.class_id = cs.class_id
+                WHERE ci.class_id IN (:classIds)
+                """;
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("classIds", classIds);
+
+        // Create a list to hold the final classInfo objects
+        List<ClassInfo> classInfos = new ArrayList<>();
+        Map<String, ClassInfo> classInfoMap = new HashMap<>();
+
+        // Query the database to get the class info and schedules in one go
+        jdbcTemplate.query(query, params, (rs, rowNum) -> {
+            String classId = rs.getString("class_id");
+
+            // Create ClassInfo object only once per class_id
+            if (!classInfoMap.containsKey(classId)) {
+                ClassInfo classInfo = new ClassInfo(
+                        classId,
+                        rs.getString("name"),
+                        rs.getString("format"),
+                        rs.getString("level"),
+                        rs.getString("material"),
+                        rs.getString("notes"),
+                        new ArrayList<>()
+                );
+                classInfoMap.put(classId, classInfo);
+                classInfos.add(classInfo);
+            }
+
+            // Add the schedule to the classInfo if available
+            ClassInfo classInfo = classInfoMap.get(classId);
+            String dayOfWeek = rs.getString("day_of_week");
+            if (dayOfWeek != null) {
+                ClassSchedule schedule = new ClassSchedule(
+                        dayOfWeek,
+                        rs.getTime("start_time").toLocalTime(),
+                        rs.getTime("end_time").toLocalTime()
+                );
+                classInfo.getSchedules().add(schedule);
+            }
+
+            return null;
+        });
+
+        return classInfos;
     }
 
 }

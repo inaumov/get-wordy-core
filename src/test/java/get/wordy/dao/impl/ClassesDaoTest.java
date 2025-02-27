@@ -1,6 +1,7 @@
 package get.wordy.dao.impl;
 
 import get.wordy.core.api.bean.ClassInfo;
+import get.wordy.core.api.bean.ClassSchedule;
 import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.impl.ClassesDao;
 import get.wordy.dao.config.SpringJdbcConfig;
@@ -49,7 +50,7 @@ public class ClassesDaoTest {
         assertEquals("Beginner English", class1.getName());
         assertEquals(2, class1.getSchedules().size()); // Mon, Wed
 
-        ClassInfo.ClassSchedule mondaySchedule = class1.getSchedules().stream()
+        ClassSchedule mondaySchedule = class1.getSchedules().stream()
                 .filter(s -> "mon".equals(s.getDayOfWeek()))
                 .findFirst()
                 .orElse(null);
@@ -63,7 +64,7 @@ public class ClassesDaoTest {
         assertEquals("Advanced English", class3.getName());
         assertEquals(2, class3.getSchedules().size()); // Fri, Sat
 
-        ClassInfo.ClassSchedule fridaySchedule = class3.getSchedules().stream()
+        ClassSchedule fridaySchedule = class3.getSchedules().stream()
                 .filter(s -> "fri".equals(s.getDayOfWeek()))
                 .findFirst()
                 .orElse(null);
@@ -76,8 +77,8 @@ public class ClassesDaoTest {
     public void testInsertClassInfoWithSchedules() {
         OwnerId ownerId = new OwnerId("user123", "user");
 
-        ClassInfo.ClassSchedule schedule1 = new ClassInfo.ClassSchedule("Mon", LocalTime.of(10, 0), LocalTime.of(10, 50));
-        ClassInfo.ClassSchedule schedule2 = new ClassInfo.ClassSchedule("Fri", LocalTime.of(14, 0), LocalTime.of(14, 50));
+        ClassSchedule schedule1 = new ClassSchedule("Mon", LocalTime.of(10, 0), LocalTime.of(10, 50));
+        ClassSchedule schedule2 = new ClassSchedule("Fri", LocalTime.of(14, 0), LocalTime.of(14, 50));
         ClassInfo classInfo = new ClassInfo("class13", "Tower 101", "Lecture", "Beginner", "Algebra", "None", List.of(schedule1, schedule2));
 
         classesDao.insert(ownerId, classInfo);
@@ -94,7 +95,7 @@ public class ClassesDaoTest {
 
         // assertions to verify the class and schedules are inserted correctly
 
-        ClassInfo.ClassSchedule mondaySchedule = insertedClass.getSchedules().stream()
+        ClassSchedule mondaySchedule = insertedClass.getSchedules().stream()
                 .filter(s -> "mon".equals(s.getDayOfWeek()))
                 .findFirst()
                 .orElse(null);
@@ -102,7 +103,7 @@ public class ClassesDaoTest {
         assertEquals(schedule1.getStartTime(), mondaySchedule.getStartTime());
         assertEquals(schedule1.getEndTime(), mondaySchedule.getEndTime());
 
-        ClassInfo.ClassSchedule fridaySchedule = insertedClass.getSchedules().stream()
+        ClassSchedule fridaySchedule = insertedClass.getSchedules().stream()
                 .filter(s -> "fri".equals(s.getDayOfWeek()))
                 .findFirst()
                 .orElse(null);
@@ -147,6 +148,20 @@ public class ClassesDaoTest {
         // Fetch data and verify it is not present
         Optional<ClassInfo> classInfo = classesDao.selectById(ownerId, "class999");
         assertTrue(classInfo.isEmpty());
+    }
+
+    @Test
+    void selectByIds() {
+        List<ClassInfo> classInfos = classesDao.selectByIds(List.of("class1", "class12"));
+        assertEquals(2, classInfos.size());
+
+        ClassInfo first = classInfos.getFirst();
+        assertEquals("Beginner English", first.getName());
+        assertEquals("Lecture", first.getFormat());
+        assertEquals("Beginner", first.getLevel());
+        assertEquals("Grammar Basics", first.getMaterial());
+        assertEquals("Morning class", first.getNotes());
+        assertEquals(2, first.getSchedules().size()); // Mon, Wed
     }
 
 }

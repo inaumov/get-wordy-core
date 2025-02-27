@@ -1,24 +1,26 @@
 package get.wordy.core.api.bean;
 
+import java.time.LocalDate;
 import java.util.List;
 
-public class ClassInfo {
+public class ClassViewerInfo {
 
     private String classId;
+    private boolean isActive;
     private String name;
-    private String format;
-    private String level;
     private String material;
     private String notes;
+    private boolean isRepeatable;
     private List<ClassSchedule> schedules;
+    private LocalDate endDate;
 
-    public ClassInfo(String classId, String name, String format, String level, String material, String notes, List<ClassSchedule> schedules) {
+    public ClassViewerInfo(String classId, boolean isActive, String name, String material, String notes, boolean isRepeatable, List<ClassSchedule> schedules) {
         this.classId = classId;
+        this.isActive = isActive;
         this.name = name;
-        this.format = format;
-        this.level = level;
         this.material = material;
         this.notes = notes;
+        this.isRepeatable = isRepeatable;
         this.schedules = schedules;
     }
 
@@ -36,22 +38,6 @@ public class ClassInfo {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getFormat() {
-        return format;
-    }
-
-    public void setFormat(String format) {
-        this.format = format;
-    }
-
-    public String getLevel() {
-        return level;
-    }
-
-    public void setLevel(String level) {
-        this.level = level;
     }
 
     public String getMaterial() {
@@ -76,6 +62,30 @@ public class ClassInfo {
 
     public void setSchedules(List<ClassSchedule> schedules) {
         this.schedules = schedules;
+    }
+
+    public boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
+    }
+
+    public boolean getIsRepeatable() {
+        return isRepeatable;
+    }
+
+    public void setRepeatable(boolean repeatable) {
+        isRepeatable = repeatable;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
     }
 
 }

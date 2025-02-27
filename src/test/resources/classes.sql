@@ -59,3 +59,9 @@ VALUES
 -- English for Travel
 ('class12', 'Sat', '11:00', '12:00'),
 ('class12', 'Sun', '11:00', '12:00');
+
+-- Insert access permissions for viewers
+INSERT INTO class_access (class_id, viewer_id, is_active)
+VALUES ('class1', 'viewer123', true),
+       ('class2', 'viewer123', true),
+       ('class3', 'viewer999', true);
