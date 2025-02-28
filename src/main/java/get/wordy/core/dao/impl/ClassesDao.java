@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Time;
+import java.time.LocalDate;
 import java.util.*;
 
 @Repository
@@ -28,7 +29,7 @@ public class ClassesDao {
                        cs.day_of_week, cs.start_time, cs.end_time
                 FROM class_info c
                 JOIN class_schedule cs ON c.class_id = cs.class_id
-                WHERE c.owner_id = :ownerId AND c.owner_type = :ownerType
+                WHERE c.owner_id = :ownerId AND c.owner_type = :ownerType AND c.is_repeatable is true
                 ORDER BY cs.day_of_week, cs.start_time
                 """;
 
@@ -49,7 +50,7 @@ public class ClassesDao {
                     (String) row.get("level"),
                     (String) row.get("material"),
                     (String) row.get("notes"),
-                    new ArrayList<>()
+                    true
             ));
 
             // add schedule to the class
@@ -65,8 +66,8 @@ public class ClassesDao {
 
     public ClassInfo insert(OwnerId ownerId, ClassInfo classInfo) {
         String classInsertQuery = """
-                INSERT INTO class_info (class_id, name, format, level, material, notes, owner_id, owner_type)
-                VALUES (:classId, :name, :format, :level, :material, :notes, :ownerId, :ownerType)
+                INSERT INTO class_info (class_id, name, format, level, material, notes, owner_id, owner_type, is_repeatable, end_date)
+                VALUES (:classId, :name, :format, :level, :material, :notes, :ownerId, :ownerType, :isRepeatable, :endDate)
                 """;
         MapSqlParameterSource classParams = new MapSqlParameterSource()
                 .addValue("classId", classInfo.getClassId())
@@ -76,10 +77,15 @@ public class ClassesDao {
                 .addValue("format", classInfo.getFormat())
                 .addValue("level", classInfo.getLevel())
                 .addValue("material", classInfo.getMaterial())
-                .addValue("notes", classInfo.getNotes());
+                .addValue("notes", classInfo.getNotes())
+                .addValue("isRepeatable", classInfo.getIsRepeatable())
+                .addValue("endDate", classInfo.getEndDate());
 
         jdbcTemplate.update(classInsertQuery, classParams);
 
+        if (!classInfo.getIsRepeatable()) {
+            return classInfo;
+        }
         String scheduleInsertQuery = """
                 INSERT INTO class_schedule (class_id, day_of_week, start_time, end_time)
                 VALUES (:classId, lower(:dayOfWeek), :startTime, :endTime)
@@ -99,7 +105,7 @@ public class ClassesDao {
     public ClassInfo updateClassInfoOnly(OwnerId ownerId, ClassInfo classInfo) {
         String query = """
                 UPDATE class_info
-                SET name = :name, format = :format, level = :level, material = :material, notes = :notes
+                SET name = :name, format = :format, level = :level, material = :material, notes = :notes, is_repeatable = :isRepeatable, end_date = :endDate
                 WHERE class_id = :classId AND owner_id = :ownerId AND owner_type = :ownerType
                 """;
         MapSqlParameterSource params = new MapSqlParameterSource()
@@ -110,7 +116,10 @@ public class ClassesDao {
                 .addValue("material", classInfo.getMaterial())
                 .addValue("notes", classInfo.getNotes())
                 .addValue("ownerId", ownerId.ownerId())
-                .addValue("ownerType", ownerId.ownerType());
+                .addValue("ownerType", ownerId.ownerType())
+                .addValue("isRepeatable", classInfo.getIsRepeatable())
+                .addValue("endDate", classInfo.getEndDate());
+
         jdbcTemplate.update(query, params);
         return classInfo;
     }
@@ -129,7 +138,7 @@ public class ClassesDao {
 
     public Optional<ClassInfo> selectById(OwnerId ownerId, String classId) {
         String classQuery = """
-                SELECT class_id, name, format, level, material, notes
+                SELECT class_id, name, format, level, material, notes, is_repeatable, end_date
                 FROM class_info
                 WHERE class_id = :classId AND owner_id = :ownerId AND owner_type = :ownerType
                 """;
@@ -146,15 +155,23 @@ public class ClassesDao {
                 .addValue("ownerType", ownerId.ownerType());
 
         try {
-            return Optional.ofNullable(jdbcTemplate.queryForObject(classQuery, params, (rs, rowNum) -> new ClassInfo(
-                    rs.getString("class_id"),
-                    rs.getString("name"),
-                    rs.getString("format"),
-                    rs.getString("level"),
-                    rs.getString("material"),
-                    rs.getString("notes"),
-                    new ArrayList<>()
-            ))).map(x -> {
+            return Optional.ofNullable(jdbcTemplate.queryForObject(classQuery, params, (rs, rowNum) -> {
+                ClassInfo classInfo = new ClassInfo(
+                        rs.getString("class_id"),
+                        rs.getString("name"),
+                        rs.getString("format"),
+                        rs.getString("level"),
+                        rs.getString("material"),
+                        rs.getString("notes"),
+                        rs.getBoolean("is_repeatable")
+                );
+                LocalDate endDate = rs.getDate("end_date") != null ? rs.getDate("end_date").toLocalDate() : null;
+                classInfo.setEndDate(endDate);
+                return classInfo;
+            })).map(x -> {
+                if (!x.getIsRepeatable()) {
+                    return x;
+                }
                 List<ClassSchedule> schedules = jdbcTemplate.query(scheduleQuery, params, (rs, rowNum) -> new ClassSchedule(
                         rs.getString("day_of_week"),
                         rs.getTime("start_time").toLocalTime(),
@@ -175,7 +192,7 @@ public class ClassesDao {
         }
 
         String query = """
-                SELECT ci.class_id, ci.name, ci.format, ci.level, ci.material, ci.notes,
+                SELECT ci.class_id, ci.name, ci.format, ci.level, ci.material, ci.notes, ci.is_repeatable, ci.end_date,
                        cs.day_of_week, cs.start_time, cs.end_time
                 FROM class_info ci
                 LEFT JOIN class_schedule cs ON ci.class_id = cs.class_id
@@ -202,7 +219,7 @@ public class ClassesDao {
                         rs.getString("level"),
                         rs.getString("material"),
                         rs.getString("notes"),
-                        new ArrayList<>()
+                        rs.getBoolean("is_repeatable")
                 );
                 classInfoMap.put(classId, classInfo);
                 classInfos.add(classInfo);
@@ -210,14 +227,19 @@ public class ClassesDao {
 
             // Add the schedule to the classInfo if available
             ClassInfo classInfo = classInfoMap.get(classId);
-            String dayOfWeek = rs.getString("day_of_week");
-            if (dayOfWeek != null) {
-                ClassSchedule schedule = new ClassSchedule(
-                        dayOfWeek,
-                        rs.getTime("start_time").toLocalTime(),
-                        rs.getTime("end_time").toLocalTime()
-                );
-                classInfo.getSchedules().add(schedule);
+            if (classInfo.getIsRepeatable()) {
+                String dayOfWeek = rs.getString("day_of_week");
+                if (dayOfWeek != null) {
+                    ClassSchedule schedule = new ClassSchedule(
+                            dayOfWeek,
+                            rs.getTime("start_time").toLocalTime(),
+                            rs.getTime("end_time").toLocalTime()
+                    );
+                    classInfo.getSchedules().add(schedule);
+                }
+            } else {
+                LocalDate endDate = rs.getDate("end_date") != null ? rs.getDate("end_date").toLocalDate() : null;
+                classInfo.setEndDate(endDate);
             }
 
             return null;

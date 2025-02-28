@@ -10,7 +10,6 @@ import get.wordy.core.db.LocalTxManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 
@@ -66,15 +65,22 @@ public class ClassAccessService implements IClassAccessService {
         List<ClassInfo> classInfos = classesDao.selectByIds(accessibleClasses.keySet());
         return classInfos
                 .stream()
-                .map(classInfo -> new ClassViewerInfo(
-                        classInfo.getClassId(),
-                        accessibleClasses.get(classInfo.getClassId()),
-                        classInfo.getName(),
-                        classInfo.getMaterial(),
-                        classInfo.getNotes(),
-                        !CollectionUtils.isEmpty(classInfo.getSchedules()),
-                        classInfo.getSchedules()
-                ))
+                .map(classInfo -> {
+                    Boolean isActive = accessibleClasses.get(classInfo.getClassId());
+                    ClassViewerInfo classViewerInfo = new ClassViewerInfo(
+                            classInfo.getClassId(),
+                            isActive,
+                            classInfo.getName(),
+                            isActive ? classInfo.getNotes() : null,
+                            classInfo.getIsRepeatable()
+                    );
+                    if (classInfo.getIsRepeatable()) {
+                        classViewerInfo.setSchedules(classInfo.getSchedules());
+                    } else {
+                        classViewerInfo.setEndDate(classInfo.getEndDate());
+                    }
+                    return classViewerInfo;
+                })
                 .toList();
     }
 

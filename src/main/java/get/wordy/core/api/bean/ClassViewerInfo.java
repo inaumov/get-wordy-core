@@ -8,20 +8,17 @@ public class ClassViewerInfo {
     private String classId;
     private boolean isActive;
     private String name;
-    private String material;
     private String notes;
     private boolean isRepeatable;
     private List<ClassSchedule> schedules;
     private LocalDate endDate;
 
-    public ClassViewerInfo(String classId, boolean isActive, String name, String material, String notes, boolean isRepeatable, List<ClassSchedule> schedules) {
+    public ClassViewerInfo(String classId, boolean isActive, String name, String notes, boolean isRepeatable) {
         this.classId = classId;
         this.isActive = isActive;
         this.name = name;
-        this.material = material;
         this.notes = notes;
         this.isRepeatable = isRepeatable;
-        this.schedules = schedules;
     }
 
     public String getClassId() {
@@ -38,14 +35,6 @@ public class ClassViewerInfo {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getMaterial() {
-        return material;
-    }
-
-    public void setMaterial(String material) {
-        this.material = material;
     }
 
     public String getNotes() {

@@ -13,6 +13,7 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,7 @@ public class ClassesDaoTest {
         ClassInfo class1 = groupedClasses.get("class1");
         assertNotNull(class1);
         assertEquals("Beginner English", class1.getName());
+        assertTrue(class1.getIsRepeatable());
         assertEquals(2, class1.getSchedules().size()); // Mon, Wed
 
         ClassSchedule mondaySchedule = class1.getSchedules().stream()
@@ -62,6 +64,7 @@ public class ClassesDaoTest {
         ClassInfo class3 = groupedClasses.get("class3");
         assertNotNull(class3);
         assertEquals("Advanced English", class3.getName());
+        assertTrue(class1.getIsRepeatable());
         assertEquals(2, class3.getSchedules().size()); // Fri, Sat
 
         ClassSchedule fridaySchedule = class3.getSchedules().stream()
@@ -79,7 +82,8 @@ public class ClassesDaoTest {
 
         ClassSchedule schedule1 = new ClassSchedule("Mon", LocalTime.of(10, 0), LocalTime.of(10, 50));
         ClassSchedule schedule2 = new ClassSchedule("Fri", LocalTime.of(14, 0), LocalTime.of(14, 50));
-        ClassInfo classInfo = new ClassInfo("class13", "Tower 101", "Lecture", "Beginner", "Algebra", "None", List.of(schedule1, schedule2));
+        ClassInfo classInfo = new ClassInfo("class13", "Tower 101", "Lecture", "Beginner", "Algebra", "None", true);
+        classInfo.setSchedules(List.of(schedule1, schedule2));
 
         classesDao.insert(ownerId, classInfo);
 
@@ -91,6 +95,7 @@ public class ClassesDaoTest {
         assertEquals("Tower 101", insertedClass.getName());
         assertEquals("Lecture", insertedClass.getFormat());
         assertEquals("Beginner", insertedClass.getLevel());
+        assertTrue(insertedClass.getIsRepeatable());
         assertEquals(2, insertedClass.getSchedules().size());
 
         // assertions to verify the class and schedules are inserted correctly
@@ -138,6 +143,7 @@ public class ClassesDaoTest {
         assertEquals("Beginner", entity.getLevel());
         assertEquals("Grammar Basics", entity.getMaterial());
         assertEquals("Morning class", entity.getNotes());
+        assertTrue(entity.getIsRepeatable());
         assertEquals(2, entity.getSchedules().size()); // Mon, Wed
     }
 
@@ -161,7 +167,16 @@ public class ClassesDaoTest {
         assertEquals("Beginner", first.getLevel());
         assertEquals("Grammar Basics", first.getMaterial());
         assertEquals("Morning class", first.getNotes());
+        assertTrue(first.getIsRepeatable());
         assertEquals(2, first.getSchedules().size()); // Mon, Wed
+    }
+
+    @Test
+    void updateClassInfoOnly() {
+        OwnerId ownerId = new OwnerId("user123", "user");
+        ClassInfo classInfo = new ClassInfo("class11", "Tower AAA", "VIP Online", null, null, "Some notes", false);
+        classInfo.setEndDate(LocalDate.now());
+        classesDao.updateClassInfoOnly(ownerId, classInfo);
     }
 
 }

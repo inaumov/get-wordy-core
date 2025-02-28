@@ -1,16 +1,16 @@
-INSERT INTO class_info (class_id, owner_id, owner_type, name, format, level, material, notes)
-VALUES ('class1', 'user123', 'user', 'Beginner English', 'Lecture', 'Beginner', 'Grammar Basics', 'Morning class'),
-       ('class2', 'user123', 'user', 'Intermediate English', 'Workshop', 'Intermediate', 'Speaking Practice','Interactive'),
-       ('class3', 'user123', 'user', 'Advanced English', 'Lecture', 'Advanced', 'Essay Writing', ''),
-       ('class4', 'user123', 'user', 'Business English', 'Workshop', 'Advanced', 'Corporate Communication','Evening class'),
-       ('class5', 'user123', 'user', 'English for Kids', 'Interactive', 'Beginner', 'Storybooks', 'Fun activities'),
-       ('class6', 'user123', 'user', 'English Literature', 'Lecture', 'Advanced', 'Classic Novels','Analysis and discussions'),
-       ('class7', 'user123', 'user', 'IELTS Preparation', 'Lecture', 'Advanced', 'IELTS Workbook', ''),
-       ('class8', 'user123', 'user', 'TOEFL Preparation', 'Lecture', 'Advanced', 'TOEFL Guide', ''),
-       ('class9', 'user123', 'user', 'Conversational English', 'Workshop', 'Intermediate', 'Dialogue Practice', ''),
-       ('class10', 'user123', 'user', 'Grammar for Beginners', 'Lecture', 'Beginner', 'Grammar Exercises', ''),
-       ('class11', 'user123', 'user', 'Pronunciation Practice', 'Workshop', 'Intermediate', 'Audio Lessons', ''),
-       ('class12', 'user123', 'user', 'English for Travel', 'Interactive', 'Intermediate', 'Travel Phrases', '');
+INSERT INTO class_info (class_id, owner_id, owner_type, name, format, level, material, notes, is_repeatable)
+VALUES ('class1', 'user123', 'user', 'Beginner English', 'Lecture', 'Beginner', 'Grammar Basics', 'Morning class', true),
+       ('class2', 'user123', 'user', 'Intermediate English', 'Workshop', 'Intermediate', 'Speaking Practice','Interactive', true),
+       ('class3', 'user123', 'user', 'Advanced English', 'Lecture', 'Advanced', 'Essay Writing', '', true),
+       ('class4', 'user123', 'user', 'Business English', 'Workshop', 'Advanced', 'Corporate Communication','Evening class', true),
+       ('class5', 'user123', 'user', 'English for Kids', 'Interactive', 'Beginner', 'Storybooks', 'Fun activities', true),
+       ('class6', 'user123', 'user', 'English Literature', 'Lecture', 'Advanced', 'Classic Novels','Analysis and discussions', true),
+       ('class7', 'user123', 'user', 'IELTS Preparation', 'Lecture', 'Advanced', 'IELTS Workbook', '', true),
+       ('class8', 'user123', 'user', 'TOEFL Preparation', 'Lecture', 'Advanced', 'TOEFL Guide', '', true),
+       ('class9', 'user123', 'user', 'Conversational English', 'Workshop', 'Intermediate', 'Dialogue Practice', '', true),
+       ('class10', 'user123', 'user', 'Grammar for Beginners', 'Lecture', 'Beginner', 'Grammar Exercises', '', true),
+       ('class11', 'user123', 'user', 'Pronunciation Practice', 'Workshop', 'Intermediate', 'Audio Lessons', '', true),
+       ('class12', 'user123', 'user', 'English for Travel', 'Interactive', 'Intermediate', 'Travel Phrases', '', true);
 
 INSERT INTO class_schedule (class_id, day_of_week, start_time, end_time)
 VALUES

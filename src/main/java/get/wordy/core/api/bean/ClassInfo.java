@@ -1,5 +1,7 @@
 package get.wordy.core.api.bean;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ClassInfo {
@@ -10,16 +12,18 @@ public class ClassInfo {
     private String level;
     private String material;
     private String notes;
-    private List<ClassSchedule> schedules;
+    private boolean isRepeatable;
+    private List<ClassSchedule> schedules = new ArrayList<>();
+    private LocalDate endDate;
 
-    public ClassInfo(String classId, String name, String format, String level, String material, String notes, List<ClassSchedule> schedules) {
+    public ClassInfo(String classId, String name, String format, String level, String material, String notes, boolean isRepeatable) {
         this.classId = classId;
         this.name = name;
         this.format = format;
         this.level = level;
         this.material = material;
         this.notes = notes;
-        this.schedules = schedules;
+        this.isRepeatable = isRepeatable;
     }
 
     public String getClassId() {
@@ -70,12 +74,28 @@ public class ClassInfo {
         this.notes = notes;
     }
 
+    public boolean getIsRepeatable() {
+        return isRepeatable;
+    }
+
+    public void setIsRepeatable(boolean isRepeatable) {
+        this.isRepeatable = isRepeatable;
+    }
+
     public List<ClassSchedule> getSchedules() {
         return schedules;
     }
 
     public void setSchedules(List<ClassSchedule> schedules) {
         this.schedules = schedules;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
     }
 
 }
