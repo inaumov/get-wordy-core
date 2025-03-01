@@ -4,6 +4,7 @@ import get.wordy.core.api.IClassAccessService;
 import get.wordy.core.api.bean.ClassInfo;
 import get.wordy.core.api.bean.ClassViewerInfo;
 import get.wordy.core.api.id.OwnerId;
+import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.ClassAccessDao;
 import get.wordy.core.dao.impl.ClassesDao;
 import get.wordy.core.db.LocalTxManager;
@@ -37,26 +38,45 @@ public class ClassAccessService implements IClassAccessService {
 
     @Override
     public void assignUserToClass(OwnerId adminId, String classId, String targetUserId) {
-        // ensure adminUserId has permission to manage access
-        if (!classAccessDao.hasFullAccess(classId, adminId)) {
-            throw new AccessDeniedException("Admin does not have permission to manage this class.");
+        try {
+            connection.open();
+            // ensure adminUserId has permission to manage access
+            if (!classAccessDao.hasFullAccess(classId, adminId)) {
+                throw new AccessDeniedException("Admin does not have permission to manage this class.");
+            }
+            classAccessDao.grantAccess(classId, targetUserId);
+            connection.commit();
+            LOG.info("User {} successfully assigned to class {}", targetUserId, classId);
+        } catch (DaoException e) {
+            LOG.error("Error while granting access to a class = {}, for the user = {}", classId, targetUserId, e);
+            connection.rollback();
+        } finally {
+            connection.close();
         }
-        classAccessDao.grantAccess(classId, targetUserId);
-        LOG.info("User {} successfully assigned to class {}", targetUserId, classId);
     }
 
     @Override
     public void removeUserFromClass(OwnerId adminId, String classId, String targetUserId) {
-        // ensure adminUserId has permission to manage access
-        if (!classAccessDao.hasFullAccess(classId, adminId)) {
-            throw new AccessDeniedException("Admin does not have permission to manage this class.");
+        try {
+            connection.open();
+            // ensure adminUserId has permission to manage access
+            if (!classAccessDao.hasFullAccess(classId, adminId)) {
+                throw new AccessDeniedException("Admin does not have permission to manage this class.");
+            }
+
+            if (!classAccessDao.hasViewAccess(classId, targetUserId)) {
+                throw new AccessDeniedException("No viewer has access to this class.");
+            }
+            classAccessDao.revokeAccess(classId, targetUserId);
+            connection.commit();
+            LOG.info("User {} successfully revoked from class {}", targetUserId, classId);
+        } catch (DaoException e) {
+            LOG.error("Error while revoking access to a class = {}, for user = {}", classId, targetUserId, e);
+            connection.rollback();
+        } finally {
+            connection.close();
         }
 
-        if (!classAccessDao.hasViewAccess(classId, targetUserId)) {
-            throw new AccessDeniedException("No viewer has access to this class.");
-        }
-        classAccessDao.revokeAccess(classId, targetUserId);
-        LOG.info("User {} successfully revoked from class {}", targetUserId, classId);
     }
 
     @Override
