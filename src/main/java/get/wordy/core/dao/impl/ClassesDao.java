@@ -8,6 +8,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.CollectionUtils;
 
 import java.sql.Time;
 import java.time.LocalDate;
@@ -86,23 +87,12 @@ public class ClassesDao {
         if (!classInfo.getIsRepeatable()) {
             return classInfo;
         }
-        String scheduleInsertQuery = """
-                INSERT INTO class_schedule (class_id, day_of_week, start_time, end_time)
-                VALUES (:classId, lower(:dayOfWeek), :startTime, :endTime)
-                """;
+        insertSchedule(classInfo);
 
-        for (ClassSchedule schedule : classInfo.getSchedules()) {
-            MapSqlParameterSource scheduleParams = new MapSqlParameterSource()
-                    .addValue("classId", classInfo.getClassId())
-                    .addValue("dayOfWeek", schedule.getDayOfWeek())
-                    .addValue("startTime", schedule.getStartTime())
-                    .addValue("endTime", schedule.getEndTime());
-            jdbcTemplate.update(scheduleInsertQuery, scheduleParams);
-        }
         return classInfo;
     }
 
-    public ClassInfo updateClassInfoOnly(OwnerId ownerId, ClassInfo classInfo) {
+    public ClassInfo update(OwnerId ownerId, ClassInfo classInfo) {
         String query = """
                 UPDATE class_info
                 SET name = :name, format = :format, level = :level, material = :material, notes = :notes, is_repeatable = :isRepeatable, end_date = :endDate
@@ -121,7 +111,41 @@ public class ClassesDao {
                 .addValue("endDate", classInfo.getEndDate());
 
         jdbcTemplate.update(query, params);
+
+        // delete actual schedule
+        String clean = """
+                DELETE FROM class_schedule
+                WHERE class_id = :classId
+                """;
+        jdbcTemplate.update(clean, params);
+
+        // does not save schedules when not repeatable
+        if (!classInfo.getIsRepeatable()) {
+            return classInfo;
+        }
+
+        // insert new
+        insertSchedule(classInfo);
+
         return classInfo;
+    }
+
+    private void insertSchedule(ClassInfo classInfo) {
+        if (CollectionUtils.isEmpty(classInfo.getSchedules())) {
+            return;
+        }
+        String scheduleInsertQuery = """
+                INSERT INTO class_schedule (class_id, day_of_week, start_time, end_time)
+                VALUES (:classId, lower(:dayOfWeek), :startTime, :endTime)
+                """;
+        for (ClassSchedule schedule : classInfo.getSchedules()) {
+            MapSqlParameterSource scheduleParams = new MapSqlParameterSource()
+                    .addValue("classId", classInfo.getClassId())
+                    .addValue("dayOfWeek", schedule.getDayOfWeek())
+                    .addValue("startTime", schedule.getStartTime())
+                    .addValue("endTime", schedule.getEndTime());
+            jdbcTemplate.update(scheduleInsertQuery, scheduleParams);
+        }
     }
 
     public int delete(OwnerId ownerId, String classId) {
@@ -165,8 +189,10 @@ public class ClassesDao {
                         rs.getString("notes"),
                         rs.getBoolean("is_repeatable")
                 );
-                LocalDate endDate = rs.getDate("end_date") != null ? rs.getDate("end_date").toLocalDate() : null;
-                classInfo.setEndDate(endDate);
+                if (!classInfo.getIsRepeatable()) {
+                    LocalDate endDate = rs.getDate("end_date") != null ? rs.getDate("end_date").toLocalDate() : null;
+                    classInfo.setEndDate(endDate);
+                }
                 return classInfo;
             })).map(x -> {
                 if (!x.getIsRepeatable()) {

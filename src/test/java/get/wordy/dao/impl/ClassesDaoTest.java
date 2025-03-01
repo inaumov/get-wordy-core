@@ -77,7 +77,7 @@ public class ClassesDaoTest {
     }
 
     @Test
-    public void testInsertClassInfoWithSchedules() {
+    public void testInsertClassInfo_whenWithSchedules() {
         OwnerId ownerId = new OwnerId("user123", "user");
 
         ClassSchedule schedule1 = new ClassSchedule("Mon", LocalTime.of(10, 0), LocalTime.of(10, 50));
@@ -172,11 +172,25 @@ public class ClassesDaoTest {
     }
 
     @Test
-    void updateClassInfoOnly() {
+    void updateClassInfo_whenNonRepeatable() {
         OwnerId ownerId = new OwnerId("user123", "user");
         ClassInfo classInfo = new ClassInfo("class11", "Tower AAA", "VIP Online", null, null, "Some notes", false);
         classInfo.setEndDate(LocalDate.now());
-        classesDao.updateClassInfoOnly(ownerId, classInfo);
+
+        ClassInfo updated = classesDao.update(ownerId, classInfo);
+        assertNotNull(updated);
+    }
+
+    @Test
+    void updateClassInfo_whenHasSchedule() {
+        OwnerId ownerId = new OwnerId("user123", "user");
+        ClassInfo classInfo = new ClassInfo("class11", "Tower AAA", "VIP Online", null, null, "Some notes", true);
+        ClassSchedule schedule1 = new ClassSchedule("Mon", LocalTime.of(10, 0), LocalTime.of(10, 50));
+        ClassSchedule schedule2 = new ClassSchedule("Fri", LocalTime.of(14, 0), LocalTime.of(14, 50));
+        classInfo.setSchedules(List.of(schedule1, schedule2));
+
+        ClassInfo updated = classesDao.update(ownerId, classInfo);
+        assertNotNull(updated);
     }
 
 }
