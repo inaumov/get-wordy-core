@@ -104,6 +104,11 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
     }
 
     @Override
+    public Vocabulary getVocabulary(OwnerId ownerId, int vocabId) {
+        return findVocab(ownerId, vocabId);
+    }
+
+    @Override
     public boolean renameVocabulary(OwnerId ownerId, int vocabId, String newName) {
         // verify exists
         Vocabulary vocabulary = findVocab(ownerId, vocabId);

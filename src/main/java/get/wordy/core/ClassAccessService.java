@@ -42,7 +42,7 @@ public class ClassAccessService implements IClassAccessService {
             connection.open();
             // ensure adminUserId has permission to manage access
             if (!classAccessDao.hasFullAccess(classId, adminId)) {
-                throw new AccessDeniedException("Admin does not have permission to manage this class.");
+                throw new AccessDeniedException("Admin does not have permission to manage this class = " + classId);
             }
             classAccessDao.grantAccess(classId, targetUserId);
             connection.commit();
@@ -61,11 +61,11 @@ public class ClassAccessService implements IClassAccessService {
             connection.open();
             // ensure adminUserId has permission to manage access
             if (!classAccessDao.hasFullAccess(classId, adminId)) {
-                throw new AccessDeniedException("Admin does not have permission to manage this class.");
+                throw new AccessDeniedException("Admin does not have permission to manage this class = " + classId);
             }
 
             if (!classAccessDao.hasViewAccess(classId, targetUserId)) {
-                throw new AccessDeniedException("No viewer has access to this class.");
+                throw new AccessDeniedException("No viewer has access to this class = " + classId);
             }
             classAccessDao.revokeAccess(classId, targetUserId);
             connection.commit();
@@ -107,6 +107,14 @@ public class ClassAccessService implements IClassAccessService {
     @Override
     public List<String> getAssignedAttendees(String classId) {
         return classAccessDao.findAssignedViewersByClassId(classId);
+    }
+
+    @Override
+    public boolean hasAccess(String classId, String targetUserId) {
+        if (!classAccessDao.hasViewAccess(classId, targetUserId)) {
+            throw new AccessDeniedException("Target viewer = " + targetUserId + " has no access to this class = " + classId);
+        }
+        return true;
     }
 
 }

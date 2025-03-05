@@ -29,4 +29,5 @@ public interface IVocabularyService {
 
     boolean hasVocabulary(OwnerId ownerId, int vocabId) throws VocabNotFoundException;
 
+    Vocabulary getVocabulary(OwnerId ownerId, int vocabId);
 }

@@ -14,4 +14,7 @@ public interface IClassAccessService {
     List<ClassViewerInfo> getAttendeeClasses(String userId);
 
     List<String> getAssignedAttendees(String classId);
+
+    boolean hasAccess(String classId, String targetUserId);
+
 }
