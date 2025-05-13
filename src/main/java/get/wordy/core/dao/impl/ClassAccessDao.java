@@ -1,6 +1,7 @@
 package get.wordy.core.dao.impl;
 
 import get.wordy.core.api.id.OwnerId;
+import get.wordy.core.dao.exception.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -109,6 +110,22 @@ public class ClassAccessDao {
                 .addValue("classId", classId);
 
         return jdbcTemplate.queryForList(query, params, String.class);
+    }
+
+    public void deactivate(String classId) throws NotFoundException {
+        String query = """
+                UPDATE class_access
+                SET is_active = :isActive
+                WHERE class_id = :classId
+                """;
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("classId", classId)
+                .addValue("isActive", false);
+
+        int updated = jdbcTemplate.update(query, params);
+        if (updated == 0) {
+            throw new NotFoundException("class_access record not found for classId: " + classId);
+        }
     }
 
 }

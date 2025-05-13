@@ -1,0 +1,2 @@
+ALTER TABLE class_info
+    ADD COLUMN is_active BOOLEAN DEFAULT TRUE;

@@ -3,6 +3,7 @@ package get.wordy.dao.impl;
 import get.wordy.core.api.bean.ClassInfo;
 import get.wordy.core.api.bean.ClassSchedule;
 import get.wordy.core.api.id.OwnerId;
+import get.wordy.core.dao.exception.NotFoundException;
 import get.wordy.core.dao.impl.ClassesDao;
 import get.wordy.dao.config.SpringJdbcConfig;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ public class ClassesDaoTest {
         assertEquals(2, class1.getSchedules().size()); // Mon, Wed
 
         ClassSchedule mondaySchedule = class1.getSchedules().stream()
-                .filter(s -> "mon".equals(s.getDayOfWeek()))
+                .filter(s -> "Mon".equals(s.getDayOfWeek()))
                 .findFirst()
                 .orElse(null);
         assertNotNull(mondaySchedule);
@@ -68,7 +69,7 @@ public class ClassesDaoTest {
         assertEquals(2, class3.getSchedules().size()); // Fri, Sat
 
         ClassSchedule fridaySchedule = class3.getSchedules().stream()
-                .filter(s -> "fri".equals(s.getDayOfWeek()))
+                .filter(s -> "Fri".equals(s.getDayOfWeek()))
                 .findFirst()
                 .orElse(null);
         assertNotNull(fridaySchedule);
@@ -101,7 +102,7 @@ public class ClassesDaoTest {
         // assertions to verify the class and schedules are inserted correctly
 
         ClassSchedule mondaySchedule = insertedClass.getSchedules().stream()
-                .filter(s -> "mon".equals(s.getDayOfWeek()))
+                .filter(s -> "Mon".equals(s.getDayOfWeek()))
                 .findFirst()
                 .orElse(null);
         assertNotNull(mondaySchedule);
@@ -109,7 +110,7 @@ public class ClassesDaoTest {
         assertEquals(schedule1.getEndTime(), mondaySchedule.getEndTime());
 
         ClassSchedule fridaySchedule = insertedClass.getSchedules().stream()
-                .filter(s -> "fri".equals(s.getDayOfWeek()))
+                .filter(s -> "Fri".equals(s.getDayOfWeek()))
                 .findFirst()
                 .orElse(null);
         assertNotNull(fridaySchedule);
@@ -191,6 +192,22 @@ public class ClassesDaoTest {
 
         ClassInfo updated = classesDao.update(ownerId, classInfo);
         assertNotNull(updated);
+    }
+
+    @Test
+    void deactivate() {
+        OwnerId ownerId = new OwnerId("user123", "user");
+        classesDao.removeSchedule(ownerId, "class11");
+        ClassInfo classInfo = classesDao.selectById(ownerId, "class11")
+                .orElseThrow();
+        assertNull(classInfo.getEndDate());
+        assertTrue(classInfo.getSchedules().isEmpty());
+    }
+
+    @Test
+    void deactivateUnknown() {
+        OwnerId ownerId = new OwnerId("user123", "user");
+        assertThrows(NotFoundException.class, () -> classesDao.removeSchedule(ownerId, "nonexistent-class-id"));
     }
 
 }

@@ -1,6 +1,7 @@
 package get.wordy.dao.impl;
 
 import get.wordy.core.api.id.OwnerId;
+import get.wordy.core.dao.exception.NotFoundException;
 import get.wordy.core.dao.impl.ClassAccessDao;
 import get.wordy.dao.config.SpringJdbcConfig;
 import org.junit.jupiter.api.Test;
@@ -83,6 +84,16 @@ public class ClassAccessDaoTest {
         assertNotNull(actualUsers);
         assertEquals(expectedUsers.size(), actualUsers.size());
         assertTrue(actualUsers.containsAll(expectedUsers));
+    }
+
+    @Test
+    void deactivate() {
+        classAccessDao.deactivate("class1");
+    }
+
+    @Test
+    void deactivateUnknown() {
+        assertThrows(NotFoundException.class, () -> classAccessDao.deactivate("nonexistent-class-id"));
     }
 
 }

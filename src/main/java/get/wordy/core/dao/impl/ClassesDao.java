@@ -3,6 +3,7 @@ package get.wordy.core.dao.impl;
 import get.wordy.core.api.bean.ClassInfo;
 import get.wordy.core.api.bean.ClassSchedule;
 import get.wordy.core.api.id.OwnerId;
+import get.wordy.core.dao.exception.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -56,7 +57,7 @@ public class ClassesDao {
 
             // add schedule to the class
             classInfo.getSchedules().add(new ClassSchedule(
-                    ((String) row.get("day_of_week")).toLowerCase(),
+                    ((String) row.get("day_of_week")),
                     ((Time) row.get("start_time")).toLocalTime(),
                     ((Time) row.get("end_time")).toLocalTime()
             ));
@@ -136,7 +137,7 @@ public class ClassesDao {
         }
         String scheduleInsertQuery = """
                 INSERT INTO class_schedule (class_id, day_of_week, start_time, end_time)
-                VALUES (:classId, lower(:dayOfWeek), :startTime, :endTime)
+                VALUES (:classId, :dayOfWeek, :startTime, :endTime)
                 """;
         for (ClassSchedule schedule : classInfo.getSchedules()) {
             MapSqlParameterSource scheduleParams = new MapSqlParameterSource()
@@ -272,6 +273,31 @@ public class ClassesDao {
         });
 
         return classInfos;
+    }
+
+    public void removeSchedule(OwnerId ownerId, String classId) {
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("classId", classId)
+                .addValue("ownerId", ownerId.ownerId())
+                .addValue("ownerType", ownerId.ownerType());
+
+        // delete any actual schedule
+        String clean = """
+                DELETE FROM class_schedule
+                WHERE class_id = :classId
+                """;
+        int updated = jdbcTemplate.update(clean, params);
+        if (updated == 0) {
+            throw new NotFoundException("Class info record not found for classId: " + classId);
+        }
+
+        // reset end_date
+        String query = """
+                UPDATE class_info
+                SET end_date = NULL
+                WHERE class_id = :classId AND owner_id = :ownerId AND owner_type = :ownerType
+                """;
+        jdbcTemplate.update(query, params);
     }
 
 }
