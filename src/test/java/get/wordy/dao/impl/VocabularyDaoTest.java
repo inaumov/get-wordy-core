@@ -16,6 +16,7 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -47,12 +48,14 @@ public class VocabularyDaoTest {
                 .findFirst().orElseThrow();
         assertEquals("Vocabulary Basics", firstVocab.getName());
         assertEquals(4, firstVocab.getWordsTotal()); // Assume 4 words in 1st vocab
+        assertNotNull(firstVocab.getCreateTime());
 
         Vocabulary secondVocab = results.stream()
                 .filter(x -> x.getVocabId() == 102)
                 .findFirst().orElseThrow();
         assertEquals("Grammar 101", secondVocab.getName());
         assertEquals(7, secondVocab.getWordsTotal()); // Assume 6 words in 2nd vocab
+        assertNotNull(secondVocab.getCreateTime());
     }
 
     @Test
@@ -67,6 +70,7 @@ public class VocabularyDaoTest {
         assertEquals(LOGO_PNG, inserted.getPictureUrl());
         assertFalse(inserted.isShared());
         assertEquals(0, inserted.getWordsTotal());
+        assertNotNull(inserted.getCreateTime());
 
         // Verify presence in DB
         List<Vocabulary> results = vocabularyDao.selectAllByOwnerId(classOwner);
@@ -111,6 +115,7 @@ public class VocabularyDaoTest {
         Vocabulary result = vocabularyDao.selectById(101)
                 .orElseThrow();
         assertTrue(result.isShared());
+        assertTrue(LocalDateTime.now().minusSeconds(3).isBefore(result.getCreateTime()));
     }
 
     @Test

@@ -8,6 +8,9 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -72,6 +75,7 @@ public class VocabularyDao {
                        vocabs.name,
                        vocabs.picture_url,
                        vocabs.is_shared,
+                       vocabs.create_time,
                        COUNT(refs.word_ref) AS words_total
                 FROM vocabularies vocabs
                 LEFT JOIN vocab_has_words refs ON vocabs.vocab_id = refs.vocab_id
@@ -83,13 +87,7 @@ public class VocabularyDao {
                 .addValue("ownerId", ownerId.ownerId())
                 .addValue("ownerType", ownerId.ownerType());
 
-        return jdbcTemplate.query(query, params, (rs, rowNum) -> new Vocabulary(
-                rs.getInt("vocab_id"),
-                rs.getString("name"),
-                rs.getString("picture_url"),
-                rs.getBoolean("is_shared"),
-                rs.getInt("words_total")
-        ));
+        return jdbcTemplate.query(query, params, (rs, rowNum) -> processRecord(rs));
     }
 
     public Optional<Vocabulary> selectById(int vocabId) {
@@ -98,6 +96,7 @@ public class VocabularyDao {
                        vocabs.name,
                        vocabs.picture_url,
                        vocabs.is_shared,
+                       vocabs.create_time,
                        COUNT(refs.word_ref) AS words_total
                 FROM vocabularies vocabs
                 LEFT JOIN vocab_has_words refs ON vocabs.vocab_id = refs.vocab_id
@@ -107,13 +106,7 @@ public class VocabularyDao {
         MapSqlParameterSource params = new MapSqlParameterSource("vocabId", vocabId);
 
         try {
-            return Optional.ofNullable(jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> new Vocabulary(
-                    rs.getInt("vocab_id"),
-                    rs.getString("name"),
-                    rs.getString("picture_url"),
-                    rs.getBoolean("is_shared"),
-                    rs.getInt("words_total")
-            )));
+            return Optional.ofNullable(jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> processRecord(rs)));
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
@@ -123,7 +116,7 @@ public class VocabularyDao {
         String query = """
                 INSERT INTO vocabularies (owner_id, owner_type, name, picture_url, is_shared, create_time)
                 VALUES (:ownerId, :ownerType, :name, :pictureUrl, false, current_timestamp)
-                RETURNING vocab_id, name, picture_url, is_shared, 0 AS words_total
+                RETURNING vocab_id, name, picture_url, is_shared, 0 AS words_total, create_time
                 """;
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("ownerId", ownerId.ownerId())
@@ -131,13 +124,7 @@ public class VocabularyDao {
                 .addValue("name", vocabulary.getName())
                 .addValue("pictureUrl", vocabulary.getPictureUrl());
 
-        return jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> new Vocabulary(
-                rs.getInt("vocab_id"),
-                rs.getString("name"),
-                rs.getString("picture_url"),
-                rs.getBoolean("is_shared"),
-                rs.getInt("words_total")
-        ));
+        return jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> processRecord(rs));
     }
 
     public int rename(int vocabId, String name) {
@@ -155,7 +142,7 @@ public class VocabularyDao {
     }
 
     public int updateIsShared(int vocabId, boolean isShared) {
-        String query = "UPDATE vocabularies SET is_shared = :isShared WHERE vocab_id = :vocabId";
+        String query = "UPDATE vocabularies SET is_shared = :isShared AND create_time = NOW() WHERE vocab_id = :vocabId";
         return jdbcTemplate.update(query, new MapSqlParameterSource()
                 .addValue("vocabId", vocabId)
                 .addValue("isShared", isShared));
@@ -205,6 +192,21 @@ public class VocabularyDao {
         // Delete the vocabulary entry
         String deleteVocabulary = "DELETE FROM vocabularies WHERE vocab_id = :vocabId";
         return jdbcTemplate.update(deleteVocabulary, new MapSqlParameterSource("vocabId", vocabId));
+    }
+
+    private static Vocabulary processRecord(ResultSet rs) throws SQLException {
+        Vocabulary vocabulary = new Vocabulary(
+                rs.getInt("vocab_id"),
+                rs.getString("name"),
+                rs.getString("picture_url"),
+                rs.getBoolean("is_shared"),
+                rs.getInt("words_total")
+        );
+        Timestamp createTime = rs.getTimestamp("create_time");
+        if (createTime != null) {
+            vocabulary.setCreateTime(createTime.toLocalDateTime());
+        }
+        return vocabulary;
     }
 
 }

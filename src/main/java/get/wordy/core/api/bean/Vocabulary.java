@@ -1,5 +1,7 @@
 package get.wordy.core.api.bean;
 
+import java.time.LocalDateTime;
+
 public class Vocabulary {
 
     private int vocabId;
@@ -11,6 +13,8 @@ public class Vocabulary {
     private boolean isShared;
 
     private int wordsTotal;
+
+    private LocalDateTime createTime;
 
     public Vocabulary() {
     }
@@ -66,6 +70,14 @@ public class Vocabulary {
 
     public void setWordsTotal(int wordsTotal) {
         this.wordsTotal = wordsTotal;
+    }
+
+    public LocalDateTime getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
     }
 
 }
