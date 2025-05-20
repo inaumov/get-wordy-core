@@ -117,14 +117,36 @@ public class ClassAccessService implements IClassAccessService {
         return true;
     }
 
+    @Override
+    public void activate(OwnerId adminId, String classId) {
+        try {
+            connection.open();
+            // ensure adminUserId has permission to manage access
+            if (!classAccessDao.hasFullAccess(classId, adminId)) {
+                throw new AccessDeniedException("Admin does not have permission to active this class = " + classId);
+            }
+            classAccessDao.updateActivation(classId, true);
+            classesDao.updateActivation(adminId, classId, true);
+            connection.commit();
+            LOG.info("ClassId {} has been activated", classId);
+        } catch (DaoException e) {
+            LOG.error("Error while activating a class = {}", classId, e);
+            connection.rollback();
+        } finally {
+            connection.close();
+        }
+    }
+
+    @Override
     public void deactivate(OwnerId adminId, String classId) {
         try {
             connection.open();
             // ensure adminUserId has permission to manage access
             if (!classAccessDao.hasFullAccess(classId, adminId)) {
-                throw new AccessDeniedException("Admin does not have permission to manage this class = " + classId);
+                throw new AccessDeniedException("Admin does not have permission to deactivate this class = " + classId);
             }
-            classAccessDao.deactivate(classId);
+            classAccessDao.updateActivation(classId, false);
+            classesDao.updateActivation(adminId, classId, false);
             classesDao.removeSchedule(adminId, classId);
 
             connection.commit();

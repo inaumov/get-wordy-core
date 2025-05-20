@@ -17,4 +17,8 @@ public interface IClassAccessService {
 
     boolean hasAccess(String classId, String targetUserId);
 
+    void activate(OwnerId adminId, String classId);
+
+    void deactivate(OwnerId adminId, String classId);
+
 }

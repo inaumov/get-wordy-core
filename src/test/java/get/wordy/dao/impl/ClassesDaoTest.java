@@ -51,6 +51,7 @@ public class ClassesDaoTest {
         assertNotNull(class1);
         assertEquals("Beginner English", class1.getName());
         assertTrue(class1.getIsRepeatable());
+        assertTrue(class1.getIsActive());
         assertEquals(2, class1.getSchedules().size()); // Mon, Wed
 
         ClassSchedule mondaySchedule = class1.getSchedules().stream()
@@ -65,7 +66,8 @@ public class ClassesDaoTest {
         ClassInfo class3 = groupedClasses.get("class3");
         assertNotNull(class3);
         assertEquals("Advanced English", class3.getName());
-        assertTrue(class1.getIsRepeatable());
+        assertTrue(class3.getIsRepeatable());
+        assertTrue(class3.getIsActive());
         assertEquals(2, class3.getSchedules().size()); // Fri, Sat
 
         ClassSchedule fridaySchedule = class3.getSchedules().stream()
@@ -145,6 +147,7 @@ public class ClassesDaoTest {
         assertEquals("Grammar Basics", entity.getMaterial());
         assertEquals("Morning class", entity.getNotes());
         assertTrue(entity.getIsRepeatable());
+        assertTrue(entity.getIsActive());
         assertEquals(2, entity.getSchedules().size()); // Mon, Wed
     }
 
@@ -169,6 +172,7 @@ public class ClassesDaoTest {
         assertEquals("Grammar Basics", first.getMaterial());
         assertEquals("Morning class", first.getNotes());
         assertTrue(first.getIsRepeatable());
+        assertTrue(first.getIsActive());
         assertEquals(2, first.getSchedules().size()); // Mon, Wed
     }
 
@@ -197,11 +201,14 @@ public class ClassesDaoTest {
     @Test
     void deactivate() {
         OwnerId ownerId = new OwnerId("user123", "user");
-        classesDao.removeSchedule(ownerId, "class11");
-        ClassInfo classInfo = classesDao.selectById(ownerId, "class11")
+        String class11 = "class11";
+        classesDao.updateActivation(ownerId, class11, false);
+        classesDao.removeSchedule(ownerId, class11);
+        ClassInfo classInfo = classesDao.selectById(ownerId, class11)
                 .orElseThrow();
         assertNull(classInfo.getEndDate());
         assertTrue(classInfo.getSchedules().isEmpty());
+        assertFalse(classInfo.getIsActive());
     }
 
     @Test

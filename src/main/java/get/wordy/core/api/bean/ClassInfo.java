@@ -15,6 +15,7 @@ public class ClassInfo {
     private boolean isRepeatable;
     private List<ClassSchedule> schedules = new ArrayList<>();
     private LocalDate endDate;
+    private boolean isActive;
 
     public ClassInfo(String classId, String name, String format, String level, String material, String notes, boolean isRepeatable) {
         this.classId = classId;
@@ -96,6 +97,14 @@ public class ClassInfo {
 
     public void setEndDate(LocalDate endDate) {
         this.endDate = endDate;
+    }
+
+    public boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(boolean isActive) {
+        this.isActive = isActive;
     }
 
 }

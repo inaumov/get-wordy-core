@@ -88,12 +88,12 @@ public class ClassAccessDaoTest {
 
     @Test
     void deactivate() {
-        classAccessDao.deactivate("class1");
+        classAccessDao.updateActivation("class1", false);
     }
 
     @Test
     void deactivateUnknown() {
-        assertThrows(NotFoundException.class, () -> classAccessDao.deactivate("nonexistent-class-id"));
+        assertThrows(NotFoundException.class, () -> classAccessDao.updateActivation("nonexistent-class-id", true));
     }
 
 }

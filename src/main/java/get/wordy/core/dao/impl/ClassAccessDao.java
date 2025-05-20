@@ -112,7 +112,7 @@ public class ClassAccessDao {
         return jdbcTemplate.queryForList(query, params, String.class);
     }
 
-    public void deactivate(String classId) throws NotFoundException {
+    public void updateActivation(String classId, boolean isActive) throws NotFoundException {
         String query = """
                 UPDATE class_access
                 SET is_active = :isActive
@@ -120,7 +120,7 @@ public class ClassAccessDao {
                 """;
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("classId", classId)
-                .addValue("isActive", false);
+                .addValue("isActive", isActive);
 
         int updated = jdbcTemplate.update(query, params);
         if (updated == 0) {

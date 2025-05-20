@@ -27,7 +27,7 @@ public class ClassesDao {
 
     public Map<String, ClassInfo> fetchAllClassesWithSchedules(OwnerId ownerId) {
         String query = """
-                SELECT c.class_id, c.name, c.format, c.level, c.material, c.notes,
+                SELECT c.class_id, c.name, c.format, c.level, c.material, c.notes, c.is_active,
                        cs.day_of_week, cs.start_time, cs.end_time
                 FROM class_info c
                 JOIN class_schedule cs ON c.class_id = cs.class_id
@@ -54,7 +54,7 @@ public class ClassesDao {
                     (String) row.get("notes"),
                     true
             ));
-
+            classInfo.setIsActive((Boolean) row.get("is_active"));
             // add schedule to the class
             classInfo.getSchedules().add(new ClassSchedule(
                     ((String) row.get("day_of_week")),
@@ -163,7 +163,7 @@ public class ClassesDao {
 
     public Optional<ClassInfo> selectById(OwnerId ownerId, String classId) {
         String classQuery = """
-                SELECT class_id, name, format, level, material, notes, is_repeatable, end_date
+                SELECT class_id, name, format, level, material, notes, is_repeatable, end_date, is_active
                 FROM class_info
                 WHERE class_id = :classId AND owner_id = :ownerId AND owner_type = :ownerType
                 """;
@@ -190,6 +190,7 @@ public class ClassesDao {
                         rs.getString("notes"),
                         rs.getBoolean("is_repeatable")
                 );
+                classInfo.setIsActive(rs.getBoolean("is_active"));
                 if (!classInfo.getIsRepeatable()) {
                     LocalDate endDate = rs.getDate("end_date") != null ? rs.getDate("end_date").toLocalDate() : null;
                     classInfo.setEndDate(endDate);
@@ -220,6 +221,7 @@ public class ClassesDao {
 
         String query = """
                 SELECT ci.class_id, ci.name, ci.format, ci.level, ci.material, ci.notes, ci.is_repeatable, ci.end_date,
+                       ci.is_active,
                        cs.day_of_week, cs.start_time, cs.end_time
                 FROM class_info ci
                 LEFT JOIN class_schedule cs ON ci.class_id = cs.class_id
@@ -248,6 +250,7 @@ public class ClassesDao {
                         rs.getString("notes"),
                         rs.getBoolean("is_repeatable")
                 );
+                classInfo.setIsActive(rs.getBoolean("is_active"));
                 classInfoMap.put(classId, classInfo);
                 classInfos.add(classInfo);
             }
@@ -298,6 +301,25 @@ public class ClassesDao {
                 WHERE class_id = :classId AND owner_id = :ownerId AND owner_type = :ownerType
                 """;
         jdbcTemplate.update(query, params);
+    }
+
+    public void updateActivation(OwnerId ownerId, String classId, boolean isActive) {
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("classId", classId)
+                .addValue("ownerId", ownerId.ownerId())
+                .addValue("ownerType", ownerId.ownerType())
+                .addValue("isActive", isActive);
+
+        String query = """
+                UPDATE class_info
+                SET is_active = :isActive
+                WHERE class_id = :classId AND owner_id = :ownerId AND owner_type = :ownerType
+                """;
+
+        int updated = jdbcTemplate.update(query, params);
+        if (updated == 0) {
+            throw new NotFoundException("class_info record not found for classId: " + classId);
+        }
     }
 
 }
