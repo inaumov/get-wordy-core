@@ -47,7 +47,7 @@ public class ClassService implements IClassService {
         // fetch from the database if not present in the cache
         Map<String, ClassInfo> classIdIndex;
         try {
-            classIdIndex = classesDao.fetchAllClassesWithSchedules(ownerId);
+            classIdIndex = classesDao.fetchAllClasses(ownerId);
             // update the cache
             ownerToClassesCache.put(ownerId, classIdIndex);
         } catch (DataAccessException e) {

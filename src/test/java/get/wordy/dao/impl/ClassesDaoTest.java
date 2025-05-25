@@ -33,18 +33,21 @@ public class ClassesDaoTest {
     private ClassesDao classesDao;
 
     @Test
-    public void testFetchAllClassesWithSchedules() {
+    public void testFetchAllClasses() {
         // given
         OwnerId ownerId = new OwnerId("user123", "user");
 
         // when
-        Map<String, ClassInfo> groupedClasses = classesDao.fetchAllClassesWithSchedules(ownerId);
+        Map<String, ClassInfo> groupedClasses = classesDao.fetchAllClasses(ownerId);
 
         // then
         assertNotNull(groupedClasses);
-        assertEquals(12, groupedClasses.size());
+        assertEquals(14, groupedClasses.size());
         assertTrue(groupedClasses.containsKey("class1"));
         assertTrue(groupedClasses.containsKey("class3"));
+        // no schedule
+        assertTrue(groupedClasses.containsKey("class111"));
+        assertTrue(groupedClasses.containsKey("class112"));
 
         // Validate ClassInfo for "class1"
         ClassInfo class1 = groupedClasses.get("class1");
@@ -77,6 +80,24 @@ public class ClassesDaoTest {
         assertNotNull(fridaySchedule);
         assertEquals(LocalTime.of(10, 0), fridaySchedule.getStartTime());
         assertEquals(LocalTime.of(11, 30), fridaySchedule.getEndTime());
+
+        // Validate onetime class
+        ClassInfo class111 = groupedClasses.get("class111");
+        assertNotNull(class111);
+        assertEquals("Test onetime", class111.getName());
+        assertFalse(class111.getIsRepeatable());
+        assertTrue(class111.getIsActive());
+        assertTrue(class111.getSchedules().isEmpty());
+        assertTrue(class111.getEndDate().isEqual(LocalDate.of(2025, 5, 31)));
+
+        // Validate no scheduled class
+        ClassInfo class112 = groupedClasses.get("class112");
+        assertNotNull(class112);
+        assertEquals("Test no schedule", class112.getName());
+        assertFalse(class112.getIsRepeatable());
+        assertTrue(class112.getIsActive());
+        assertTrue(class112.getSchedules().isEmpty());
+        assertNull(class112.getEndDate());
     }
 
     @Test
@@ -90,7 +111,7 @@ public class ClassesDaoTest {
 
         classesDao.insert(ownerId, classInfo);
 
-        Map<String, ClassInfo> groupedClasses = classesDao.fetchAllClassesWithSchedules(ownerId);
+        Map<String, ClassInfo> groupedClasses = classesDao.fetchAllClasses(ownerId);
 
         assertTrue(groupedClasses.containsKey("class13"));
 
@@ -126,8 +147,8 @@ public class ClassesDaoTest {
 
         classesDao.delete(ownerId, "class1");
 
-        Map<String, ClassInfo> results = classesDao.fetchAllClassesWithSchedules(ownerId);
-        assertEquals(11, results.size()); // 12 classes initially, 1 deleted
+        Map<String, ClassInfo> results = classesDao.fetchAllClasses(ownerId);
+        assertEquals(13, results.size()); // 14 classes initially, 1 deleted
 
         assertFalse(results.containsKey("class1"));
     }

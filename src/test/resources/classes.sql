@@ -65,3 +65,7 @@ INSERT INTO class_access (class_id, viewer_id, is_active)
 VALUES ('class1', 'viewer123', true),
        ('class2', 'viewer123', true),
        ('class3', 'viewer999', true);
+
+INSERT INTO class_info (class_id, owner_id, owner_type, name, format, is_repeatable, end_date)
+VALUES ('class111', 'user123', 'user', 'Test onetime', 'Test', false, '2025-05-31'),
+       ('class112', 'user123', 'user', 'Test no schedule', 'Test', false, null);

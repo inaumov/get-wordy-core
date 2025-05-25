@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.CollectionUtils;
 
+import java.sql.Date;
 import java.sql.Time;
 import java.time.LocalDate;
 import java.util.*;
@@ -25,13 +26,13 @@ public class ClassesDao {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public Map<String, ClassInfo> fetchAllClassesWithSchedules(OwnerId ownerId) {
+    public Map<String, ClassInfo> fetchAllClasses(OwnerId ownerId) {
         String query = """
-                SELECT c.class_id, c.name, c.format, c.level, c.material, c.notes, c.is_active,
+                SELECT c.class_id, c.name, c.format, c.level, c.material, c.notes, c.is_repeatable, c.end_date, c.is_active,
                        cs.day_of_week, cs.start_time, cs.end_time
                 FROM class_info c
-                JOIN class_schedule cs ON c.class_id = cs.class_id
-                WHERE c.owner_id = :ownerId AND c.owner_type = :ownerType AND c.is_repeatable is true
+                LEFT JOIN class_schedule cs ON c.class_id = cs.class_id
+                WHERE c.owner_id = :ownerId AND c.owner_type = :ownerType
                 ORDER BY cs.day_of_week, cs.start_time
                 """;
 
@@ -45,6 +46,7 @@ public class ClassesDao {
         Map<String, ClassInfo> classMap = new LinkedHashMap<>();
         for (Map<String, Object> row : results) {
             String classId = (String) row.get("class_id");
+            Boolean isRepeatable = (Boolean) row.get("is_repeatable");
             ClassInfo classInfo = classMap.computeIfAbsent(classId, id -> new ClassInfo(
                     classId,
                     (String) row.get("name"),
@@ -52,15 +54,26 @@ public class ClassesDao {
                     (String) row.get("level"),
                     (String) row.get("material"),
                     (String) row.get("notes"),
-                    true
+                    isRepeatable
             ));
-            classInfo.setIsActive((Boolean) row.get("is_active"));
-            // add schedule to the class
-            classInfo.getSchedules().add(new ClassSchedule(
-                    ((String) row.get("day_of_week")),
-                    ((Time) row.get("start_time")).toLocalTime(),
-                    ((Time) row.get("end_time")).toLocalTime()
-            ));
+            Boolean isActive = (Boolean) row.get("is_active");
+            classInfo.setIsActive(isActive);
+            if (!isActive) {
+                continue;
+            }
+            // add schedule to the class if repeatable && active
+            if (isRepeatable) {
+                classInfo.getSchedules().add(new ClassSchedule(
+                        ((String) row.get("day_of_week")),
+                        ((Time) row.get("start_time")).toLocalTime(),
+                        ((Time) row.get("end_time")).toLocalTime()
+                ));
+            } else {
+                // handle onetime activities
+                Date date = (Date) row.get("end_date");
+                LocalDate endDate = date != null ? date.toLocalDate() : null;
+                classInfo.setEndDate(endDate);
+            }
         }
 
         return classMap;
@@ -181,6 +194,7 @@ public class ClassesDao {
 
         try {
             return Optional.ofNullable(jdbcTemplate.queryForObject(classQuery, params, (rs, rowNum) -> {
+                boolean isRepeatable = rs.getBoolean("is_repeatable");
                 ClassInfo classInfo = new ClassInfo(
                         rs.getString("class_id"),
                         rs.getString("name"),
@@ -188,24 +202,25 @@ public class ClassesDao {
                         rs.getString("level"),
                         rs.getString("material"),
                         rs.getString("notes"),
-                        rs.getBoolean("is_repeatable")
+                        isRepeatable
                 );
-                classInfo.setIsActive(rs.getBoolean("is_active"));
-                if (!classInfo.getIsRepeatable()) {
-                    LocalDate endDate = rs.getDate("end_date") != null ? rs.getDate("end_date").toLocalDate() : null;
-                    classInfo.setEndDate(endDate);
+                boolean isActive = rs.getBoolean("is_active");
+                classInfo.setIsActive(isActive);
+                if (isActive && !isRepeatable) {
+                    Date date = rs.getDate("end_date");
+                    classInfo.setEndDate(date != null ? date.toLocalDate() : null);
+                    return classInfo;
                 }
                 return classInfo;
             })).map(x -> {
-                if (!x.getIsRepeatable()) {
-                    return x;
+                if (x.getIsActive() && x.getIsRepeatable()) {
+                    List<ClassSchedule> schedules = jdbcTemplate.query(scheduleQuery, params, (rs, rowNum) -> new ClassSchedule(
+                            rs.getString("day_of_week"),
+                            rs.getTime("start_time").toLocalTime(),
+                            rs.getTime("end_time").toLocalTime()
+                    ));
+                    x.setSchedules(schedules);
                 }
-                List<ClassSchedule> schedules = jdbcTemplate.query(scheduleQuery, params, (rs, rowNum) -> new ClassSchedule(
-                        rs.getString("day_of_week"),
-                        rs.getTime("start_time").toLocalTime(),
-                        rs.getTime("end_time").toLocalTime()
-                ));
-                x.setSchedules(schedules);
                 return x;
             });
         } catch (EmptyResultDataAccessException e) {
@@ -220,12 +235,11 @@ public class ClassesDao {
         }
 
         String query = """
-                SELECT ci.class_id, ci.name, ci.format, ci.level, ci.material, ci.notes, ci.is_repeatable, ci.end_date,
-                       ci.is_active,
+                SELECT c.class_id, c.name, c.format, c.level, c.material, c.notes, c.is_repeatable, c.end_date, c.is_active,
                        cs.day_of_week, cs.start_time, cs.end_time
-                FROM class_info ci
-                LEFT JOIN class_schedule cs ON ci.class_id = cs.class_id
-                WHERE ci.class_id IN (:classIds)
+                FROM class_info c
+                LEFT JOIN class_schedule cs ON c.class_id = cs.class_id
+                WHERE c.class_id IN (:classIds)
                 """;
 
         MapSqlParameterSource params = new MapSqlParameterSource()
