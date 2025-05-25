@@ -124,7 +124,7 @@ public class ClassAccessDao {
 
         int updated = jdbcTemplate.update(query, params);
         if (updated == 0) {
-            throw new NotFoundException("class_access record not found for classId: " + classId);
+            throw new NotFoundException("no class_access record found for classId: " + classId);
         }
     }
 

@@ -203,7 +203,7 @@ public class ClassesDaoTest {
         OwnerId ownerId = new OwnerId("user123", "user");
         String class11 = "class11";
         classesDao.updateActivation(ownerId, class11, false);
-        classesDao.removeSchedule(ownerId, class11);
+        classesDao.resetSchedule(ownerId, class11);
         ClassInfo classInfo = classesDao.selectById(ownerId, class11)
                 .orElseThrow();
         assertNull(classInfo.getEndDate());
@@ -214,7 +214,7 @@ public class ClassesDaoTest {
     @Test
     void deactivateUnknown() {
         OwnerId ownerId = new OwnerId("user123", "user");
-        assertThrows(NotFoundException.class, () -> classesDao.removeSchedule(ownerId, "nonexistent-class-id"));
+        assertThrows(NotFoundException.class, () -> classesDao.resetSchedule(ownerId, "nonexistent-class-id"));
     }
 
 }

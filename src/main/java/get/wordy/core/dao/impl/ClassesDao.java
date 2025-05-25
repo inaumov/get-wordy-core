@@ -278,7 +278,7 @@ public class ClassesDao {
         return classInfos;
     }
 
-    public void removeSchedule(OwnerId ownerId, String classId) {
+    public void resetSchedule(OwnerId ownerId, String classId) {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("classId", classId)
                 .addValue("ownerId", ownerId.ownerId())
@@ -291,7 +291,7 @@ public class ClassesDao {
                 """;
         int updated = jdbcTemplate.update(clean, params);
         if (updated == 0) {
-            throw new NotFoundException("Class info record not found for classId: " + classId);
+            throw new NotFoundException("no class_schedule record found for classId: " + classId);
         }
 
         // reset end_date
@@ -318,7 +318,7 @@ public class ClassesDao {
 
         int updated = jdbcTemplate.update(query, params);
         if (updated == 0) {
-            throw new NotFoundException("class_info record not found for classId: " + classId);
+            throw new NotFoundException("no class_info record found for classId: " + classId);
         }
     }
 

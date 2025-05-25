@@ -1,6 +1,7 @@
 package get.wordy.core;
 
 import get.wordy.core.api.IClassAccessService;
+import get.wordy.core.api.IClassService;
 import get.wordy.core.api.bean.ClassInfo;
 import get.wordy.core.api.bean.ClassViewerInfo;
 import get.wordy.core.api.id.OwnerId;
@@ -19,7 +20,8 @@ public class ClassAccessService implements IClassAccessService {
 
     private ClassAccessDao classAccessDao;
     private LocalTxManager connection;
-    private ClassService classService;
+    private IClassService classService;
+    private final Map<String, List<ClassViewerInfo>> userHasClassesCache = new HashMap<>();
 
     @SuppressWarnings("unused")
     public ClassAccessService() {
@@ -28,7 +30,7 @@ public class ClassAccessService implements IClassAccessService {
     @SuppressWarnings("unused")
     public ClassAccessService(ClassAccessDao classAccessDao,
                               LocalTxManager connection,
-                              ClassService classService
+                              IClassService classService
     ) {
         this.classAccessDao = classAccessDao;
         this.connection = connection;
@@ -68,6 +70,7 @@ public class ClassAccessService implements IClassAccessService {
             }
             classAccessDao.revokeAccess(classId, targetUserId);
             connection.commit();
+            userHasClassesCache.remove(targetUserId);
             LOG.info("User {} successfully revoked from class {}", targetUserId, classId);
         } catch (DaoException e) {
             LOG.error("Error while revoking access to a class = {}, for user = {}", classId, targetUserId, e);
@@ -75,14 +78,18 @@ public class ClassAccessService implements IClassAccessService {
         } finally {
             connection.close();
         }
-
     }
 
     @Override
     public List<ClassViewerInfo> getAttendeeClasses(String userId) {
+        List<ClassViewerInfo> userClasses = userHasClassesCache.get(userId);
+        if (userClasses != null && !userClasses.isEmpty()) {
+            return List.copyOf(userClasses);
+        }
+        // fetch from the database if not present in the cache
         Map<String, Boolean> accessibleClasses = classAccessDao.findAccessibleClasses(userId);
-        List<ClassInfo> classInfos = classService.getClassesInfo(accessibleClasses.keySet());
-        return classInfos
+        List<ClassInfo> classesInfo = classService.getClassesInfo(accessibleClasses.keySet());
+        List<ClassViewerInfo> classViewerInfos = classesInfo
                 .stream()
                 .map(classInfo -> {
                     Boolean isActive = accessibleClasses.get(classInfo.getClassId());
@@ -101,6 +108,9 @@ public class ClassAccessService implements IClassAccessService {
                     return classViewerInfo;
                 })
                 .toList();
+        // update the cache
+        userHasClassesCache.put(userId, classViewerInfos);
+        return classViewerInfos;
     }
 
     @Override
@@ -130,6 +140,7 @@ public class ClassAccessService implements IClassAccessService {
             }
             classService.updateActivation(adminId, classId, true);
             connection.commit();
+            userHasClassesCache.clear();
             LOG.info("ClassId {} has been activated", classId);
         } catch (DaoException e) {
             LOG.error("Error while activating a class = {}", classId, e);
@@ -152,8 +163,8 @@ public class ClassAccessService implements IClassAccessService {
                 classAccessDao.updateActivation(classId, false);
             }
             classService.updateActivation(adminId, classId, false);
-
             connection.commit();
+            userHasClassesCache.clear();
             LOG.info("ClassId {} has been deactivated", classId);
         } catch (DaoException e) {
             LOG.error("Error while deactivating a class = {}", classId, e);

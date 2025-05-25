@@ -14,7 +14,7 @@ public interface IClassService {
 
     ClassInfo saveClassInfo(OwnerId ownerId, ClassInfo classInfo);
 
-    boolean deleteClassInfo(OwnerId ownerId, String classId);
+    void deleteClassInfo(OwnerId ownerId, String classId);
 
     void updateActivation(OwnerId ownerId, String classId, boolean isActive);
 
