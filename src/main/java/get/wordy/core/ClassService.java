@@ -51,12 +51,17 @@ public class ClassService implements IClassService {
             // update the cache
             userClassesCache.put(userId, classIdIndex);
         } catch (DataAccessException e) {
-            LOG.error("Error while getting list of classes info", e);
+            LOG.error("Error while getting classes info for the owner = {}", userId, e);
             return Collections.emptyList();
         } finally {
             connection.close();
         }
         return List.copyOf(classIdIndex.values());
+    }
+
+    @Override
+    public List<ClassInfo> getClassesInfo(Set<String> classIds) {
+        return classesDao.selectByIds(classIds);
     }
 
     @Override
@@ -68,7 +73,7 @@ public class ClassService implements IClassService {
             putClassInfoToCache(userId, () -> classInfo);
             return inserted;
         } catch (DaoException e) {
-            LOG.error("Error while saving a new class info", e);
+            LOG.error("Error while saving a new class info for the owner = {}", userId, e);
             connection.rollback();
             return null;
         } finally {
@@ -86,12 +91,31 @@ public class ClassService implements IClassService {
             userClassesCache.remove(ownerId);
         } catch (DaoException e) {
             connection.rollback();
-            LOG.error("Error while removing class info {} by id = {}", classInfo.getName(), classId, e);
+            LOG.error("Error while removing class info by id = {} for the owner = {}", classId, ownerId, e);
             return false;
         } finally {
             connection.close();
         }
         return true;
+    }
+
+    @Override
+    public void updateActivation(OwnerId ownerId, String classId, boolean isActive) {
+        ClassInfo classInfo = findClassInfo(ownerId, classId);
+        try {
+            connection.open();
+            classesDao.updateActivation(ownerId, classId, isActive);
+            if (Boolean.FALSE.equals(isActive)) {
+                classesDao.removeSchedule(ownerId, classId);
+            }
+            connection.commit();
+            userClassesCache.remove(ownerId);
+        } catch (DaoException e) {
+            connection.rollback();
+            LOG.error("Error while updating class activation by id = {} for the owner = {}", classId, ownerId, e);
+        } finally {
+            connection.close();
+        }
     }
 
     @Override

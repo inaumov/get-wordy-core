@@ -6,7 +6,6 @@ import get.wordy.core.api.bean.ClassViewerInfo;
 import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.ClassAccessDao;
-import get.wordy.core.dao.impl.ClassesDao;
 import get.wordy.core.db.LocalTxManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +19,7 @@ public class ClassAccessService implements IClassAccessService {
 
     private ClassAccessDao classAccessDao;
     private LocalTxManager connection;
-    private ClassesDao classesDao;
+    private ClassService classService;
 
     @SuppressWarnings("unused")
     public ClassAccessService() {
@@ -29,11 +28,11 @@ public class ClassAccessService implements IClassAccessService {
     @SuppressWarnings("unused")
     public ClassAccessService(ClassAccessDao classAccessDao,
                               LocalTxManager connection,
-                              ClassesDao classesDao
+                              ClassService classService
     ) {
         this.classAccessDao = classAccessDao;
         this.connection = connection;
-        this.classesDao = classesDao;
+        this.classService = classService;
     }
 
     @Override
@@ -82,7 +81,7 @@ public class ClassAccessService implements IClassAccessService {
     @Override
     public List<ClassViewerInfo> getAttendeeClasses(String userId) {
         Map<String, Boolean> accessibleClasses = classAccessDao.findAccessibleClasses(userId);
-        List<ClassInfo> classInfos = classesDao.selectByIds(accessibleClasses.keySet());
+        List<ClassInfo> classInfos = classService.getClassesInfo(accessibleClasses.keySet());
         return classInfos
                 .stream()
                 .map(classInfo -> {
@@ -125,8 +124,11 @@ public class ClassAccessService implements IClassAccessService {
             if (!classAccessDao.hasFullAccess(classId, adminId)) {
                 throw new AccessDeniedException("Admin does not have permission to active this class = " + classId);
             }
-            classAccessDao.updateActivation(classId, true);
-            classesDao.updateActivation(adminId, classId, true);
+            if (hasViewers(classId)) {
+                // avoid throwing not found exception
+                classAccessDao.updateActivation(classId, true);
+            }
+            classService.updateActivation(adminId, classId, true);
             connection.commit();
             LOG.info("ClassId {} has been activated", classId);
         } catch (DaoException e) {
@@ -145,9 +147,11 @@ public class ClassAccessService implements IClassAccessService {
             if (!classAccessDao.hasFullAccess(classId, adminId)) {
                 throw new AccessDeniedException("Admin does not have permission to deactivate this class = " + classId);
             }
-            classAccessDao.updateActivation(classId, false);
-            classesDao.updateActivation(adminId, classId, false);
-            classesDao.removeSchedule(adminId, classId);
+            if (hasViewers(classId)) {
+                // avoid throwing not found exception
+                classAccessDao.updateActivation(classId, false);
+            }
+            classService.updateActivation(adminId, classId, false);
 
             connection.commit();
             LOG.info("ClassId {} has been deactivated", classId);
@@ -157,6 +161,10 @@ public class ClassAccessService implements IClassAccessService {
         } finally {
             connection.close();
         }
+    }
+
+    private boolean hasViewers(String classId) {
+        return !classAccessDao.findAssignedViewersByClassId(classId).isEmpty();
     }
 
 }
