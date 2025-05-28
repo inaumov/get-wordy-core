@@ -81,7 +81,7 @@ public class ClassAccessService implements IClassAccessService {
     }
 
     @Override
-    public List<ClassViewerInfo> getAttendeeClasses(String userId) {
+    public List<ClassViewerInfo> getParticipantClasses(String userId) {
         List<ClassViewerInfo> userClasses = userHasClassesCache.get(userId);
         if (userClasses != null && !userClasses.isEmpty()) {
             return List.copyOf(userClasses);
@@ -114,7 +114,7 @@ public class ClassAccessService implements IClassAccessService {
     }
 
     @Override
-    public List<String> getAssignedAttendees(String classId) {
+    public List<String> getAssignedParticipants(String classId) {
         return classAccessDao.findAssignedViewersByClassId(classId);
     }
 

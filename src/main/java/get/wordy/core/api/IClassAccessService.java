@@ -11,9 +11,9 @@ public interface IClassAccessService {
 
     void removeUserFromClass(OwnerId adminId, String classId, String targetUserId);
 
-    List<ClassViewerInfo> getAttendeeClasses(String userId);
+    List<ClassViewerInfo> getParticipantClasses(String userId);
 
-    List<String> getAssignedAttendees(String classId);
+    List<String> getAssignedParticipants(String classId);
 
     boolean hasAccess(String classId, String targetUserId);
 
