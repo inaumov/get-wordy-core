@@ -80,9 +80,10 @@ public class ClassesDao {
     }
 
     public ClassInfo insert(OwnerId ownerId, ClassInfo classInfo) {
-        String classInsertQuery = """
+        String insertQuery = """
                 INSERT INTO class_info (class_id, name, format, level, material, notes, owner_id, owner_type, is_repeatable, end_date)
                 VALUES (:classId, :name, :format, :level, :material, :notes, :ownerId, :ownerType, :isRepeatable, :endDate)
+                RETURNING is_active
                 """;
         MapSqlParameterSource classParams = new MapSqlParameterSource()
                 .addValue("classId", classInfo.getClassId())
@@ -96,7 +97,9 @@ public class ClassesDao {
                 .addValue("isRepeatable", classInfo.getIsRepeatable())
                 .addValue("endDate", classInfo.getEndDate());
 
-        jdbcTemplate.update(classInsertQuery, classParams);
+        Boolean isActive = jdbcTemplate.queryForObject(insertQuery, classParams, Boolean.class);
+        // handle default database value
+        classInfo.setIsActive(Boolean.TRUE.equals(isActive));
 
         if (!classInfo.getIsRepeatable()) {
             return classInfo;
@@ -107,10 +110,11 @@ public class ClassesDao {
     }
 
     public ClassInfo update(OwnerId ownerId, ClassInfo classInfo) {
-        String query = """
+        String updateQuery = """
                 UPDATE class_info
                 SET name = :name, format = :format, level = :level, material = :material, notes = :notes, is_repeatable = :isRepeatable, end_date = :endDate
                 WHERE class_id = :classId AND owner_id = :ownerId AND owner_type = :ownerType
+                RETURNING is_active
                 """;
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("classId", classInfo.getClassId())
@@ -124,8 +128,8 @@ public class ClassesDao {
                 .addValue("isRepeatable", classInfo.getIsRepeatable())
                 .addValue("endDate", classInfo.getEndDate());
 
-        jdbcTemplate.update(query, params);
-
+        Boolean isActive = jdbcTemplate.queryForObject(updateQuery, params, Boolean.class);
+        classInfo.setIsActive(Boolean.TRUE.equals(isActive));
         // delete actual schedule
         String clean = """
                 DELETE FROM class_schedule

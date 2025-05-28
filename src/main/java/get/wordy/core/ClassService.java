@@ -11,6 +11,7 @@ import get.wordy.core.db.LocalTxManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -83,6 +84,26 @@ public class ClassService implements IClassService {
             return inserted;
         } catch (DaoException e) {
             LOG.error("Error while saving a new class info for the owner = {}", ownerId, e);
+            connection.rollback();
+            return null;
+        } finally {
+            connection.close();
+        }
+    }
+
+    @Override
+    public ClassInfo editClassInfo(OwnerId ownerId, ClassInfo classInfo) {
+        if (!StringUtils.hasText(classInfo.getClassId())) {
+            throw new IllegalArgumentException("Class Id required");
+        }
+        try {
+            connection.open();
+            ClassInfo entity = classesDao.update(ownerId, classInfo);
+            connection.commit();
+            putClassInfoToCache(ownerId, () -> entity);
+            return entity;
+        } catch (DaoException e) {
+            LOG.error("Error while saving a class info for the owner = {}", ownerId, e);
             connection.rollback();
             return null;
         } finally {
