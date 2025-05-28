@@ -13,7 +13,7 @@ public class ClassInfo {
     private String material;
     private String notes;
     private boolean isRepeatable;
-    private List<ClassSchedule> schedules = new ArrayList<>();
+    private List<ClassSchedule> timeSlots = new ArrayList<>();
     private LocalDate endDate;
     private boolean isActive;
 
@@ -83,12 +83,12 @@ public class ClassInfo {
         this.isRepeatable = isRepeatable;
     }
 
-    public List<ClassSchedule> getSchedules() {
-        return schedules;
+    public List<ClassSchedule> getTimeSlots() {
+        return timeSlots;
     }
 
-    public void setSchedules(List<ClassSchedule> schedules) {
-        this.schedules = schedules;
+    public void setTimeSlots(List<ClassSchedule> timeSlots) {
+        this.timeSlots = timeSlots;
     }
 
     public LocalDate getEndDate() {

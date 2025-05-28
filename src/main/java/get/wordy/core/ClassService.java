@@ -112,7 +112,7 @@ public class ClassService implements IClassService {
         try {
             connection.open();
             classesDao.updateActivation(ownerId, classId, isActive);
-            if (Boolean.FALSE.equals(isActive) && !classInfo.getSchedules().isEmpty()) {
+            if (Boolean.FALSE.equals(isActive) && !classInfo.getTimeSlots().isEmpty()) {
                 classesDao.resetSchedule(ownerId, classId);
             }
             connection.commit();

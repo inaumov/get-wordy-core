@@ -55,9 +55,9 @@ public class ClassesDaoTest {
         assertEquals("Beginner English", class1.getName());
         assertTrue(class1.getIsRepeatable());
         assertTrue(class1.getIsActive());
-        assertEquals(2, class1.getSchedules().size()); // Mon, Wed
+        assertEquals(2, class1.getTimeSlots().size()); // Mon, Wed
 
-        ClassSchedule mondaySchedule = class1.getSchedules().stream()
+        ClassSchedule mondaySchedule = class1.getTimeSlots().stream()
                 .filter(s -> "Mon".equals(s.getDayOfWeek()))
                 .findFirst()
                 .orElse(null);
@@ -71,9 +71,9 @@ public class ClassesDaoTest {
         assertEquals("Advanced English", class3.getName());
         assertTrue(class3.getIsRepeatable());
         assertTrue(class3.getIsActive());
-        assertEquals(2, class3.getSchedules().size()); // Fri, Sat
+        assertEquals(2, class3.getTimeSlots().size()); // Fri, Sat
 
-        ClassSchedule fridaySchedule = class3.getSchedules().stream()
+        ClassSchedule fridaySchedule = class3.getTimeSlots().stream()
                 .filter(s -> "Fri".equals(s.getDayOfWeek()))
                 .findFirst()
                 .orElse(null);
@@ -87,7 +87,7 @@ public class ClassesDaoTest {
         assertEquals("Test onetime", class111.getName());
         assertFalse(class111.getIsRepeatable());
         assertTrue(class111.getIsActive());
-        assertTrue(class111.getSchedules().isEmpty());
+        assertTrue(class111.getTimeSlots().isEmpty());
         assertTrue(class111.getEndDate().isEqual(LocalDate.of(2025, 5, 31)));
 
         // Validate no scheduled class
@@ -96,7 +96,7 @@ public class ClassesDaoTest {
         assertEquals("Test no schedule", class112.getName());
         assertFalse(class112.getIsRepeatable());
         assertTrue(class112.getIsActive());
-        assertTrue(class112.getSchedules().isEmpty());
+        assertTrue(class112.getTimeSlots().isEmpty());
         assertNull(class112.getEndDate());
     }
 
@@ -107,9 +107,10 @@ public class ClassesDaoTest {
         ClassSchedule schedule1 = new ClassSchedule("Mon", LocalTime.of(10, 0), LocalTime.of(10, 50));
         ClassSchedule schedule2 = new ClassSchedule("Fri", LocalTime.of(14, 0), LocalTime.of(14, 50));
         ClassInfo classInfo = new ClassInfo("class13", "Tower 101", "Lecture", "Beginner", "Algebra", "None", true);
-        classInfo.setSchedules(List.of(schedule1, schedule2));
+        classInfo.setTimeSlots(List.of(schedule1, schedule2));
 
-        classesDao.insert(ownerId, classInfo);
+        ClassInfo newClass = classesDao.insert(ownerId, classInfo);
+        assertTrue(newClass.getIsActive());
 
         Map<String, ClassInfo> groupedClasses = classesDao.fetchAllClasses(ownerId);
 
@@ -119,12 +120,13 @@ public class ClassesDaoTest {
         assertEquals("Tower 101", insertedClass.getName());
         assertEquals("Lecture", insertedClass.getFormat());
         assertEquals("Beginner", insertedClass.getLevel());
+        assertTrue(insertedClass.getIsActive());
         assertTrue(insertedClass.getIsRepeatable());
-        assertEquals(2, insertedClass.getSchedules().size());
+        assertEquals(2, insertedClass.getTimeSlots().size());
 
         // assertions to verify the class and schedules are inserted correctly
 
-        ClassSchedule mondaySchedule = insertedClass.getSchedules().stream()
+        ClassSchedule mondaySchedule = insertedClass.getTimeSlots().stream()
                 .filter(s -> "Mon".equals(s.getDayOfWeek()))
                 .findFirst()
                 .orElse(null);
@@ -132,7 +134,7 @@ public class ClassesDaoTest {
         assertEquals(schedule1.getStartTime(), mondaySchedule.getStartTime());
         assertEquals(schedule1.getEndTime(), mondaySchedule.getEndTime());
 
-        ClassSchedule fridaySchedule = insertedClass.getSchedules().stream()
+        ClassSchedule fridaySchedule = insertedClass.getTimeSlots().stream()
                 .filter(s -> "Fri".equals(s.getDayOfWeek()))
                 .findFirst()
                 .orElse(null);
@@ -169,7 +171,7 @@ public class ClassesDaoTest {
         assertEquals("Morning class", entity.getNotes());
         assertTrue(entity.getIsRepeatable());
         assertTrue(entity.getIsActive());
-        assertEquals(2, entity.getSchedules().size()); // Mon, Wed
+        assertEquals(2, entity.getTimeSlots().size()); // Mon, Wed
     }
 
     @Test
@@ -194,7 +196,7 @@ public class ClassesDaoTest {
         assertEquals("Morning class", first.getNotes());
         assertTrue(first.getIsRepeatable());
         assertTrue(first.getIsActive());
-        assertEquals(2, first.getSchedules().size()); // Mon, Wed
+        assertEquals(2, first.getTimeSlots().size()); // Mon, Wed
     }
 
     @Test
@@ -213,7 +215,7 @@ public class ClassesDaoTest {
         ClassInfo classInfo = new ClassInfo("class11", "Tower AAA", "VIP Online", null, null, "Some notes", true);
         ClassSchedule schedule1 = new ClassSchedule("Mon", LocalTime.of(10, 0), LocalTime.of(10, 50));
         ClassSchedule schedule2 = new ClassSchedule("Fri", LocalTime.of(14, 0), LocalTime.of(14, 50));
-        classInfo.setSchedules(List.of(schedule1, schedule2));
+        classInfo.setTimeSlots(List.of(schedule1, schedule2));
 
         ClassInfo updated = classesDao.update(ownerId, classInfo);
         assertNotNull(updated);
@@ -228,7 +230,7 @@ public class ClassesDaoTest {
         ClassInfo classInfo = classesDao.selectById(ownerId, class11)
                 .orElseThrow();
         assertNull(classInfo.getEndDate());
-        assertTrue(classInfo.getSchedules().isEmpty());
+        assertTrue(classInfo.getTimeSlots().isEmpty());
         assertFalse(classInfo.getIsActive());
     }
 

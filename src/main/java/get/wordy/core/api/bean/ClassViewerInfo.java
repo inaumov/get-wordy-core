@@ -10,7 +10,7 @@ public class ClassViewerInfo {
     private String name;
     private String notes;
     private boolean isRepeatable;
-    private List<ClassSchedule> schedules;
+    private List<ClassSchedule> timeSlots;
     private LocalDate endDate;
 
     public ClassViewerInfo(String classId, boolean isActive, String name, String notes, boolean isRepeatable) {
@@ -45,12 +45,12 @@ public class ClassViewerInfo {
         this.notes = notes;
     }
 
-    public List<ClassSchedule> getSchedules() {
-        return schedules;
+    public List<ClassSchedule> getTimeSlots() {
+        return timeSlots;
     }
 
-    public void setSchedules(List<ClassSchedule> schedules) {
-        this.schedules = schedules;
+    public void setTimeSlots(List<ClassSchedule> schedules) {
+        this.timeSlots = schedules;
     }
 
     public boolean getIsActive() {

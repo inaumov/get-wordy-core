@@ -63,7 +63,7 @@ public class ClassesDao {
             }
             // add schedule to the class if repeatable && active
             if (isRepeatable) {
-                classInfo.getSchedules().add(new ClassSchedule(
+                classInfo.getTimeSlots().add(new ClassSchedule(
                         ((String) row.get("day_of_week")),
                         ((Time) row.get("start_time")).toLocalTime(),
                         ((Time) row.get("end_time")).toLocalTime()
@@ -145,14 +145,14 @@ public class ClassesDao {
     }
 
     private void insertSchedule(ClassInfo classInfo) {
-        if (CollectionUtils.isEmpty(classInfo.getSchedules())) {
+        if (CollectionUtils.isEmpty(classInfo.getTimeSlots())) {
             return;
         }
         String scheduleInsertQuery = """
                 INSERT INTO class_schedule (class_id, day_of_week, start_time, end_time)
                 VALUES (:classId, :dayOfWeek, :startTime, :endTime)
                 """;
-        for (ClassSchedule schedule : classInfo.getSchedules()) {
+        for (ClassSchedule schedule : classInfo.getTimeSlots()) {
             MapSqlParameterSource scheduleParams = new MapSqlParameterSource()
                     .addValue("classId", classInfo.getClassId())
                     .addValue("dayOfWeek", schedule.getDayOfWeek())
@@ -219,7 +219,7 @@ public class ClassesDao {
                             rs.getTime("start_time").toLocalTime(),
                             rs.getTime("end_time").toLocalTime()
                     ));
-                    x.setSchedules(schedules);
+                    x.setTimeSlots(schedules);
                 }
                 return x;
             });
@@ -279,7 +279,7 @@ public class ClassesDao {
                             rs.getTime("start_time").toLocalTime(),
                             rs.getTime("end_time").toLocalTime()
                     );
-                    classInfo.getSchedules().add(schedule);
+                    classInfo.getTimeSlots().add(schedule);
                 }
             } else {
                 LocalDate endDate = rs.getDate("end_date") != null ? rs.getDate("end_date").toLocalDate() : null;

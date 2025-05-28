@@ -101,7 +101,7 @@ public class ClassAccessService implements IClassAccessService {
                             classInfo.getIsRepeatable()
                     );
                     if (classInfo.getIsRepeatable()) {
-                        classViewerInfo.setSchedules(classInfo.getSchedules());
+                        classViewerInfo.setTimeSlots(classInfo.getTimeSlots());
                     } else {
                         classViewerInfo.setEndDate(classInfo.getEndDate());
                     }
