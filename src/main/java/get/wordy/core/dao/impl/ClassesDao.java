@@ -33,7 +33,6 @@ public class ClassesDao {
                 FROM class_info c
                 LEFT JOIN class_schedule cs ON c.class_id = cs.class_id
                 WHERE c.owner_id = :ownerId AND c.owner_type = :ownerType
-                ORDER BY cs.day_of_week, cs.start_time
                 """;
 
         MapSqlParameterSource params = new MapSqlParameterSource()

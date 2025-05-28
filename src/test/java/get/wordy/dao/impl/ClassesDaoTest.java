@@ -104,43 +104,41 @@ public class ClassesDaoTest {
     public void testInsertClassInfo_whenWithSchedules() {
         OwnerId ownerId = new OwnerId("user123", "user");
 
-        ClassSchedule schedule1 = new ClassSchedule("Mon", LocalTime.of(10, 0), LocalTime.of(10, 50));
-        ClassSchedule schedule2 = new ClassSchedule("Fri", LocalTime.of(14, 0), LocalTime.of(14, 50));
+        List<ClassSchedule> timeSlots = createTestTimeSlots(); // Random order
         ClassInfo classInfo = new ClassInfo("class13", "Tower 101", "Lecture", "Beginner", "Algebra", "None", true);
-        classInfo.setTimeSlots(List.of(schedule1, schedule2));
+        classInfo.setTimeSlots(timeSlots);
 
         ClassInfo newClass = classesDao.insert(ownerId, classInfo);
         assertTrue(newClass.getIsActive());
 
-        Map<String, ClassInfo> groupedClasses = classesDao.fetchAllClasses(ownerId);
+        Optional<ClassInfo> classInfoOpt = classesDao.selectById(ownerId, "class13");
 
-        assertTrue(groupedClasses.containsKey("class13"));
-
-        ClassInfo insertedClass = groupedClasses.get("class13");
+        assertTrue(classInfoOpt.isPresent());
+        ClassInfo insertedClass = classInfoOpt.get();
         assertEquals("Tower 101", insertedClass.getName());
         assertEquals("Lecture", insertedClass.getFormat());
         assertEquals("Beginner", insertedClass.getLevel());
         assertTrue(insertedClass.getIsActive());
         assertTrue(insertedClass.getIsRepeatable());
-        assertEquals(2, insertedClass.getTimeSlots().size());
 
-        // assertions to verify the class and schedules are inserted correctly
+        List<ClassSchedule> insertedSchedules = insertedClass.getTimeSlots();
+        assertEquals(4, insertedSchedules.size());
 
-        ClassSchedule mondaySchedule = insertedClass.getTimeSlots().stream()
-                .filter(s -> "Mon".equals(s.getDayOfWeek()))
-                .findFirst()
-                .orElse(null);
-        assertNotNull(mondaySchedule);
-        assertEquals(schedule1.getStartTime(), mondaySchedule.getStartTime());
-        assertEquals(schedule1.getEndTime(), mondaySchedule.getEndTime());
+        List<ClassSchedule> expectedOrder = List.of(
+                new ClassSchedule("Mon", LocalTime.of(10, 0), LocalTime.of(10, 50)),
+                new ClassSchedule("Mon", LocalTime.of(20, 30), LocalTime.of(21, 15)),
+                new ClassSchedule("Fri", LocalTime.of(14, 0), LocalTime.of(14, 50)),
+                new ClassSchedule("Sat", LocalTime.of(12, 30), LocalTime.of(13, 50))
+        );
 
-        ClassSchedule fridaySchedule = insertedClass.getTimeSlots().stream()
-                .filter(s -> "Fri".equals(s.getDayOfWeek()))
-                .findFirst()
-                .orElse(null);
-        assertNotNull(fridaySchedule);
-        assertEquals(schedule2.getStartTime(), fridaySchedule.getStartTime());
-        assertEquals(schedule2.getEndTime(), fridaySchedule.getEndTime());
+        // Verify order and values
+        for (int i = 0; i < expectedOrder.size(); i++) {
+            ClassSchedule expected = expectedOrder.get(i);
+            ClassSchedule actual = insertedSchedules.get(i);
+            assertEquals(expected.getDayOfWeek(), actual.getDayOfWeek(), "Day mismatch at index " + i);
+            assertEquals(expected.getStartTime(), actual.getStartTime(), "Start time mismatch at index " + i);
+            assertEquals(expected.getEndTime(), actual.getEndTime(), "End time mismatch at index " + i);
+        }
     }
 
     @Test
@@ -238,6 +236,15 @@ public class ClassesDaoTest {
     void deactivateUnknown() {
         OwnerId ownerId = new OwnerId("user123", "user");
         assertThrows(NotFoundException.class, () -> classesDao.resetSchedule(ownerId, "nonexistent-class-id"));
+    }
+
+    private List<ClassSchedule> createTestTimeSlots() {
+        return List.of(
+                new ClassSchedule("Mon", LocalTime.of(20, 30), LocalTime.of(21, 15)),
+                new ClassSchedule("Sat", LocalTime.of(12, 30), LocalTime.of(13, 50)),
+                new ClassSchedule("Mon", LocalTime.of(10, 0), LocalTime.of(10, 50)),
+                new ClassSchedule("Fri", LocalTime.of(14, 0), LocalTime.of(14, 50))
+        );
     }
 
 }

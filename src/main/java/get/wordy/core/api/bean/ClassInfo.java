@@ -88,7 +88,16 @@ public class ClassInfo {
     }
 
     public void setTimeSlots(List<ClassSchedule> timeSlots) {
-        this.timeSlots = timeSlots;
+        // sort time slots by day-of-week (calendar order) and start time
+        this.timeSlots = timeSlots.stream()
+                .sorted((a, b) -> {
+                    int dayCompare = Integer.compare(
+                            dayOfWeekOrder(a.getDayOfWeek()),
+                            dayOfWeekOrder(b.getDayOfWeek())
+                    );
+                    return (dayCompare != 0) ? dayCompare : a.getStartTime().compareTo(b.getStartTime());
+                })
+                .toList();
     }
 
     public LocalDate getEndDate() {
@@ -105,6 +114,19 @@ public class ClassInfo {
 
     public void setIsActive(boolean isActive) {
         this.isActive = isActive;
+    }
+
+    private int dayOfWeekOrder(String day) {
+        return switch (day.toLowerCase()) {
+            case "mon" -> 1;
+            case "tue" -> 2;
+            case "wed" -> 3;
+            case "thu" -> 4;
+            case "fri" -> 5;
+            case "sat" -> 6;
+            case "sun" -> 7;
+            default -> throw new IllegalArgumentException("Invalid day of week: " + day);
+        };
     }
 
 }
