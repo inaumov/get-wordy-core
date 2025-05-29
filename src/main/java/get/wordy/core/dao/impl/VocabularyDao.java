@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
  * <ul>
  *   <li><b>CRUD Operations:</b>
  *     <ul>
- *       <li>{@code selectAllByOwnerId(OwnerId ownerId)}: Retrieves all vocabularies for a given owner.</li>
+ *       <li>{@code selectAll(OwnerId ownerId)}: Retrieves all vocabularies for a given owner.</li>
  *       <li>{@code selectById(int vocabId)}: Fetches a specific vocabulary by its ID.</li>
  *       <li>{@code insert(OwnerId ownerId, String name, String pictureUrl)}: Inserts a new vocabulary with the specified details.</li>
  *       <li>{@code rename(int vocabId, String name)}: Updates the name of a vocabulary.</li>
@@ -69,20 +70,22 @@ public class VocabularyDao {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<Vocabulary> selectAllByOwnerId(OwnerId ownerId) {
+    public List<Vocabulary> selectAll(OwnerId ownerId) {
         String query = """
-                SELECT vocabs.vocab_id AS vocab_id,
+                SELECT vocabs.vocab_id,
                        vocabs.name,
                        vocabs.picture_url,
                        vocabs.is_shared,
                        vocabs.create_time,
+                       vocabs.update_time,
                        COUNT(refs.word_ref) AS words_total
                 FROM vocabularies vocabs
-                LEFT JOIN vocab_has_words refs ON vocabs.vocab_id = refs.vocab_id
+                LEFT JOIN vocab_has_words refs ON refs.vocab_id = vocabs.vocab_id
                 WHERE vocabs.owner_id = :ownerId AND vocabs.owner_type = :ownerType
                 GROUP BY vocabs.vocab_id, vocabs.name, vocabs.picture_url, vocabs.is_shared
                 ORDER BY vocabs.name
                 """;
+
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("ownerId", ownerId.ownerId())
                 .addValue("ownerType", ownerId.ownerType());
@@ -92,16 +95,20 @@ public class VocabularyDao {
 
     public Optional<Vocabulary> selectById(int vocabId) {
         String query = """
-                SELECT vocabs.vocab_id AS vocab_id,
-                       vocabs.name,
-                       vocabs.picture_url,
-                       vocabs.is_shared,
-                       vocabs.create_time,
-                       COUNT(refs.word_ref) AS words_total
-                FROM vocabularies vocabs
-                LEFT JOIN vocab_has_words refs ON vocabs.vocab_id = refs.vocab_id
-                WHERE vocabs.vocab_id = :vocabId
-                GROUP BY vocabs.vocab_id, vocabs.name, vocabs.picture_url, vocabs.is_shared
+                SELECT
+                    vocab_id,
+                    name,
+                    picture_url,
+                    is_shared,
+                    create_time,
+                    update_time,
+                    (
+                        SELECT COUNT(*)
+                        FROM vocab_has_words
+                        WHERE vocab_has_words.vocab_id = vocabularies.vocab_id
+                    ) AS words_total
+                FROM vocabularies
+                WHERE vocab_id = :vocabId
                 """;
         MapSqlParameterSource params = new MapSqlParameterSource("vocabId", vocabId);
 
@@ -114,9 +121,9 @@ public class VocabularyDao {
 
     public Vocabulary insert(OwnerId ownerId, Vocabulary vocabulary) {
         String query = """
-                INSERT INTO vocabularies (owner_id, owner_type, name, picture_url, is_shared, create_time)
-                VALUES (:ownerId, :ownerType, :name, :pictureUrl, false, current_timestamp)
-                RETURNING vocab_id, name, picture_url, is_shared, 0 AS words_total, create_time
+                INSERT INTO vocabularies (owner_id, owner_type, name, picture_url)
+                VALUES (:ownerId, :ownerType, :name, :pictureUrl)
+                RETURNING vocab_id, name, picture_url, is_shared, 0 AS words_total, create_time, update_time
                 """;
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("ownerId", ownerId.ownerId())
@@ -127,11 +134,31 @@ public class VocabularyDao {
         return jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> processRecord(rs));
     }
 
-    public int rename(int vocabId, String name) {
-        String query = "UPDATE vocabularies SET name = :name WHERE vocab_id = :vocabId";
-        return jdbcTemplate.update(query, new MapSqlParameterSource()
+    public Vocabulary rename(int vocabId, String name) {
+        String query = """
+                UPDATE vocabularies
+                SET name = :name,
+                    update_time = NOW()
+                WHERE vocab_id = :vocabId
+                RETURNING
+                    vocab_id,
+                    name,
+                    picture_url,
+                    is_shared,
+                    create_time,
+                    update_time,
+                    (
+                        SELECT COUNT(*)
+                        FROM vocab_has_words
+                        WHERE vocab_has_words.vocab_id = vocabularies.vocab_id
+                    ) AS words_total
+                """;
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("vocabId", vocabId)
-                .addValue("name", name));
+                .addValue("name", name);
+
+        return jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> processRecord(rs));
     }
 
     public int updatePicture(int vocabId, String pictureUrl) {
@@ -141,11 +168,30 @@ public class VocabularyDao {
                 .addValue("pictureUrl", pictureUrl));
     }
 
-    public int updateIsShared(int vocabId, boolean isShared) {
-        String query = "UPDATE vocabularies SET is_shared = :isShared AND create_time = NOW() WHERE vocab_id = :vocabId";
-        return jdbcTemplate.update(query, new MapSqlParameterSource()
+    public Vocabulary updateIsShared(int vocabId, boolean isShared) {
+        String query = """
+                UPDATE vocabularies
+                SET is_shared = :isShared,
+                    update_time = NOW()
+                WHERE vocab_id = :vocabId
+                RETURNING
+                    vocab_id,
+                    name,
+                    picture_url,
+                    is_shared,
+                    create_time,
+                    update_time,
+                    (
+                        SELECT COUNT(*) FROM vocab_has_words
+                        WHERE vocab_id = vocabularies.vocab_id
+                    ) AS words_total
+                """;
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("vocabId", vocabId)
-                .addValue("isShared", isShared));
+                .addValue("isShared", isShared);
+
+        return jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> processRecord(rs));
     }
 
     public void addWordsToVocabulary(int vocabId, Set<Integer> wordRefs) {
@@ -153,24 +199,28 @@ public class VocabularyDao {
                 INSERT INTO vocab_has_words (vocab_id, word_ref)
                 VALUES (:vocabId, :wordRef)
                 """;
-        jdbcTemplate.batchUpdate(query, wordRefs.stream()
+        bulkWordsUpdate(vocabId, wordRefs, query);
+    }
+
+    private void bulkWordsUpdate(int vocabId, Set<Integer> wordRefs, String query) {
+        int[] results = jdbcTemplate.batchUpdate(query, wordRefs.stream()
                 .map(wordRef -> new MapSqlParameterSource()
                         .addValue("vocabId", vocabId)
                         .addValue("wordRef", wordRef))
                 .toArray(MapSqlParameterSource[]::new));
+
+        if (Arrays.stream(results).anyMatch(i -> i > 0)) {
+            String updateInteractionQuery = "UPDATE vocabularies SET update_time = NOW() WHERE vocab_id = :vocabId";
+            jdbcTemplate.update(updateInteractionQuery, new MapSqlParameterSource("vocabId", vocabId));
+        }
     }
 
     public void removeWordsFromVocabulary(int vocabId, Set<Integer> wordRefs) {
-        String query = """
+        String deleteQuery = """
                 DELETE FROM vocab_has_words
                 WHERE vocab_id = :vocabId AND word_ref = :wordRef
                 """;
-
-        jdbcTemplate.batchUpdate(query, wordRefs.stream()
-                .map(wordRef -> new MapSqlParameterSource()
-                        .addValue("vocabId", vocabId)
-                        .addValue("wordRef", wordRef))
-                .toArray(MapSqlParameterSource[]::new));
+        bulkWordsUpdate(vocabId, wordRefs, deleteQuery);
     }
 
     public Set<Integer> getWordRefs(int vocabId) {
@@ -205,6 +255,10 @@ public class VocabularyDao {
         Timestamp createTime = rs.getTimestamp("create_time");
         if (createTime != null) {
             vocabulary.setCreateTime(createTime.toLocalDateTime());
+        }
+        Timestamp updateTime = rs.getTimestamp("update_time");
+        if (updateTime != null) {
+            vocabulary.setUpdateTime(updateTime.toLocalDateTime());
         }
         return vocabulary;
     }

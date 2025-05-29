@@ -17,7 +17,7 @@ public interface IVocabularyService {
 
     boolean changeVocabularyPicture(OwnerId ownerId, int vocabId, String newPictureUrl);
 
-    boolean makeVocabularyIsShared(OwnerId ownerId, int vocabId, boolean isShared);
+    boolean updateSharing(OwnerId ownerId, int vocabId, boolean isShared);
 
     boolean deleteVocabulary(OwnerId ownerId, int vocabId);
 

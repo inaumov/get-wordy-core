@@ -16,6 +16,8 @@ public class Vocabulary {
 
     private LocalDateTime createTime;
 
+    private LocalDateTime updateTime;
+
     public Vocabulary() {
     }
 
@@ -78,6 +80,14 @@ public class Vocabulary {
 
     public void setCreateTime(LocalDateTime createTime) {
         this.createTime = createTime;
+    }
+
+    public LocalDateTime getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(LocalDateTime updateTime) {
+        this.updateTime = updateTime;
     }
 
 }

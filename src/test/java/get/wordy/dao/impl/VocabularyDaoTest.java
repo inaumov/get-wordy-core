@@ -40,7 +40,7 @@ public class VocabularyDaoTest {
     public void testSelectAllByClassId() {
         OwnerId classOwner = new OwnerId("class001", "class");
 
-        List<Vocabulary> results = vocabularyDao.selectAllByOwnerId(classOwner);
+        List<Vocabulary> results = vocabularyDao.selectAll(classOwner);
         assertEquals(2, results.size());
 
         Vocabulary firstVocab = results.stream()
@@ -49,13 +49,15 @@ public class VocabularyDaoTest {
         assertEquals("Vocabulary Basics", firstVocab.getName());
         assertEquals(4, firstVocab.getWordsTotal()); // Assume 4 words in 1st vocab
         assertNotNull(firstVocab.getCreateTime());
+        assertNotNull(firstVocab.getUpdateTime());
 
         Vocabulary secondVocab = results.stream()
                 .filter(x -> x.getVocabId() == 102)
                 .findFirst().orElseThrow();
         assertEquals("Grammar 101", secondVocab.getName());
         assertEquals(7, secondVocab.getWordsTotal()); // Assume 6 words in 2nd vocab
-        assertNotNull(secondVocab.getCreateTime());
+        assertNotNull(firstVocab.getCreateTime());
+        assertNotNull(secondVocab.getUpdateTime());
     }
 
     @Test
@@ -71,9 +73,10 @@ public class VocabularyDaoTest {
         assertFalse(inserted.isShared());
         assertEquals(0, inserted.getWordsTotal());
         assertNotNull(inserted.getCreateTime());
+        assertNotNull(inserted.getUpdateTime());
 
         // Verify presence in DB
-        List<Vocabulary> results = vocabularyDao.selectAllByOwnerId(classOwner);
+        List<Vocabulary> results = vocabularyDao.selectAll(classOwner);
         assertEquals(1, results.size());
         assertEquals("New Vocabulary", results.getFirst().getName());
     }
@@ -81,13 +84,10 @@ public class VocabularyDaoTest {
     @Test
     public void testRename() {
         // rename vocabulary and verify
-        int updated = vocabularyDao.rename(101, "Updated Vocabulary Basics");
-        assertEquals(1, updated);
-
-        // verify in DB
-        Vocabulary result = vocabularyDao.selectById(101)
-                .orElseThrow();
+        Vocabulary result = vocabularyDao.rename(101, "Updated Vocabulary Basics");
+        assertNotNull(result);
         assertEquals("Updated Vocabulary Basics", result.getName());
+        assertTrue(LocalDateTime.now().minusSeconds(3).isBefore(result.getUpdateTime()));
     }
 
     @Test
@@ -108,14 +108,11 @@ public class VocabularyDaoTest {
     @Test
     public void testSetIsShared() {
         // update sharing status and verify
-        int updated = vocabularyDao.updateIsShared(101, true);
-        assertEquals(1, updated);
-
-        // Verify in DB
-        Vocabulary result = vocabularyDao.selectById(101)
-                .orElseThrow();
+        Vocabulary result = vocabularyDao.updateIsShared(101, true);
+        assertNotNull(result);
         assertTrue(result.isShared());
-        assertTrue(LocalDateTime.now().minusSeconds(3).isBefore(result.getCreateTime()));
+        assertEquals(4, result.getWordsTotal());
+        assertTrue(LocalDateTime.now().minusSeconds(3).isBefore(result.getUpdateTime()));
     }
 
     @Test
@@ -161,6 +158,13 @@ public class VocabularyDaoTest {
         assertEquals(expectedTotal, wordsRefs.size());
         // verify added references
         assertTrue(wordsRefs.containsAll(toAdd));
+        // verify updateTime
+        Vocabulary result = vocabularyDao.selectById(vocabId)
+                .orElseThrow(() -> new AssertionError("Vocabulary not found"));
+        assertTrue(
+                LocalDateTime.now().minusSeconds(3).isBefore(result.getUpdateTime()),
+                "Expected updateTime to be updated recently"
+        );
     }
 
     @Test
@@ -169,6 +173,13 @@ public class VocabularyDaoTest {
 
         Set<Integer> wordsRefs = vocabularyDao.getWordRefs(101);
         assertEquals(Set.of(11, 12), wordsRefs);
+        // verify updateTime
+        Vocabulary result = vocabularyDao.selectById(101)
+                .orElseThrow(() -> new AssertionError("Vocabulary not found"));
+        assertTrue(
+                LocalDateTime.now().minusSeconds(3).isBefore(result.getUpdateTime()),
+                "Expected updateTime to be updated recently"
+        );
     }
 
     @ParameterizedTest

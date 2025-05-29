@@ -60,7 +60,7 @@ public class GetWordyServiceTest {
         replay(vocabularyMock);
 
         List<Vocabulary> vocabularies = Collections.singletonList(vocabularyMock);
-        expect(vocabularyDaoMock.selectAllByOwnerId(JOHN_DOE)).andReturn(vocabularies);
+        expect(vocabularyDaoMock.selectAll(JOHN_DOE)).andReturn(vocabularies);
         expectLastCall().once();
         replay(vocabularyDaoMock);
 
@@ -72,7 +72,7 @@ public class GetWordyServiceTest {
     @Test
     public void testGetVocabulariesWhenException() {
 
-        expect(vocabularyDaoMock.selectAllByOwnerId(JOHN_DOE))
+        expect(vocabularyDaoMock.selectAll(JOHN_DOE))
                 .andStubThrow(new DataAccessException("selectAll", null) {
                 });
         replay(vocabularyDaoMock);
@@ -126,13 +126,14 @@ public class GetWordyServiceTest {
         replayTxCommited();
 
         Vocabulary vocabularyMock = createVocabularyMock();
-        vocabularyMock.setName("nameUpdated");
+        expect(vocabularyMock.getName())
+                .andReturn("nameBefore")
+                .andReturn("nameUpdated");
         addVocabularyToCache(vocabularyMock);
         replay(vocabularyMock);
 
         vocabularyDaoMock.rename(vocabularyMock.getVocabId(), "nameUpdated");
-        expectLastCall().andReturn(1)
-                .once();
+        expectLastCall().andReturn(vocabularyMock);
         replay(vocabularyDaoMock);
 
         boolean done = sut.renameVocabulary(JOHN_DOE, VOCAB_ID, "nameUpdated");
@@ -184,17 +185,17 @@ public class GetWordyServiceTest {
         replayTxCommited();
 
         Vocabulary vocabularyMock = createVocabularyMock();
-        expect(vocabularyMock.isShared()).andReturn(false);
-        vocabularyMock.setShared(true);
+        expect(vocabularyMock.isShared())
+                .andReturn(false)
+                .andReturn(true);
         addVocabularyToCache(vocabularyMock);
         replay(vocabularyMock);
 
         vocabularyDaoMock.updateIsShared(VOCAB_ID, true);
-        expectLastCall().andReturn(1)
-                .once();
+        expectLastCall().andReturn(vocabularyMock);
         replay(vocabularyDaoMock);
 
-        boolean done = sut.makeVocabularyIsShared(JOHN_DOE, VOCAB_ID, true);
+        boolean done = sut.updateSharing(JOHN_DOE, VOCAB_ID, true);
         assertTrue(done);
 
         verify(vocabularyDaoMock);

@@ -68,7 +68,7 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
         List<Vocabulary> list;
         try {
             // fetch from the database if not present in the cache
-            list = vocabularyDao.selectAllByOwnerId(ownerId);
+            list = vocabularyDao.selectAll(ownerId);
 
             // update the cache
             userVocabsCache.put(ownerId, list);
@@ -118,9 +118,9 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
         // do modification
         try {
             connection.open();
-            vocabularyDao.rename(vocabId, newName);
+            Vocabulary renamed = vocabularyDao.rename(vocabId, newName);
             connection.commit();
-            vocabulary.setName(newName); // should update name in cache
+            putToCache(ownerId, () -> renamed);
         } catch (DaoException e) {
             LOG.error("Error while renaming vocabulary, id = {}", vocabId, e);
             connection.rollback();
@@ -154,7 +154,7 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
     }
 
     @Override
-    public boolean makeVocabularyIsShared(OwnerId ownerId, int vocabId, boolean isShared) {
+    public boolean updateSharing(OwnerId ownerId, int vocabId, boolean isShared) {
         // verify exists
         Vocabulary vocabulary = findVocab(ownerId, vocabId);
         if (Objects.equals(vocabulary.isShared(), isShared)) {
@@ -163,11 +163,9 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
         // do modifications
         try {
             connection.open();
-            int updated = vocabularyDao.updateIsShared(vocabId, isShared);
+            Vocabulary updated = vocabularyDao.updateIsShared(vocabId, isShared);
             connection.commit();
-            if (updated > 0) {
-                vocabulary.setShared(isShared); // should update readiness url in cache
-            }
+            putToCache(ownerId, () -> updated);
         } catch (DaoException e) {
             LOG.error("Error while updating vocabulary, id = {}", vocabId, e);
             connection.rollback();
@@ -540,15 +538,22 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
         }
     }
 
-    private void putToCache(OwnerId ownerId, Supplier<Vocabulary> vocabulary) {
-        if (userVocabsCache.containsKey(ownerId)) {
-            List<Vocabulary> vocabularies = userVocabsCache.get(ownerId);
-            vocabularies.add(vocabulary.get());
-        } else {
-            List<Vocabulary> newList = new ArrayList<>();
-            newList.add(vocabulary.get());
-            userVocabsCache.put(ownerId, newList);
-        }
+    private void putToCache(OwnerId ownerId, Supplier<Vocabulary> vocabularySupplier) {
+        Vocabulary newVocab = vocabularySupplier.get();
+        userVocabsCache.compute(ownerId, (key, existingList) -> {
+            if (existingList == null) {
+                existingList = new ArrayList<>();
+            } else {
+                // Remove old entry with the same vocabId if it exists
+                existingList.removeIf(v -> v.getVocabId() == newVocab.getVocabId());
+            }
+            existingList.add(newVocab);
+            // Sort by updateTime descending (most recent first)
+            existingList
+                    .sort(Comparator.comparing(Vocabulary::getUpdateTime)
+                    .reversed());
+            return existingList;
+        });
     }
 
 }
