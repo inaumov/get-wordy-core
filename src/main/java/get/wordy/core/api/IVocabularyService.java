@@ -2,8 +2,10 @@ package get.wordy.core.api;
 
 import get.wordy.core.api.bean.Vocabulary;
 import get.wordy.core.api.bean.Word;
+import get.wordy.core.api.bean.wrapper.VocabularySummary;
 import get.wordy.core.api.exception.VocabNotFoundException;
 import get.wordy.core.api.id.OwnerId;
+import get.wordy.core.api.id.OwnersId;
 
 import java.util.List;
 
@@ -30,4 +32,7 @@ public interface IVocabularyService {
     boolean hasVocabulary(OwnerId ownerId, int vocabId) throws VocabNotFoundException;
 
     Vocabulary getVocabulary(OwnerId ownerId, int vocabId);
+
+    List<VocabularySummary> findVocabularySummaries(OwnersId ownersId);
+
 }

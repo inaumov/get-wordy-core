@@ -4,9 +4,11 @@ import get.wordy.core.api.IUserCardsService;
 import get.wordy.core.api.IVocabularyService;
 import get.wordy.core.api.bean.*;
 import get.wordy.core.api.bean.Vocabulary;
+import get.wordy.core.api.bean.wrapper.VocabularySummary;
 import get.wordy.core.api.exception.CardNotFoundException;
 import get.wordy.core.api.exception.DictionaryServiceException;
 import get.wordy.core.api.id.OwnerId;
+import get.wordy.core.api.id.OwnersId;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.CardDao;
 import get.wordy.core.dao.impl.CardHeadlineDao;
@@ -469,6 +471,14 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
         vocabularyDao.removeWordsFromVocabulary(vocabId, Set.of(wordRef));
 
         return true;
+    }
+
+    @Override
+    public List<VocabularySummary> findVocabularySummaries(OwnersId ownersId) {
+        if (ownersId.ownerIds().isEmpty()) {
+            return List.of();
+        }
+        return vocabularyDao.findVocabularySummariesByType(ownersId);
     }
 
     private Vocabulary findVocab(OwnerId ownerId, int vocabId) {

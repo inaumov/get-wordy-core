@@ -1,7 +1,9 @@
 package get.wordy.core.dao.impl;
 
 import get.wordy.core.api.bean.Vocabulary;
+import get.wordy.core.api.bean.wrapper.VocabularySummary;
 import get.wordy.core.api.id.OwnerId;
+import get.wordy.core.api.id.OwnersId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -49,6 +51,13 @@ import java.util.stream.Collectors;
  *     <ul>
  *       <li>Handles {@code words_total}, a calculated field representing the total number of words in a vocabulary.</li>
  *       <li>Manages the {@code picture_url} field for storing image URLs associated with vocabularies.</li>
+ *       <li>{@code findVocabularySummariesByType(OwnersId classesIds)}: For each owner (class), returns a summary with:
+ *         <ul>
+ *           <li>The number of vocabularies that are not shared by the teacher ({@code is_shared = false}).</li>
+ *           <li>The most recent updates {@code update_time} across all vocabularies in that class.</li>
+ *         </ul>
+ *         Designed to support dashboards or overviews where quick access to vocabulary stats is needed.
+ *       </li>
  *     </ul>
  *   </li>
  * </ul>
@@ -59,6 +68,7 @@ import java.util.stream.Collectors;
  *
  * @see Vocabulary
  * @see OwnerId
+ * @see OwnersId
  */
 @Repository
 public class VocabularyDao {
@@ -261,6 +271,32 @@ public class VocabularyDao {
             vocabulary.setUpdateTime(updateTime.toLocalDateTime());
         }
         return vocabulary;
+    }
+
+    public List<VocabularySummary> findVocabularySummariesByType(OwnersId ownersId) {
+        String query = """
+                SELECT owner_id,
+                       COUNT(*) FILTER (WHERE is_shared = false) AS not_shared_count,
+                       MAX(update_time) AS last_update_time
+                FROM vocabularies
+                WHERE owner_id IN (:ownerIds) AND owner_type = :ownerType
+                GROUP BY owner_id
+                """;
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("ownerIds", ownersId.ownerIds())
+                .addValue("ownerType", ownersId.ownerType());
+
+        return jdbcTemplate.query(query, params, (rs, rowNum) -> {
+            Timestamp lastUpdateTime = rs.getTimestamp("last_update_time");
+            return new VocabularySummary(
+                    rs.getString("owner_id"),
+                    rs.getInt("not_shared_count"),
+                    lastUpdateTime != null
+                            ? lastUpdateTime.toLocalDateTime()
+                            : null
+            );
+        });
     }
 
 }
