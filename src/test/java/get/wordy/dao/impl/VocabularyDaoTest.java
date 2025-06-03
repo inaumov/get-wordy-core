@@ -1,6 +1,7 @@
 package get.wordy.dao.impl;
 
 import get.wordy.core.api.bean.Vocabulary;
+import get.wordy.core.api.exception.DuplicateVocabularyException;
 import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.VocabularyDao;
@@ -65,7 +66,7 @@ public class VocabularyDaoTest {
         OwnerId classOwner = new OwnerId("class003", "class");
         Vocabulary vocabulary = new Vocabulary("New Vocabulary", LOGO_PNG);
 
-        // Insert new vocabulary
+        // insert new vocabulary
         Vocabulary inserted = vocabularyDao.insert(classOwner, vocabulary);
         assertNotNull(inserted);
         assertEquals("New Vocabulary", inserted.getName());
@@ -75,19 +76,36 @@ public class VocabularyDaoTest {
         assertNotNull(inserted.getCreateTime());
         assertNotNull(inserted.getUpdateTime());
 
-        // Verify presence in DB
+        // verify presence in DB
         List<Vocabulary> results = vocabularyDao.selectAll(classOwner);
         assertEquals(1, results.size());
         assertEquals("New Vocabulary", results.getFirst().getName());
     }
 
     @Test
+    public void testInsert_whenNameCollision() {
+        OwnerId classOwner = new OwnerId("class001", "class");
+        Vocabulary vocabulary = new Vocabulary("Vocabulary Basics", LOGO_PNG);
+
+        // insert new vocabulary and expect name collision
+        assertThrows(DuplicateVocabularyException.class, () -> vocabularyDao.insert(classOwner, vocabulary));
+    }
+
+    @Test
     public void testRename() {
+        OwnerId classOwner = new OwnerId("class001", "class");
         // rename vocabulary and verify
-        Vocabulary result = vocabularyDao.rename(101, "Updated Vocabulary Basics");
+        Vocabulary result = vocabularyDao.rename(classOwner, 101, "Updated Vocabulary Basics");
         assertNotNull(result);
         assertEquals("Updated Vocabulary Basics", result.getName());
         assertTrue(LocalDateTime.now().minusSeconds(3).isBefore(result.getUpdateTime()));
+    }
+
+    @Test
+    public void testRename_whenNameCollision() {
+        OwnerId classOwner = new OwnerId("class001", "class");
+        // rename vocabulary and expect name collision
+        assertThrows(DuplicateVocabularyException.class, () -> vocabularyDao.rename(classOwner, 102, "Vocabulary Basics"));
     }
 
     @Test

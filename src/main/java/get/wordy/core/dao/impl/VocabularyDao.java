@@ -2,10 +2,13 @@ package get.wordy.core.dao.impl;
 
 import get.wordy.core.api.bean.Vocabulary;
 import get.wordy.core.api.bean.wrapper.VocabularySummary;
+import get.wordy.core.api.exception.DuplicateVocabularyException;
 import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.api.id.OwnersId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -93,7 +96,7 @@ public class VocabularyDao {
                 LEFT JOIN vocab_has_words refs ON refs.vocab_id = vocabs.vocab_id
                 WHERE vocabs.owner_id = :ownerId AND vocabs.owner_type = :ownerType
                 GROUP BY vocabs.vocab_id, vocabs.name, vocabs.picture_url, vocabs.is_shared
-                ORDER BY vocabs.name
+                ORDER BY vocabs.create_time DESC
                 """;
 
         MapSqlParameterSource params = new MapSqlParameterSource()
@@ -141,11 +144,21 @@ public class VocabularyDao {
                 .addValue("name", vocabulary.getName())
                 .addValue("pictureUrl", vocabulary.getPictureUrl());
 
-        return jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> processRecord(rs));
+        try {
+            return jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> processRecord(rs));
+        } catch (DataAccessException ex) {
+            if (isDuplicateException(ex)) {
+                throw new DuplicateVocabularyException(vocabulary.getName());
+            }
+            throw ex;
+        }
     }
 
-    public Vocabulary rename(int vocabId, String name) {
-        String query = """
+    public Vocabulary rename(OwnerId ownerId, int vocabId, String name) {
+
+        checkForNameCollision(ownerId, vocabId, name);
+
+        String updateQuery = """
                 UPDATE vocabularies
                 SET name = :name,
                     update_time = NOW()
@@ -164,11 +177,11 @@ public class VocabularyDao {
                     ) AS words_total
                 """;
 
-        MapSqlParameterSource params = new MapSqlParameterSource()
+        MapSqlParameterSource updateParams = new MapSqlParameterSource()
                 .addValue("vocabId", vocabId)
                 .addValue("name", name);
 
-        return jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> processRecord(rs));
+        return jdbcTemplate.queryForObject(updateQuery, updateParams, (rs, rowNum) -> processRecord(rs));
     }
 
     public int updatePicture(int vocabId, String pictureUrl) {
@@ -297,6 +310,36 @@ public class VocabularyDao {
                             : null
             );
         });
+    }
+
+    private void checkForNameCollision(OwnerId ownerId, int vocabId, String name) {
+        String checkQuery = """
+                    SELECT name FROM vocabularies
+                    WHERE owner_id = :ownerId
+                      AND owner_type = :ownerType
+                      AND name = :name
+                      AND vocab_id != :vocabId
+                    LIMIT 1
+                """;
+
+        MapSqlParameterSource checkParams = new MapSqlParameterSource()
+                .addValue("ownerId", ownerId.ownerId())
+                .addValue("ownerType", ownerId.ownerType())
+                .addValue("name", name)
+                .addValue("vocabId", vocabId);
+
+        boolean exists = Boolean.TRUE.equals(jdbcTemplate.query(
+                checkQuery, checkParams, rs -> rs.next() ? Boolean.TRUE : Boolean.FALSE
+        ));
+        if (exists) {
+            throw new DuplicateVocabularyException(name);
+        }
+    }
+
+    private boolean isDuplicateException(DataAccessException ex) {
+        Throwable cause = ex.getRootCause();
+        return cause instanceof org.postgresql.util.PSQLException &&
+                cause.getMessage().contains("uniq_vocab_per_owner");
     }
 
 }

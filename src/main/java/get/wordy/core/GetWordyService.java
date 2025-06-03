@@ -7,6 +7,7 @@ import get.wordy.core.api.bean.Vocabulary;
 import get.wordy.core.api.bean.wrapper.VocabularySummary;
 import get.wordy.core.api.exception.CardNotFoundException;
 import get.wordy.core.api.exception.DictionaryServiceException;
+import get.wordy.core.api.exception.DuplicateVocabularyException;
 import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.api.id.OwnersId;
 import get.wordy.core.dao.exception.DaoException;
@@ -86,10 +87,14 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
         Vocabulary vocabulary = new Vocabulary(name, pictureUrl);
         try {
             connection.open();
-            final Vocabulary saved = vocabularyDao.insert(ownerId, vocabulary);
+            Vocabulary saved = vocabularyDao.insert(ownerId, vocabulary);
             connection.commit();
             putToCache(ownerId, () -> saved);
-            return vocabulary;
+            return saved;
+        } catch (DuplicateVocabularyException e) {
+            connection.rollback();
+            LOG.warn("Duplicate vocabulary name '{}' for {}", name, ownerId);
+            throw e;
         } catch (DaoException | DataAccessException e) {
             LOG.error("Error while creating a new vocabulary", e);
             connection.rollback();
@@ -120,9 +125,13 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
         // do modification
         try {
             connection.open();
-            Vocabulary renamed = vocabularyDao.rename(vocabId, newName);
+            Vocabulary renamed = vocabularyDao.rename(ownerId, vocabId, newName);
             connection.commit();
             putToCache(ownerId, () -> renamed);
+        } catch (DuplicateVocabularyException e) {
+            connection.rollback();
+            LOG.warn("Duplicate vocabulary name '{}' for {}", newName, ownerId);
+            throw e;
         } catch (DaoException e) {
             LOG.error("Error while renaming vocabulary, id = {}", vocabId, e);
             connection.rollback();

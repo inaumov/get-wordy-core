@@ -132,7 +132,7 @@ public class GetWordyServiceTest {
         addVocabularyToCache(vocabularyMock);
         replay(vocabularyMock);
 
-        vocabularyDaoMock.rename(vocabularyMock.getVocabId(), "nameUpdated");
+        vocabularyDaoMock.rename(JOHN_DOE, vocabularyMock.getVocabId(), "nameUpdated");
         expectLastCall().andReturn(vocabularyMock);
         replay(vocabularyDaoMock);
 
