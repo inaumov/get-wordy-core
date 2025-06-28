@@ -110,22 +110,22 @@ public class WordDao extends BaseDao<Word> {
         return records;
     }
 
-    public List<Word> selectAll(Set<Integer> wordsRefs) throws DaoException {
+    public List<Word> selectAll(Collection<Integer> wordRefs) throws DaoException {
 
-        if (wordsRefs == null || wordsRefs.isEmpty()) {
-            throw new IllegalArgumentException("The set of wordsRefs cannot be null or empty");
+        if (wordRefs == null || wordRefs.isEmpty()) {
+            throw new IllegalArgumentException("The set of wordRefs cannot be null or empty");
         }
 
         // generate the dynamic query
-        String placeholders = String.join(",", Collections.nCopies(wordsRefs.size(), "?"));
-        String sql = String.format(SELECT_ALL_QUERY, placeholders);
+        String placeholders = String.join(",", Collections.nCopies(wordRefs.size(), "?"));
+        String selectInQuery = String.format(SELECT_ALL_QUERY, placeholders);
 
         List<Word> words = new ArrayList<>();
 
-        try (var preparedStatement = prepareStatement(sql)) {
+        try (var preparedStatement = prepareStatement(selectInQuery)) {
             // bind parameters
             int index = 1;
-            for (Integer id : wordsRefs) {
+            for (Integer id : wordRefs) {
                 preparedStatement.setInt(index++, id);
             }
             ResultSet resultSet = preparedStatement.executeQuery();

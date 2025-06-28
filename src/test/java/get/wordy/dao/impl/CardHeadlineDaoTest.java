@@ -51,7 +51,7 @@ public class CardHeadlineDaoTest {
                 () -> assertThat(card.getVocabId()).isEqualTo(1),
                 () -> assertThat(card.getWordId()).isEqualTo(1),
                 () -> assertThat(card.getScore()).isEqualTo(50),
-                () -> assertThat(card.getStatus()).isEqualTo(CardStatus.DEFAULT_STATUS),
+                () -> assertThat(card.getStatus()).isEqualTo(CardStatus.TO_LEARN),
                 () -> assertThat(formattedInstant).isEqualTo("2014-08-17 17:40:03"),
                 () -> assertThat(card.getUpdatedAt()).isNotNull(),
 
@@ -93,7 +93,7 @@ public class CardHeadlineDaoTest {
                 () -> assertThat(card.getVocabId()).isEqualTo(1),
                 () -> assertThat(card.getWordId()).isEqualTo(1),
                 () -> assertThat(card.getScore()).isEqualTo(50),
-                () -> assertThat(card.getStatus()).isEqualTo(CardStatus.DEFAULT_STATUS),
+                () -> assertThat(card.getStatus()).isEqualTo(CardStatus.TO_LEARN),
                 () -> assertThat(formattedInstant).isEqualTo("2014-08-17 17:40:03"),
                 () -> assertThat(card.getUpdatedAt()).isNotNull(),
 

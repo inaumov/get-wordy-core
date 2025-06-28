@@ -17,7 +17,7 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -98,7 +98,7 @@ public class VocabularyDaoTest {
         Vocabulary result = vocabularyDao.rename(classOwner, 101, "Updated Vocabulary Basics");
         assertNotNull(result);
         assertEquals("Updated Vocabulary Basics", result.getName());
-        assertTrue(LocalDateTime.now().minusSeconds(3).isBefore(result.getUpdateTime()));
+        assertTrue(Instant.now().minusSeconds(3).isBefore(result.getUpdateTime()));
     }
 
     @Test
@@ -130,7 +130,7 @@ public class VocabularyDaoTest {
         assertNotNull(result);
         assertTrue(result.isShared());
         assertEquals(4, result.getWordsTotal());
-        assertTrue(LocalDateTime.now().minusSeconds(3).isBefore(result.getUpdateTime()));
+        assertTrue(Instant.now().minusSeconds(3).isBefore(result.getUpdateTime()));
     }
 
     @Test
@@ -180,7 +180,7 @@ public class VocabularyDaoTest {
         Vocabulary result = vocabularyDao.selectById(vocabId)
                 .orElseThrow(() -> new AssertionError("Vocabulary not found"));
         assertTrue(
-                LocalDateTime.now().minusSeconds(3).isBefore(result.getUpdateTime()),
+                Instant.now().minusSeconds(3).isBefore(result.getUpdateTime()),
                 "Expected updateTime to be updated recently"
         );
     }
@@ -195,7 +195,7 @@ public class VocabularyDaoTest {
         Vocabulary result = vocabularyDao.selectById(101)
                 .orElseThrow(() -> new AssertionError("Vocabulary not found"));
         assertTrue(
-                LocalDateTime.now().minusSeconds(3).isBefore(result.getUpdateTime()),
+                Instant.now().minusSeconds(3).isBefore(result.getUpdateTime()),
                 "Expected updateTime to be updated recently"
         );
     }

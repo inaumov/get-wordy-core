@@ -8,7 +8,6 @@ import get.wordy.core.api.id.OwnersId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -277,11 +276,11 @@ public class VocabularyDao {
         );
         Timestamp createTime = rs.getTimestamp("create_time");
         if (createTime != null) {
-            vocabulary.setCreateTime(createTime.toLocalDateTime());
+            vocabulary.setCreateTime(createTime.toInstant());
         }
         Timestamp updateTime = rs.getTimestamp("update_time");
         if (updateTime != null) {
-            vocabulary.setUpdateTime(updateTime.toLocalDateTime());
+            vocabulary.setUpdateTime(updateTime.toInstant());
         }
         return vocabulary;
     }

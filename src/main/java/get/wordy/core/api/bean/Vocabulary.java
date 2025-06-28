@@ -1,6 +1,6 @@
 package get.wordy.core.api.bean;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class Vocabulary {
 
@@ -14,9 +14,9 @@ public class Vocabulary {
 
     private int wordsTotal;
 
-    private LocalDateTime createTime;
+    private Instant createTime;
 
-    private LocalDateTime updateTime;
+    private Instant updateTime;
 
     public Vocabulary() {
     }
@@ -74,19 +74,19 @@ public class Vocabulary {
         this.wordsTotal = wordsTotal;
     }
 
-    public LocalDateTime getCreateTime() {
+    public Instant getCreateTime() {
         return createTime;
     }
 
-    public void setCreateTime(LocalDateTime createTime) {
+    public void setCreateTime(Instant createTime) {
         this.createTime = createTime;
     }
 
-    public LocalDateTime getUpdateTime() {
+    public Instant getUpdateTime() {
         return updateTime;
     }
 
-    public void setUpdateTime(LocalDateTime updateTime) {
+    public void setUpdateTime(Instant updateTime) {
         this.updateTime = updateTime;
     }
 

@@ -10,7 +10,7 @@ public class Card {
     private int id;
     private int vocabId;
     private int wordId;
-    private CardStatus status = CardStatus.DEFAULT_STATUS;
+    private CardStatus status = CardStatus.TO_LEARN;
     private int score;
     private Instant insertedAt;
     private Instant updatedAt;
