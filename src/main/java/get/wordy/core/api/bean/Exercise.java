@@ -7,24 +7,24 @@ import java.util.List;
 
 public class Exercise {
 
-    private int cardId;
-    private int wordId;
+    private Integer cardId;
+    private Integer wordId;
     private Word word;
     private final List<Sentence> sentences = new ArrayList<>();
 
-    public int getCardId() {
+    public Integer getCardId() {
         return cardId;
     }
 
-    public void setCardId(int cardId) {
+    public void setCardId(Integer cardId) {
         this.cardId = cardId;
     }
 
-    public int getWordId() {
+    public Integer getWordId() {
         return wordId;
     }
 
-    public void setWordId(int wordId) {
+    public void setWordId(Integer wordId) {
         this.wordId = wordId;
     }
 

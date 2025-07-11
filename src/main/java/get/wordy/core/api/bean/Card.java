@@ -7,36 +7,36 @@ import java.util.Objects;
 
 public class Card {
 
-    private int id;
-    private int vocabId;
-    private int wordId;
-    private CardStatus status = CardStatus.TO_LEARN;
+    private Integer id;
+    private Integer vocabId;
+    private Integer wordId;
+    private CardStatus status;
     private int score;
     private Instant insertedAt;
     private Instant updatedAt;
     private Word word;
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int cardId) {
+    public void setId(Integer cardId) {
         this.id = cardId;
     }
 
-    public int getVocabId() {
+    public Integer getVocabId() {
         return vocabId;
     }
 
-    public void setVocabId(int vocabId) {
+    public void setVocabId(Integer vocabId) {
         this.vocabId = vocabId;
     }
 
-    public int getWordId() {
+    public Integer getWordId() {
         return wordId;
     }
 
-    public void setWordId(int wordId) {
+    public void setWordId(Integer wordId) {
         this.wordId = wordId;
     }
 
@@ -90,16 +90,14 @@ public class Card {
 
         Card that = (Card) o;
 
-        return this.id == that.id
-                && this.wordId == that.wordId
-                && this.vocabId == that.vocabId
-                && this.status == that.status
-                && this.score == that.score;
+        return Objects.equals(this.id, that.id)
+                && Objects.equals(this.vocabId, that.vocabId)
+                && Objects.equals(this.wordId, that.wordId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, wordId, vocabId, status, score);
+        return Objects.hash(id, vocabId, wordId);
     }
 
 }

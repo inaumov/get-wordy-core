@@ -16,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class CardDaoTest extends BaseDaoTest {
 
-    private static final int PREDEFINED_CARDS_CNT = 2;
     private static final int EXPECTED_NEW_ID = 3;
 
     private CardDao cardDao;
@@ -58,7 +57,7 @@ public class CardDaoTest extends BaseDaoTest {
     @Test
     public void testDelete() throws DaoException {
         OwnerId ownerId = new OwnerId("user123", "user");
-        cardDao.delete(ownerId, 2);
+        cardDao.delete(ownerId, 2, 2);
         // update list
         List<Card> cards = cardDao.selectCards(ownerId, 2, 2);
         assertNotNull(cards);
@@ -82,21 +81,6 @@ public class CardDaoTest extends BaseDaoTest {
         assertEquals(CardStatus.TO_LEARN, second.getStatus());
 
         assertTrue(first.getInsertedAt().isBefore(second.getInsertedAt())); // oldest first
-    }
-
-    @Test
-    public void testSelectCardIdsForExercise() throws DaoException {
-        OwnerId ownerId = new OwnerId("user123", "user");
-        // test no cards
-        int[] idsFromVocab1 = cardDao.selectCardIdsForExercise(ownerId, 1, PREDEFINED_CARDS_CNT);
-        assertNotNull(idsFromVocab1);
-        assertEquals(1, idsFromVocab1.length);
-        assertEquals(1, idsFromVocab1[0]); // card id
-        // test 1 cards to learn
-        int[] idsFromVocab2 = cardDao.selectCardIdsForExercise(ownerId, 2, PREDEFINED_CARDS_CNT);
-        assertNotNull(idsFromVocab2);
-        assertEquals(1, idsFromVocab2.length);
-        assertEquals(2, idsFromVocab2[0]); // card id
     }
 
     @Test

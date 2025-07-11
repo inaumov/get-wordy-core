@@ -4,6 +4,7 @@ public enum CardStatus {
 
     TO_LEARN,
     DEFERRED,
-    LEARNT
+    LEARNT,
+    UNSEEN
 
 }

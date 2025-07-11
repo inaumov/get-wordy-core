@@ -21,10 +21,8 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class GetWordyService implements IUserCardsService, IVocabularyService {
 
@@ -36,7 +34,8 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
     private CardHeadlineDao cardHeadlineDao;
     private LocalTxManager connection;
     private final Map<OwnerId, List<Vocabulary>> userVocabsCache = new HashMap<>();
-    private final Map<Integer, Card> cardsCache = new HashMap<>();
+    private final Map<String, List<Card>> cardsCache = new HashMap<>();
+    private final Map<String, List<Exercise>> exerciseCache = new HashMap<>();
     private final Map<Integer, List<Word>> wordsInVocabularyCache = new HashMap<>();
 
     @SuppressWarnings("unused")
@@ -103,8 +102,10 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
 
     @Override
     public boolean hasVocabulary(OwnerId ownerId, int vocabId) throws VocabNotFoundException {
-        Vocabulary vocabulary = findVocab(ownerId, vocabId);
-        return vocabulary != null;
+        return userVocabsCache.getOrDefault(ownerId, Collections.emptyList())
+                .stream()
+                .anyMatch(vocabulary -> vocabulary.getVocabId() == vocabId)
+                || vocabularyDao.hasAccess(ownerId, vocabId);
     }
 
     @Override
@@ -127,7 +128,7 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
             putToCache(ownerId, () -> renamed);
         } catch (DuplicateVocabularyException e) {
             connection.rollback();
-            LOG.warn("Duplicate vocabulary name '{}' for {}", newName, ownerId);
+            LOG.warn("Vocabulary name '{}' has been already taken for {}", newName, ownerId);
             throw e;
         } catch (DaoException e) {
             LOG.error("Error while renaming vocabulary, id = {}", vocabId, e);
@@ -236,10 +237,17 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
 
     @Override
     public List<Card> getCards(OwnerId ownerId, int vocabId) {
+        String key = String.join(":", ownerId.ownerId(), String.valueOf(vocabId));
+
+        if (cardsCache.containsKey(key)) {
+            List<Card> cardListFull = cardsCache.get(key);
+            return List.copyOf(cardListFull);
+        }
+
         List<Card> cardListFull;
         try {
             connection.open();
-            cardListFull = cardHeadlineDao.getCards(findVocab(ownerId, vocabId).getVocabId());
+            cardListFull = cardHeadlineDao.getCards(ownerId.ownerId(), findVocab(ownerId, vocabId).getVocabId());
             connection.commit();
         } catch (DaoException e) {
             LOG.error("Error while loading all cards in vocabulary by id = {}", vocabId, e);
@@ -248,78 +256,43 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
             connection.close();
         }
 
-        Map<Integer, Card> cardsMap = cardListFull
-                .stream()
-                .collect(Collectors.toMap(Card::getId, Function.identity()));
-
-        cardsCache.clear();
-        cardsCache.putAll(cardsMap);
+        cardsCache.put(key, cardListFull);
 
         return List.copyOf(cardListFull);
     }
 
     @Override
     public List<Exercise> getCardsForExercise(OwnerId ownerId, int vocabId, int limit) {
-        List<Exercise> exercises = new ArrayList<>();
+
+        LOG.info("Getting cards for exercise from for user = {}, vocab id = {}", ownerId, vocabId);
+
+        // build cache key, for example user-temp:123
+        String key = String.join(":", ownerId.ownerId(), String.valueOf(vocabId));
+
+        // cache is cleared when any card reached 100 score / learned status
+        if (exerciseCache.containsKey(key)) {
+            List<Exercise> inCache = exerciseCache.get(key);
+            if (inCache.size() >= limit) {
+                return inCache.subList(0, limit);
+            }
+        }
+
         try {
             connection.open();
-            int[] cardIds = cardDao.selectCardIdsForExercise(ownerId, vocabId, limit);
-            LOG.info("Selected card ids for exercise from database = {}", cardIds);
-            if (cardIds == null || cardIds.length == 0) {
+            List<Exercise> cardsForExercise = cardHeadlineDao.getCardsForExercise(ownerId.ownerId(), vocabId, limit);
+            connection.commit();
+
+            exerciseCache.put(key, cardsForExercise);
+            if (CollectionUtils.isEmpty(cardsForExercise)) {
                 return Collections.emptyList();
             }
-
-            // check if cards are in the cache
-            int[] cardsInCache = IntStream.of(cardIds)
-                    .filter(cardsCache::containsKey)
-                    .toArray();
-            boolean allCached = cardsInCache.length == cardIds.length;
-
-            if (allCached) { // get only actual sentences from database for cached cards
-                LOG.debug("Get actual sentences from database for cached cards = {}", cardsInCache);
-                Map<Integer, List<Sentence>> missingSentences = cardHeadlineDao.getSentencesFor(cardIds);
-                connection.commit();
-                for (Integer id : cardIds) {
-                    Card card = cardsCache.get(id);
-                    Exercise exercise = new Exercise();
-                    exercise.setCardId(card.getId());
-                    exercise.setWordId(card.getWord().getId());
-                    exercise.setWord(card.getWord());
-                    Optional.ofNullable(missingSentences.get(id))
-                            .ifPresent(exercise::setSentences);
-                    exercises.add(exercise);
-                }
-            } else { // get all in case NOT fully present in cache
-                LOG.debug("Get cards for exercise from database for ids = {}", cardIds);
-                List<Exercise> cardsForExercise = cardHeadlineDao.getCardsForExercise(cardIds);
-                connection.commit();
-                exercises.addAll(cardsForExercise);
-            }
+            return cardsForExercise;
         } catch (DaoException e) {
             LOG.error("Error while loading cards for exercise by vocab id = {}", vocabId, e);
             return Collections.emptyList();
         } finally {
             connection.close();
         }
-        return exercises;
-    }
-
-    public boolean deleteCard(OwnerId ownerId, int cardId) {
-        Card card = findCardById(cardId);
-        try {
-            connection.open();
-            cardDao.delete(ownerId, card.getId());
-//            this.removeFromVocabulary(ownerId, card.getVocabId(), card.getWordId());
-            connection.commit();
-            cardsCache.remove(cardId);
-        } catch (DaoException e) {
-            LOG.error("Error while removing card by id = {}", cardId, e);
-            connection.rollback();
-            return false;
-        } finally {
-            connection.close();
-        }
-        return true;
     }
 
     @Override
@@ -344,8 +317,8 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
     }
 
     @Override
-    public boolean resetScore(OwnerId ownerId, int cardId) {
-        Card card = findCardById(cardId);
+    public boolean resetScore(OwnerId ownerId, int vocabId, int cardId) {
+        Card card = findCardById(ownerId, vocabId, cardId);
         LOG.info("Resetting score for a card id = {}", cardId);
         try {
             connection.open();
@@ -382,6 +355,8 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
                 if (score >= MAX_SCORE) {
                     score = MAX_SCORE;
                     card.setStatus(CardStatus.LEARNT);
+                    String key = String.join(":", ownerId.ownerId(), String.valueOf(vocabId));
+                    exerciseCache.remove(key);
                 }
                 card.setScore(score);
                 updatedCards.add(card);
@@ -406,26 +381,50 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
 
     @Override
     public Word addToVocabulary(OwnerId ownerId, int vocabId, int wordRef) {
+        try {
+            connection.open();
 
-        Word word = new Word();
-        word = word.withId(wordRef);
-        List<Word> wordsInVocab = wordsInVocabularyCache.get(vocabId);
-        wordsInVocab.add(word);
+            boolean vocabulary = vocabularyDao.hasAccess(ownerId, vocabId);
+            if (!vocabulary) {
+                throw new DictionaryServiceException("Cannot modify vocabulary because of no access");
+            }
 
-        vocabularyDao.addWordsToVocabulary(vocabId, Set.of(wordRef));
+            vocabularyDao.addWordsToVocabulary(vocabId, wordRef);
 
-        return word;
+            Word word = wordDao.selectById(wordRef);
+            if (wordsInVocabularyCache.containsKey(vocabId)) {
+                List<Word> wordsInVocab = wordsInVocabularyCache.get(vocabId);
+                wordsInVocab.add(word);
+            }
+            return word;
+        } catch (DaoException e) {
+            LOG.error("Error while adding a wordRef = {} to vocabulary = {}", wordRef, vocabId, e);
+            connection.rollback();
+        } finally {
+            connection.close();
+        }
+        return null;
     }
 
     @Override
-    public boolean removeFromVocabulary(OwnerId ownerId, int vocabId, int wordRef) {
+    public void removeFromVocabulary(OwnerId ownerId, int vocabId, int wordRef) {
+        try {
+            connection.open();
+            cardDao.delete(ownerId, vocabId, wordRef);
+            vocabularyDao.removeWordsFromVocabulary(vocabId, wordRef);
+            connection.commit();
+            List<Word> wordsInVocab = wordsInVocabularyCache.get(vocabId);
+            wordsInVocab.removeIf(w -> Objects.equals(w.getId(), wordRef));
 
-        List<Word> wordsInVocab = wordsInVocabularyCache.get(vocabId);
-        wordsInVocab.removeIf(wordEntity -> wordEntity.getId() == wordRef);
-
-        vocabularyDao.removeWordsFromVocabulary(vocabId, Set.of(wordRef));
-
-        return true;
+            String key = String.join(":", ownerId.ownerId(), String.valueOf(vocabId));
+            List<Card> cards = cardsCache.get(key);
+            cards.removeIf(c -> Objects.equals(c.getWordId(), wordRef));
+        } catch (DaoException e) {
+            LOG.error("Error while removing a wordRef = {} from vocabulary = {}", wordRef, vocabId, e);
+            connection.rollback();
+        } finally {
+            connection.close();
+        }
     }
 
     @Override
@@ -477,8 +476,13 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
         return word;
     }
 
-    private Card findCardById(int cardId) {
-        return Optional.ofNullable(cardsCache.get(cardId))
+    private Card findCardById(OwnerId ownerId, int vocabId, int cardId) {
+        String key = String.join(":", ownerId.ownerId(), String.valueOf(vocabId));
+
+        return Optional.ofNullable(cardsCache.get(key))
+                .flatMap(cards -> cards.stream()
+                        .filter(card -> card.getId() == cardId)
+                        .findFirst())
                 .orElseGet(() -> loadCardFromDb(cardId));
     }
 

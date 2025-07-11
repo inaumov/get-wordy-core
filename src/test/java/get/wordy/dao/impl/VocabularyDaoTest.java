@@ -154,6 +154,13 @@ public class VocabularyDaoTest {
     }
 
     @Test
+    void hasAccess() {
+        OwnerId user = new OwnerId("john-123", "user");
+        boolean hasAccess = vocabularyDao.hasAccess(user, 1);
+        assertTrue(hasAccess);
+    }
+
+    @Test
     public void testDeleteVocabularyById() {
         int deleted = vocabularyDao.deleteVocabularyById(101);
         assertEquals(1, deleted);
@@ -169,13 +176,13 @@ public class VocabularyDaoTest {
 
     @ParameterizedTest
     @MethodSource("provideIdsAdd")
-    public void testAddRefsToVocabulary(int vocabId, Set<Integer> toAdd, int expectedTotal) {
+    public void testAddRefsToVocabulary(int vocabId, Integer[] toAdd, int expectedTotal) {
         vocabularyDao.addWordsToVocabulary(vocabId, toAdd);
 
         Set<Integer> wordsRefs = vocabularyDao.getWordRefs(vocabId);
         assertEquals(expectedTotal, wordsRefs.size());
         // verify added references
-        assertTrue(wordsRefs.containsAll(toAdd));
+        assertTrue(wordsRefs.containsAll(Set.of(toAdd)));
         // verify updateTime
         Vocabulary result = vocabularyDao.selectById(vocabId)
                 .orElseThrow(() -> new AssertionError("Vocabulary not found"));
@@ -187,7 +194,7 @@ public class VocabularyDaoTest {
 
     @Test
     public void testRemoveRefsFromVocabulary() {
-        vocabularyDao.removeWordsFromVocabulary(101, Set.of(10, 13));
+        vocabularyDao.removeWordsFromVocabulary(101, 10, 13);
 
         Set<Integer> wordsRefs = vocabularyDao.getWordRefs(101);
         assertEquals(Set.of(11, 12), wordsRefs);
@@ -219,9 +226,9 @@ public class VocabularyDaoTest {
 
     private static Stream<Arguments> provideIdsAdd() {
         return Stream.of(
-                Arguments.of(101, Set.of(14, 15, 16, 17, 18, 19, 20), 11),
-                Arguments.of(102, Set.of(10, 11, 12, 13), 11),
-                Arguments.of(103, Set.of(10, 20), 2)
+                Arguments.of(101, new Integer[]{14, 15, 16, 17, 18, 19, 20}, 11),
+                Arguments.of(102, new Integer[]{10, 11, 12, 13}, 11),
+                Arguments.of(103, new Integer[]{10, 20}, 2)
         );
     }
 

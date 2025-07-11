@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public class Sentence {
 
-    private int wordId;
+    private Integer wordId;
     private String example;
     private String matchedWords;
 
@@ -12,16 +12,16 @@ public class Sentence {
         this.example = fullSentence;
     }
 
-    public Sentence(String example, int wordId) {
+    public Sentence(String example, Integer wordId) {
         this.wordId = wordId;
         this.example = example;
     }
 
-    public int getWordId() {
+    public Integer getWordId() {
         return wordId;
     }
 
-    public void setWordId(int wordId) {
+    public void setWordId(Integer wordId) {
         this.wordId = wordId;
     }
 
@@ -53,7 +53,7 @@ public class Sentence {
 
         Sentence sentence = (Sentence) o;
 
-        return wordId == sentence.wordId
+        return Objects.equals(wordId, sentence.wordId)
                 && Objects.equals(example, sentence.example)
                 && Objects.equals(matchedWords, sentence.matchedWords);
     }

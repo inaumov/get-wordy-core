@@ -12,7 +12,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,7 +35,7 @@ public class CardHeadlineDaoTest {
         int vocabId = 1;
 
         // Execute DAO method
-        List<Card> cards = cardHeadlineDao.getCards(vocabId);
+        List<Card> cards = cardHeadlineDao.getCards("john-123", vocabId);
 
         // Assert results
         assertEquals(1, cards.size());
@@ -118,11 +117,8 @@ public class CardHeadlineDaoTest {
 
     @Test
     void testGetCardsForExercise() {
-        // Define test data
-        int cardIds = 1; // Example card ID for testing
-
         // Execute DAO method
-        List<Exercise> cards = cardHeadlineDao.getCardsForExercise(cardIds);
+        List<Exercise> cards = cardHeadlineDao.getCardsForExercise("john-123", 1, 5);
 
         // Assert results
         assertEquals(1, cards.size());
@@ -150,31 +146,6 @@ public class CardHeadlineDaoTest {
                 () -> assertEquals("noun", word.getPartOfSpeech()),
                 () -> assertEquals("a word in vocab 1", word.getMeaning())
         );
-    }
-
-    @Test
-    void getSentencesFor() {
-        // Define test data
-        int cardIdExpected = 1;
-        int[] wordIds = {1, 3, 4};
-
-        // Execute DAO method
-        Map<Integer, List<Sentence>> result = cardHeadlineDao.getSentencesFor(wordIds);
-
-        assertEquals(1, result.size());
-        assertTrue(result.containsKey(cardIdExpected));
-        // Assert sentences
-        assertEquals(2, result.get(cardIdExpected).size());
-
-        Sentence first = result.get(cardIdExpected)
-                .getFirst();
-        assertEquals("Test sentence 1", first.getExample());
-        assertEquals("sentence 1", first.getMatchedWords());
-
-        Sentence last = result.get(cardIdExpected)
-                .getLast();
-        assertEquals("Test sentence 4", last.getExample());
-        assertEquals("sentence 4", last.getMatchedWords());
     }
 
 }

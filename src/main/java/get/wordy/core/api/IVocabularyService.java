@@ -27,7 +27,7 @@ public interface IVocabularyService {
 
     Word addToVocabulary(OwnerId ownerId, int vocabId, int wordRef);
 
-    boolean removeFromVocabulary(OwnerId ownerId, int vocabId, int wordRef);
+    void removeFromVocabulary(OwnerId ownerId, int vocabId, int wordRef);
 
     boolean hasVocabulary(OwnerId ownerId, int vocabId) throws VocabNotFoundException;
 

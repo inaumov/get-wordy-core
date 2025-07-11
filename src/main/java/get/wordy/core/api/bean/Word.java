@@ -6,7 +6,7 @@ import java.util.Objects;
 
 public class Word {
 
-    private int id;
+    private Integer id;
     private String value;
     private String partOfSpeech;
     private String transcription;
@@ -24,12 +24,12 @@ public class Word {
         this.meaning = meaning;
     }
 
-    public Word(int id, String value, String partOfSpeech, String transcription, String meaning) {
+    public Word(Integer id, String value, String partOfSpeech, String transcription, String meaning) {
         this(value, partOfSpeech, transcription, meaning);
         this.id = id;
     }
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
@@ -49,7 +49,7 @@ public class Word {
         return meaning;
     }
 
-    public Word withId(int id) {
+    public Word withId(Integer id) {
         this.id = id;
         return this;
     }
@@ -104,7 +104,7 @@ public class Word {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Word that = (Word) o;
-        return id == that.id
+        return Objects.equals(id, that.id)
                 && Objects.equals(value, that.value)
                 && Objects.equals(partOfSpeech, that.partOfSpeech)
                 && Objects.equals(transcription, that.transcription)

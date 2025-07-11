@@ -13,7 +13,7 @@ public class CardDao extends BaseDao<Card> {
     private static final String INSERT_CARD_QUERY = """
             INSERT INTO cards (vocab_id, word_id, status, user_id) VALUES (?,?,?,?)
             """;
-    private static final String DELETE_CARD_QUERY = "DELETE FROM cards WHERE id=? AND user_id=?";
+    private static final String DELETE_CARD_QUERY = "DELETE FROM cards WHERE vocab_id=? AND word_id=? AND user_id=?";
 
     private static final String SELECT_CARD_QUERY = """
             SELECT * FROM cards WHERE id=?
@@ -26,9 +26,6 @@ public class CardDao extends BaseDao<Card> {
             """;
     private static final String SCORE_SUMMARY_QUERY = """
             SELECT status, COUNT(status) FROM cards WHERE vocab_id=? AND user_id=? GROUP BY status
-            """;
-    private static final String SELECT_FOR_EXERCISE_QUERY = """
-            SELECT id FROM cards WHERE vocab_id=? AND user_id=? AND status=? ORDER BY create_time LIMIT ?
             """;
     private static final String CARDS_BY_WORD_REFS_QUERY = """
             SELECT * FROM cards WHERE vocab_id=? AND user_id=? AND word_id IN (%s)
@@ -74,10 +71,11 @@ public class CardDao extends BaseDao<Card> {
         }
     }
 
-    public void delete(OwnerId ownerId, int cardId) throws DaoException {
+    public void delete(OwnerId ownerId, int vocabId, int wordRef) throws DaoException {
         try (var statement = prepareStatement(DELETE_CARD_QUERY)) {
-            statement.setInt(1, cardId);
-            statement.setString(2, ownerId.ownerId());
+            statement.setInt(1, vocabId);
+            statement.setInt(2, wordRef);
+            statement.setString(3, ownerId.ownerId());
             statement.execute();
         } catch (SQLException ex) {
             throw new DaoException("Error while deleting a card record", ex);
@@ -139,34 +137,6 @@ public class CardDao extends BaseDao<Card> {
         }
         destination.setWordId(resultSet.getInt("word_id"));
         destination.setVocabId(resultSet.getInt("vocab_id"));
-    }
-
-    public int[] selectCardIdsForExercise(OwnerId ownerId, int vocabId, int limit) throws DaoException {
-
-        int[] buffer = new int[limit]; // initial array with the largest possible capacity;
-        int cnt = 0; // retrieved amount
-
-        try (var statement = prepareStatement(SELECT_FOR_EXERCISE_QUERY)) {
-            statement.setInt(1, vocabId);
-            statement.setString(2, ownerId.ownerId());
-            statement.setString(3, CardStatus.TO_LEARN.name());
-            statement.setInt(4, limit);
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                buffer[cnt] = id;
-                cnt++;
-            }
-        } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving card records for exercise", ex);
-        }
-        // downsize the array if retrieved amount is less than the limit
-        if (cnt < limit) {
-            int[] ids = new int[cnt];
-            System.arraycopy(buffer, 0, ids, 0, cnt);
-            return ids;
-        }
-        return buffer;
     }
 
     public Map<String, Integer> getScoreSummary(OwnerId ownerId, int vocabId) throws DaoException {
