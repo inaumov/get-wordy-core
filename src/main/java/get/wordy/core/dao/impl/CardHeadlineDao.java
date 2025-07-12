@@ -130,14 +130,12 @@ public class CardHeadlineDao {
 
         @Override
         public Card mapRow(ResultSet rs, int rowNum) throws SQLException {
-            Integer cardId = rs.getInt("card_id");
             Integer vocabId = rs.getInt("vocab_id");
             String status = rs.getString("status");
             int score = rs.getInt("score");
             Integer wordId = rs.getInt("word_id");
 
             Card cardData = new Card();
-            cardData.setId(cardId);
             cardData.setVocabId(vocabId);
             cardData.setStatus(StringUtils.hasText(status) ? CardStatus.valueOf(status) : CardStatus.UNSEEN);
             cardData.setScore(score);

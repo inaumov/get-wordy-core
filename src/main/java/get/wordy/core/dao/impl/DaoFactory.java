@@ -18,8 +18,8 @@ public class DaoFactory {
         return new WordDao(txManager);
     }
 
-    public CardDao getCardDao() {
-        return new CardDao(txManager);
+    public ProgressDao getCardDao() {
+        return new ProgressDao(txManager);
     }
 
 }

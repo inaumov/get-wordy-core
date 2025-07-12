@@ -46,7 +46,6 @@ public class CardHeadlineDaoTest {
         List<String> sentences = card.getWord().getStrSentences();
         assertAll(
                 "Grouped assertions of Card Headline",
-                () -> assertThat(card.getId()).isEqualTo(1),
                 () -> assertThat(card.getVocabId()).isEqualTo(1),
                 () -> assertThat(card.getWordId()).isEqualTo(1),
                 () -> assertThat(card.getScore()).isEqualTo(50),
@@ -88,7 +87,6 @@ public class CardHeadlineDaoTest {
         List<String> sentences = card.getWord().getStrSentences();
         assertAll(
                 "Grouped assertions of Card Headline",
-                () -> assertThat(card.getId()).isEqualTo(1),
                 () -> assertThat(card.getVocabId()).isEqualTo(1),
                 () -> assertThat(card.getWordId()).isEqualTo(1),
                 () -> assertThat(card.getScore()).isEqualTo(50),

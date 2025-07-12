@@ -15,8 +15,8 @@ INSERT INTO vocab_has_words (vocab_id, word_ref)
 VALUES (1, 1),
        (2, 2);
 
-insert into cards (id, score, create_time, last_update_time, vocab_id, word_id, status) values (1, 3, '2014-08-17 17:40:03', CURRENT_TIMESTAMP, 1, 1, 'TO_LEARN');
-insert into cards (id, score, create_time, last_update_time, vocab_id, word_id, status) values (2, 95, '2014-08-17 17:40:04', CURRENT_TIMESTAMP, 2, 2, 'TO_LEARN');
+insert into cards (vocab_id, word_id, status, score, create_time, last_update_time) values (1, 1, 'TO_LEARN', 3, '2014-08-17 17:40:03', CURRENT_TIMESTAMP);
+insert into cards (vocab_id, word_id, status, score, create_time, last_update_time) values (2, 2, 'TO_LEARN', 95, '2014-08-17 17:40:04', CURRENT_TIMESTAMP);
 
 insert into collocations (word_id, example) values (1, 'collocation1');
 insert into collocations (word_id, example) values (2, 'collocation2');

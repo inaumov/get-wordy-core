@@ -7,7 +7,6 @@ import java.util.Objects;
 
 public class Card {
 
-    private Integer id;
     private Integer vocabId;
     private Integer wordId;
     private CardStatus status;
@@ -15,14 +14,6 @@ public class Card {
     private Instant insertedAt;
     private Instant updatedAt;
     private Word word;
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer cardId) {
-        this.id = cardId;
-    }
 
     public Integer getVocabId() {
         return vocabId;
@@ -90,14 +81,13 @@ public class Card {
 
         Card that = (Card) o;
 
-        return Objects.equals(this.id, that.id)
-                && Objects.equals(this.vocabId, that.vocabId)
+        return Objects.equals(this.vocabId, that.vocabId)
                 && Objects.equals(this.wordId, that.wordId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, vocabId, wordId);
+        return Objects.hash(vocabId, wordId);
     }
 
 }

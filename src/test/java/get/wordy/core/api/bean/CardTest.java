@@ -10,14 +10,12 @@ public class CardTest {
     public void testEquals() {
         // Create two cards with identical properties
         Card card1 = new Card();
-        card1.setId(1);
         card1.setVocabId(100);
         card1.setWordId(200);
         card1.setStatus(CardStatus.TO_LEARN);
         card1.setScore(25);
 
         Card card2 = new Card();
-        card2.setId(1);
         card2.setVocabId(100);
         card2.setWordId(200);
         card2.setStatus(CardStatus.TO_LEARN);
@@ -31,14 +29,12 @@ public class CardTest {
     public void testNotEquals() {
         // Create two cards with different properties
         Card card1 = new Card();
-        card1.setId(1);
         card1.setVocabId(100);
         card1.setWordId(200);
         card1.setStatus(CardStatus.TO_LEARN);
         card1.setScore(25);
 
         Card card2 = new Card();
-        card2.setId(1);
         card2.setVocabId(100);
         card2.setWordId(200);
         card2.setStatus(CardStatus.TO_LEARN);
