@@ -48,7 +48,7 @@ public class CardHeadlineDaoTest {
                 "Grouped assertions of Card Headline",
                 () -> assertThat(card.getVocabId()).isEqualTo(1),
                 () -> assertThat(card.getWordId()).isEqualTo(1),
-                () -> assertThat(card.getScore()).isEqualTo(50),
+                () -> assertThat(card.getScore()).isEqualTo(3),
                 () -> assertThat(card.getStatus()).isEqualTo(CardStatus.TO_LEARN),
                 () -> assertThat(formattedInstant).isEqualTo("2014-08-17 17:40:03"),
                 () -> assertThat(card.getUpdatedAt()).isNotNull(),
@@ -124,7 +124,6 @@ public class CardHeadlineDaoTest {
 
         assertAll(
                 "Grouped assertions of Card Headline",
-                () -> assertThat(card.getCardId()).isEqualTo(1),
                 () -> assertThat(card.getWordId()).isEqualTo(1),
 
                 // select only those which has both example and matched words value. as most viable

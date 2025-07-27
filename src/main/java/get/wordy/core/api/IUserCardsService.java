@@ -15,7 +15,7 @@ public interface IUserCardsService {
 
     void saveProgress(OwnerId ownerId, int vocabId, int[] wordsRefs, int repetitions);
 
-    boolean resetProgress(OwnerId ownerId, int vocabId, int cardId);
+    boolean resetProgress(OwnerId ownerId, int vocabId, int wordId);
 
     Score getProgressSummary(OwnerId ownerId, int vocabId);
 

@@ -249,6 +249,11 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
             connection.open();
             cardListFull = cardHeadlineDao.getCards(ownerId.ownerId(), findVocab(ownerId, vocabId).getVocabId());
             connection.commit();
+            List<Word> list = cardListFull
+                    .stream()
+                    .map(Card::getWord)
+                    .toList();
+            wordsInVocabularyCache.put(vocabId, new ArrayList<>(list));
         } catch (DaoException e) {
             LOG.error("Error while loading all cards in vocabulary by id = {}", vocabId, e);
             return Collections.emptyList();
@@ -318,13 +323,13 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
 
     @Override
     public boolean resetProgress(OwnerId ownerId, int vocabId, int wordId) {
-        Card card = findCardById(ownerId, vocabId, wordId);
-        card.setScore(0);
-        card.setStatus(CardStatus.TO_LEARN);
+        Progress progress = findProgressById(ownerId, vocabId, wordId);
+        progress.setScore(0);
+        progress.setStatus(CardStatus.TO_LEARN);
         LOG.info("Resetting score for a card id = {}", wordId);
         try {
             connection.open();
-            progressDao.updateProgress(ownerId, card);
+            progressDao.updateProgress(ownerId, progress);
             connection.commit();
         } catch (DaoException e) {
             LOG.error("Error while resetting score for card, id = {}", wordId, e);
@@ -346,31 +351,31 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
                 .toArray();
 
         // Generate full list of cards (creates missing, loads existing)
-        List<Card> allCards = generateCards(ownerId, vocabId, uniqueWordRefs);
+        List<Progress> allRecords = generateProgressRecords(ownerId, vocabId, uniqueWordRefs);
 
-        List<Card> updatedCards = new ArrayList<>();
+        List<Progress> updatedProgresses = new ArrayList<>();
 
-        for (Card card : allCards) {
-            if (card.getStatus() != CardStatus.LEARNT) {
-                int score = card.getScore() + diff;
+        for (Progress progress : allRecords) {
+            if (progress.getStatus() != CardStatus.LEARNT) {
+                int score = progress.getScore() + diff;
                 if (score >= MAX_SCORE) {
                     score = MAX_SCORE;
-                    card.setStatus(CardStatus.LEARNT);
+                    progress.setStatus(CardStatus.LEARNT);
                     String key = String.join(":", ownerId.ownerId(), String.valueOf(vocabId));
                     exerciseCache.remove(key);
                 }
-                card.setScore(score);
-                updatedCards.add(card);
+                progress.setScore(score);
+                updatedProgresses.add(progress);
             }
         }
 
-        if (updatedCards.isEmpty()) {
+        if (updatedProgresses.isEmpty()) {
             return; // nothing to update
         }
 
         try {
             connection.open();
-            progressDao.batchUpsertProgress(ownerId, updatedCards); // single operation
+            progressDao.batchUpsertProgress(ownerId, updatedProgresses); // single operation
             connection.commit();
         } catch (DaoException e) {
             LOG.error("Failed to update progress for user={}, vocabId={}, words={}", ownerId, vocabId, Arrays.toString(wordRefs), e);
@@ -415,7 +420,9 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
             vocabularyDao.removeWordsFromVocabulary(vocabId, wordRef);
             connection.commit();
             List<Word> wordsInVocab = wordsInVocabularyCache.get(vocabId);
-            wordsInVocab.removeIf(w -> Objects.equals(w.getId(), wordRef));
+            if (wordsInVocab != null) {
+                wordsInVocab.removeIf(w -> Objects.equals(w.getId(), wordRef));
+            }
 
             String key = String.join(":", ownerId.ownerId(), String.valueOf(vocabId));
             List<Card> cards = cardsCache.get(key);
@@ -477,76 +484,74 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
         return word;
     }
 
-    private Card findCardById(OwnerId ownerId, int vocabId, int wordId) {
+    private Progress findProgressById(OwnerId ownerId, int vocabId, int wordId) {
         String key = String.join(":", ownerId.ownerId(), String.valueOf(vocabId));
 
         return Optional.ofNullable(cardsCache.get(key))
                 .flatMap(cards -> cards.stream()
                         .filter(card -> card.getWordId() == wordId)
-                        .findFirst())
+                        .findFirst()
+                        .map(card -> (Progress) card))
                 .orElseGet(() -> loadCardFromDb(ownerId, vocabId, wordId));
     }
 
-    private Card loadCardFromDb(OwnerId ownerId, int vocabId, int wordId) {
-        Card card;
+    private Progress loadCardFromDb(OwnerId ownerId, int vocabId, int wordId) {
+        Progress progress;
         try {
-            card = progressDao.selectById(ownerId, vocabId, wordId);
+            progress = progressDao.selectById(ownerId, vocabId, wordId);
         } catch (DaoException e) {
             LOG.error("Error while getting progress for a word id = {}", wordId, e);
             throw new DictionaryServiceException();
         }
-        if (card == null) {
-            throw new CardNotFoundException();
-        }
-        return card;
+        return progress;
     }
 
-    private List<Card> generateCards(OwnerId ownerId, int vocabId, int... wordRefs) {
+    private List<Progress> generateProgressRecords(OwnerId ownerId, int vocabId, int... wordRefs) {
         Set<Integer> wordRefSet = Arrays.stream(wordRefs).boxed().collect(Collectors.toSet());
 
         try {
             connection.open();
 
             // Step 1: Load existing cards
-            List<Card> existingCards = progressDao.selectCards(ownerId, vocabId, wordRefs);
-            Set<Integer> existingWordIds = existingCards.stream()
-                    .map(Card::getWordId)
+            List<Progress> existingProgresses = progressDao.selectCards(ownerId, vocabId, wordRefs);
+            Set<Integer> existingWordIds = existingProgresses.stream()
+                    .map(Progress::getWordId)
                     .collect(Collectors.toSet());
 
             // Step 2: Determine missing
             Set<Integer> missingWordIds = new TreeSet<>(wordRefSet);
             missingWordIds.removeAll(existingWordIds);
 
-            List<Card> allCards = new ArrayList<>(existingCards);
+            List<Progress> allProgresses = new ArrayList<>(existingProgresses);
 
             // Step 3: Prepare Card beans for missing and insert
             if (!missingWordIds.isEmpty()) {
-                List<Card> cardsToInsert = missingWordIds.stream()
+                List<Progress> cardsToInsert = missingWordIds.stream()
                         .map(wordId -> {
-                            Card card = new Card();
-                            card.setVocabId(vocabId);
-                            card.setWordId(wordId);
-                            card.setStatus(CardStatus.TO_LEARN);
-                            return card;
+                            Progress progress = new Progress();
+                            progress.setVocabId(vocabId);
+                            progress.setWordId(wordId);
+                            progress.setStatus(CardStatus.TO_LEARN);
+                            return progress;
                         })
                         .collect(Collectors.toList());
 
                 if (cardsToInsert.size() == 1) {
-                    Card inserted = progressDao.insert(ownerId, cardsToInsert.getFirst());
-                    allCards.add(inserted);
+                    Progress inserted = progressDao.insert(ownerId, cardsToInsert.getFirst());
+                    allProgresses.add(inserted);
                 } else {
                     progressDao.addCards(ownerId, cardsToInsert);
                     // Fetch newly inserted cards back
                     int[] insertedWordIds = cardsToInsert.stream()
-                            .mapToInt(Card::getWordId)
+                            .mapToInt(Progress::getWordId)
                             .toArray();
-                    List<Card> newCards = progressDao.selectCards(ownerId, vocabId, insertedWordIds);
-                    allCards.addAll(newCards);
+                    List<Progress> newProgresses = progressDao.selectCards(ownerId, vocabId, insertedWordIds);
+                    allProgresses.addAll(newProgresses);
                 }
             }
 
             connection.commit();
-            return allCards;
+            return allProgresses;
 
         } catch (DaoException e) {
             LOG.error("Error while generating cards by vocabId = {}", vocabId, e);

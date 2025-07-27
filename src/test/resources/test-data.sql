@@ -1,6 +1,6 @@
 truncate table in_context;
 truncate table collocations;
-truncate table cards cascade;
+truncate table progress cascade;
 truncate table words cascade;
 truncate table vocabularies cascade;
 
@@ -15,8 +15,8 @@ INSERT INTO vocab_has_words (vocab_id, word_ref)
 VALUES (1, 1),
        (2, 2);
 
-insert into cards (vocab_id, word_id, status, score, create_time, last_update_time) values (1, 1, 'TO_LEARN', 3, '2014-08-17 17:40:03', CURRENT_TIMESTAMP);
-insert into cards (vocab_id, word_id, status, score, create_time, last_update_time) values (2, 2, 'TO_LEARN', 95, '2014-08-17 17:40:04', CURRENT_TIMESTAMP);
+insert into progress (vocab_id, word_id, status, score, create_time, last_update_time) values (1, 1, 'TO_LEARN', 3, '2014-08-17 17:40:03', CURRENT_TIMESTAMP);
+insert into progress (vocab_id, word_id, status, score, create_time, last_update_time) values (2, 2, 'TO_LEARN', 95, '2014-08-17 17:40:04', CURRENT_TIMESTAMP);
 
 insert into collocations (word_id, example) values (1, 'collocation1');
 insert into collocations (word_id, example) values (2, 'collocation2');
@@ -30,9 +30,9 @@ update vocabularies set owner_id = 'john-123', owner_type = 'user' where vocab_i
 update vocabularies set owner_id = 'class-42', owner_type = 'class' where vocab_id = 2;
 
 -- own:
-update cards set user_id = 'john-123' where vocab_id = 1;
+update progress set user_id = 'john-123' where vocab_id = 1;
 -- shared:
-update cards set user_id = 'john-123' where vocab_id = 2;
+update progress set user_id = 'john-123' where vocab_id = 2;
 
 -- updates on vocab API
 INSERT INTO vocabularies (vocab_id, owner_id, owner_type, name, is_shared)

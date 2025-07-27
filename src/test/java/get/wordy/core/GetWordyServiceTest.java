@@ -275,8 +275,12 @@ public class GetWordyServiceTest {
         Vocabulary vocabularyMock = createVocabularyMock();
         replay(vocabularyMock);
         addVocabularyToCache(vocabularyMock);
+        Word wordMock = niceMock(Word.class);
+        expect(wordMock.getId()).andReturn(1).anyTimes();
+        replay(wordMock);
 
         Card cardMock = strictMock(Card.class);
+        expect(cardMock.getWord()).andReturn(wordMock);
         expect(cardMock.getVocabId()).andReturn(1);
         expect(cardMock.getWordId()).andReturn(1);
         replay(cardMock);
@@ -324,14 +328,12 @@ public class GetWordyServiceTest {
         int[] wordIds = {1, 2, 3, 5, 8, 13};
         List<Exercise> inCache = Arrays.stream(wordIds)
                 .mapToObj(wordId -> {
-                    int cardId = new Random().nextInt(101);
                     Word wordMock = niceMock(Word.class);
                     expect(wordMock.getId()).andReturn(wordId).anyTimes();
                     replay(wordMock);
 
                     Exercise exercise = niceMock(Exercise.class);
                     expect(exercise.getWordId()).andReturn(wordId).anyTimes();
-                    expect(exercise.getCardId()).andReturn(cardId).anyTimes();
                     expect(exercise.getWord()).andReturn(wordMock).anyTimes();
                     expect(exercise.getSentences()).andReturn(List.of()).anyTimes();
                     replay(exercise);
@@ -509,22 +511,22 @@ public class GetWordyServiceTest {
     public void testUpdateProgress_whenGenerateOneCard() throws Exception {
         replayTxCommited();
 
-        Card insertedCardMock = strictMock(Card.class);
-        expect(insertedCardMock.getWordId()).andReturn(5).anyTimes();
-        expect(insertedCardMock.getStatus()).andReturn(CardStatus.TO_LEARN);
-        expect(insertedCardMock.getScore()).andReturn(30);
-        insertedCardMock.setScore(40);
+        Progress insertedProgressMock = strictMock(Progress.class);
+        expect(insertedProgressMock.getWordId()).andReturn(5).anyTimes();
+        expect(insertedProgressMock.getStatus()).andReturn(CardStatus.TO_LEARN);
+        expect(insertedProgressMock.getScore()).andReturn(30);
+        insertedProgressMock.setScore(40);
         expectLastCall().once();
-        replay(insertedCardMock);
+        replay(insertedProgressMock);
 
         progressDaoMock.selectCards(JOHN_DOE, VOCAB_ID, 5);
         expectLastCall().andReturn(Collections.emptyList());
 
-        Capture<Card> cardCapture = Capture.newInstance();
+        Capture<Progress> cardCapture = Capture.newInstance();
         progressDaoMock.insert(eq(JOHN_DOE), capture(cardCapture));
-        expectLastCall().andAnswer(() -> insertedCardMock);
+        expectLastCall().andAnswer(() -> insertedProgressMock);
 
-        progressDaoMock.batchUpsertProgress(JOHN_DOE, List.of(insertedCardMock));
+        progressDaoMock.batchUpsertProgress(JOHN_DOE, List.of(insertedProgressMock));
         expectLastCall().once();
         replay(progressDaoMock);
 
@@ -542,26 +544,26 @@ public class GetWordyServiceTest {
     public void testUpdateProgress_whenGenerateSeveralCards() throws Exception {
         replayTxCommited();
 
-        Card card98 = new Card();
-        card98.setVocabId(VOCAB_ID);
-        card98.setWordId(42);
-        card98.setStatus(CardStatus.TO_LEARN);
+        Progress progress98 = new Progress();
+        progress98.setVocabId(VOCAB_ID);
+        progress98.setWordId(42);
+        progress98.setStatus(CardStatus.TO_LEARN);
         //
-        Card card99 = new Card();
-        card99.setVocabId(VOCAB_ID);
-        card99.setWordId(87);
-        card99.setStatus(CardStatus.TO_LEARN);
+        Progress progress99 = new Progress();
+        progress99.setVocabId(VOCAB_ID);
+        progress99.setWordId(87);
+        progress99.setStatus(CardStatus.TO_LEARN);
 
         progressDaoMock.selectCards(JOHN_DOE, VOCAB_ID, 42, 87);
         expectLastCall().andReturn(Collections.emptyList());
 
-        progressDaoMock.addCards(JOHN_DOE, List.of(card98, card99));
+        progressDaoMock.addCards(JOHN_DOE, List.of(progress98, progress99));
         expectLastCall().once();
 
         progressDaoMock.selectCards(JOHN_DOE, VOCAB_ID, 42, 87);
-        expectLastCall().andReturn(List.of(card98, card99)).anyTimes();
+        expectLastCall().andReturn(List.of(progress98, progress99)).anyTimes();
 
-        progressDaoMock.batchUpsertProgress(JOHN_DOE, List.of(card98, card99));
+        progressDaoMock.batchUpsertProgress(JOHN_DOE, List.of(progress98, progress99));
         expectLastCall().once();
         replay(progressDaoMock);
 
@@ -586,11 +588,11 @@ public class GetWordyServiceTest {
         Objects.requireNonNull(wordsCache).put(vocabId, list);
     }
 
-    private void addCardToCache(OwnerId ownerId, int vocabId, Card... cardMocks) {
+    private void addCardToCache(OwnerId ownerId, int vocabId, Progress... progressMocks) {
         @SuppressWarnings("unchecked")
-        var cardsCache = (Map<String, List<Card>>) ReflectionTestUtils.getField(sut, "cardsCache");
+        var cardsCache = (Map<String, List<Progress>>) ReflectionTestUtils.getField(sut, "cardsCache");
         String key = String.format("%s:%d", ownerId.ownerId(), vocabId);
-        List<Card> list = new ArrayList<>(Arrays.asList(cardMocks));
+        List<Progress> list = new ArrayList<>(Arrays.asList(progressMocks));
         Objects.requireNonNull(cardsCache).put(key, list);
     }
 

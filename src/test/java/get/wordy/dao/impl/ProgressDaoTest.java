@@ -1,6 +1,6 @@
 package get.wordy.dao.impl;
 
-import get.wordy.core.api.bean.Card;
+import get.wordy.core.api.bean.Progress;
 import get.wordy.core.api.bean.CardStatus;
 import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
@@ -27,7 +27,7 @@ public class ProgressDaoTest extends BaseDaoTest {
 
     @Test
     public void testInsert() throws DaoException {
-        Card newCard = new Card();
+        Progress newCard = new Progress();
         newCard.setWordId(3);
         newCard.setVocabId(2);
         newCard.setScore(0);
@@ -38,11 +38,11 @@ public class ProgressDaoTest extends BaseDaoTest {
         progressDao.insert(ownerId, newCard);
 
         // assert
-        List<Card> cards = progressDao.selectCards(ownerId, 2, 2, 3);
+        List<Progress> cards = progressDao.selectCards(ownerId, 2, 2, 3);
         assertNotNull(cards);
         assertEquals(2, cards.size());
         assertEquals(2, cards.getFirst().getWordId());
-        Card actual = cards.getLast();
+        Progress actual = cards.getLast();
         assertNotNull(actual);
         assertEquals(newCard.getWordId(), actual.getWordId());
         assertEquals(3, actual.getWordId());
@@ -54,20 +54,20 @@ public class ProgressDaoTest extends BaseDaoTest {
     public void testDelete() throws DaoException {
         progressDao.delete(ownerId, 2, 2);
         // update list
-        List<Card> cards = progressDao.selectCards(ownerId, 2, 2);
+        List<Progress> cards = progressDao.selectCards(ownerId, 2, 2);
         assertNotNull(cards);
         assertEquals(0, cards.size());
     }
 
     @Test
     public void testGetCard() throws DaoException {
-        Card first = progressDao.selectById(ownerId, 1, 1);
+        Progress first = progressDao.selectById(ownerId, 1, 1);
         assertNotNull(first);
         assertEquals(1, first.getWordId());
         assertEquals(1, first.getVocabId());
         assertEquals(CardStatus.TO_LEARN, first.getStatus());
 
-        Card second = progressDao.selectById(ownerId, 2, 2);
+        Progress second = progressDao.selectById(ownerId, 2, 2);
         assertNotNull(second);
         assertEquals(2, second.getWordId());
         assertEquals(2, second.getVocabId());
@@ -84,7 +84,7 @@ public class ProgressDaoTest extends BaseDaoTest {
 
     @Test
     public void testResetProgress() throws DaoException {
-        Card card = new Card();
+        Progress card = new Progress();
         card.setVocabId(1);
         card.setWordId(1);
         card.setStatus(CardStatus.TO_LEARN);
@@ -92,20 +92,20 @@ public class ProgressDaoTest extends BaseDaoTest {
         int rowsAffected = progressDao.updateProgress(ownerId, card);
         assertTrue(rowsAffected > 0);
 
-        List<Card> cards = progressDao.selectCards(ownerId, 1, 1);
-        Card first = cards.getFirst();
+        List<Progress> cards = progressDao.selectCards(ownerId, 1, 1);
+        Progress first = cards.getFirst();
         assertEquals(0, first.getScore());
         assertEquals(CardStatus.TO_LEARN, first.getStatus());
     }
 
     @Test
     public void testSelectAllByVocabId() throws DaoException {
-        Collection<Card> cards = progressDao.selectCards(ownerId, 1);
+        Collection<Progress> cards = progressDao.selectCards(ownerId, 1);
         assertNotNull(cards);
         assertEquals(1, cards.size());
 
-        Iterator<Card> it = cards.iterator();
-        Card card = it.next();
+        Iterator<Progress> it = cards.iterator();
+        Progress card = it.next();
         assertEquals(1, card.getWordId());
         assertEquals(1, card.getVocabId());
         assertEquals(CardStatus.TO_LEARN, card.getStatus());
@@ -116,7 +116,7 @@ public class ProgressDaoTest extends BaseDaoTest {
     public void testAddCards() throws DaoException {
         int vocabId = 2;
 
-        Card newCard = new Card();
+        Progress newCard = new Progress();
         newCard.setWordId(3);
         newCard.setVocabId(2);
         newCard.setScore(0);
@@ -126,15 +126,15 @@ public class ProgressDaoTest extends BaseDaoTest {
         progressDao.addCards(ownerId, List.of(newCard));
 
         // assert
-        List<Card> cards = progressDao.selectCards(ownerId, vocabId, 2, 3);
+        List<Progress> cards = progressDao.selectCards(ownerId, vocabId, 2, 3);
         assertNotNull(cards);
         assertEquals(2, cards.size());
 
-        Card first = cards.getFirst();
+        Progress first = cards.getFirst();
         assertEquals(vocabId, first.getVocabId());
         assertEquals(2, first.getWordId());
 
-        Card actual = cards.getLast();
+        Progress actual = cards.getLast();
         assertEquals(vocabId, actual.getVocabId());
         assertEquals(3, actual.getWordId());
         assertTrue(first.getInsertedAt().isBefore(actual.getInsertedAt())); // oldest first
@@ -142,7 +142,7 @@ public class ProgressDaoTest extends BaseDaoTest {
 
     @Test
     void testUpdateProgress() throws DaoException {
-        Card card = new Card();
+        Progress card = new Progress();
         card.setVocabId(2);
         card.setWordId(2);
         card.setScore(100);
@@ -151,10 +151,10 @@ public class ProgressDaoTest extends BaseDaoTest {
         assertEquals(1, updatedCnt);
 
         // verify
-        List<Card> cards = progressDao.selectCards(ownerId, 2, 2);
+        List<Progress> cards = progressDao.selectCards(ownerId, 2, 2);
         assertNotNull(cards);
         assertEquals(1, cards.size());
-        Card actual = cards.getFirst();
+        Progress actual = cards.getFirst();
         assertNotNull(actual);
         assertEquals(2, actual.getWordId());
         assertEquals(2, actual.getVocabId());
@@ -164,12 +164,12 @@ public class ProgressDaoTest extends BaseDaoTest {
 
     @Test
     void testBatchUpsertProgress() throws DaoException {
-        Card card1 = new Card();
+        Progress card1 = new Progress();
         card1.setVocabId(1);
         card1.setStatus(CardStatus.DEFERRED);
         card1.setScore(25);
         card1.setWordId(1);
-        Card card2 = new Card();
+        Progress card2 = new Progress();
         card2.setVocabId(2);
         card2.setStatus(CardStatus.DEFERRED);
         card2.setScore(80);
@@ -178,7 +178,7 @@ public class ProgressDaoTest extends BaseDaoTest {
         progressDao.batchUpsertProgress(ownerId, List.of(card1, card2));
 
         // assert
-        Card actual = progressDao.selectCards(ownerId, 1, new int[]{1, 2})
+        Progress actual = progressDao.selectCards(ownerId, 1, new int[]{1, 2})
                 .getFirst();
         assertEquals(1, actual.getWordId());
         assertEquals(CardStatus.DEFERRED, actual.getStatus());

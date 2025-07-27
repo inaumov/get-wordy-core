@@ -25,8 +25,7 @@ import java.util.stream.Collectors;
 public class CardHeadlineDao {
 
     private static final String ALL_JOINS_QUERY = """
-            SELECT c.id                                                         AS card_id,
-                   c.vocab_id,
+            SELECT c.vocab_id,
                    c.status,
                    c.score,
                    c.create_time,
@@ -42,9 +41,9 @@ public class CardHeadlineDao {
                 JOIN words w ON vhw.word_ref = w.id
                 LEFT JOIN in_context ON w.id = in_context.word_id
                 LEFT JOIN collocations ON w.id = collocations.word_id
-                LEFT JOIN cards c ON c.word_id = w.id AND c.vocab_id = vhw.vocab_id AND c.user_id = :userId
+                LEFT JOIN progress c ON c.word_id = w.id AND c.vocab_id = vhw.vocab_id AND c.user_id = :userId
             WHERE vhw.vocab_id = :vocabId
-            GROUP BY c.id, w.id;
+            GROUP BY c.vocab_id, w.id, c.score, c.status, c.create_time, c.last_update_time
             """;
 
     private static final String GET_CARD_HEADLINE = """
@@ -78,7 +77,6 @@ public class CardHeadlineDao {
 
     private static final String GET_CARDS_FOR_EXERCISE = """
             SELECT
-                c.id AS card_id,
                 vhw.vocab_id,
                 vhw.word_ref as word_id,
                 c.score,
@@ -94,9 +92,9 @@ public class CardHeadlineDao {
             FROM vocab_has_words vhw
                 JOIN words w ON vhw.word_ref = w.id
                 LEFT JOIN in_context ON vhw.word_ref = in_context.word_id
-                LEFT JOIN cards c ON vhw.word_ref = c.word_id AND vhw.vocab_id = c.vocab_id AND c.user_id = :userId
+                LEFT JOIN progress c ON vhw.word_ref = c.word_id AND vhw.vocab_id = c.vocab_id AND c.user_id = :userId
             WHERE vhw.vocab_id = :vocabId AND (c.status != 'LEARNED' OR c.status IS NULL)
-            GROUP BY vhw.vocab_id, vhw.word_ref, w.id, c.id, c.score
+            GROUP BY vhw.vocab_id, vhw.word_ref, w.id, c.score, c.last_update_time
             ORDER BY c.score
             LIMIT :limit;
     """;
@@ -172,11 +170,9 @@ public class CardHeadlineDao {
     private static class ExerciseRowMapper implements RowMapper<Exercise> {
         @Override
         public Exercise mapRow(ResultSet rs, int rowNum) throws SQLException {
-            Integer cardId = rs.getInt("card_id");
             Integer wordId = rs.getInt("word_id");
 
             Exercise exercise = new Exercise();
-            exercise.setCardId(cardId);
             exercise.setWordId(wordId);
 
             Word word = new Word(wordId,
