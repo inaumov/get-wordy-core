@@ -267,6 +267,24 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
     }
 
     @Override
+    public List<Progress> getProgress(OwnerId ownerId, int vocabId) {
+        List<Progress> cards;
+        try {
+            connection.open();
+            Set<Integer> wordRefs = vocabularyDao.getWordRefs(findVocab(ownerId, vocabId).getVocabId());
+            int[] array = wordRefs.stream().mapToInt(Number::intValue).toArray();
+            cards = progressDao.selectCards(ownerId, vocabId, array);
+            connection.commit();
+        } catch (DaoException e) {
+            LOG.error("Error while loading user cards progress in vocabulary by id = {}", vocabId, e);
+            return Collections.emptyList();
+        } finally {
+            connection.close();
+        }
+        return cards;
+    }
+
+    @Override
     public List<Exercise> getCardsForExercise(OwnerId ownerId, int vocabId, int limit) {
 
         LOG.info("Getting cards for exercise from for user = {}, vocab id = {}", ownerId, vocabId);
