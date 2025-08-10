@@ -3,76 +3,26 @@ package get.wordy.core.dao.impl;
 import get.wordy.core.api.bean.*;
 import get.wordy.core.dao.impl.helper.SentenceParser;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
-import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
-import org.springframework.util.StringUtils;
 
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Repository
 public class CardHeadlineDao {
 
-    private static final String ALL_JOINS_QUERY = """
-            SELECT c.vocab_id,
-                   c.status,
-                   c.score,
-                   c.create_time,
-                   c.last_update_time,
-                   w.id                                                         AS word_id,
-                   w.word,
-                   w.part_of_speech,
-                   w.transcription,
-                   w.meaning,
-                   array_remove(array_agg(DISTINCT in_context.example), NULL)   AS card_sentences,
-                   array_remove(array_agg(DISTINCT collocations.example), NULL) AS card_collocations
-            FROM vocab_has_words vhw
-                JOIN words w ON vhw.word_ref = w.id
-                LEFT JOIN in_context ON w.id = in_context.word_id
-                LEFT JOIN collocations ON w.id = collocations.word_id
-                LEFT JOIN progress c ON c.word_id = w.id AND c.vocab_id = vhw.vocab_id AND c.user_id = :userId
-            WHERE vhw.vocab_id = :vocabId
-            GROUP BY c.vocab_id, w.id, c.score, c.status, c.create_time, c.last_update_time
+    private static final String ALL_VOCAB_WORDS_QUERY = """
+            SELECT * from vocab_words_headlines WHERE vocab_id = :vocabId
             """;
 
-    private static final String GET_CARD_HEADLINE = """
-            SELECT
-                cards.id AS card_id,
-                cards.vocab_id,
-                cards.status,
-                cards.score,
-                cards.create_time,
-                cards.last_update_time,
-                words.id AS word_id,
-                words.word,
-                words.part_of_speech,
-                words.transcription,
-                words.meaning,
-                array_remove(array_agg(DISTINCT in_context.example), NULL) AS card_sentences,
-                array_remove(array_agg(DISTINCT collocations.example), NULL) AS card_collocations
-            FROM
-                cards
-            JOIN
-                words ON cards.word_id = words.id
-            LEFT JOIN
-                in_context ON cards.word_id = in_context.word_id
-            LEFT JOIN
-                collocations ON cards.word_id = collocations.word_id
-            WHERE
-                cards.id = :cardId -- Specify the card ID to retrieve
-            GROUP BY
-                cards.id, words.id
+    private static final String GET_WORD_HEADLINE = """
+            SELECT * FROM vocab_words_headlines WHERE vocab_id = :vocabId AND word_id = :wordId
             """;
 
     private static final String GET_CARDS_FOR_EXERCISE = """
@@ -106,15 +56,15 @@ public class CardHeadlineDao {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<Card> getCards(String userId, int vocabId) {
-        MapSqlParameterSource parameters = new MapSqlParameterSource("userId", userId);
-        parameters.addValue("vocabId", vocabId);
-        return jdbcTemplate.query(ALL_JOINS_QUERY, parameters, new FullCardRowMapper());
+    public List<Word> getWordsHeadlines(int vocabId) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource("vocabId", vocabId);
+        return jdbcTemplate.query(ALL_VOCAB_WORDS_QUERY, parameters, new WordHeadlineRowMapper());
     }
 
-    public Card getCardById(int cardId) {
-        MapSqlParameterSource parameters = new MapSqlParameterSource("cardId", cardId);
-        return jdbcTemplate.queryForObject(GET_CARD_HEADLINE, parameters, new FullCardRowMapper());
+    public Word getWordHeadlineById(int vocabId, int wordId) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource("vocabId", vocabId);
+        parameters.addValue("wordId", wordId);
+        return jdbcTemplate.queryForObject(GET_WORD_HEADLINE, parameters, new WordHeadlineRowMapper());
     }
 
     public List<Exercise> getCardsForExercise(String userId, int vocabId, int limit) {
@@ -124,35 +74,18 @@ public class CardHeadlineDao {
         return jdbcTemplate.query(GET_CARDS_FOR_EXERCISE, parameters, new ExerciseRowMapper());
     }
 
-    private static class FullCardRowMapper implements RowMapper<Card> {
+    private static class WordHeadlineRowMapper implements RowMapper<Word> {
 
         @Override
-        public Card mapRow(ResultSet rs, int rowNum) throws SQLException {
-            Integer vocabId = rs.getInt("vocab_id");
-            String status = rs.getString("status");
-            int score = rs.getInt("score");
+        public Word mapRow(ResultSet rs, int rowNum) throws SQLException {
             Integer wordId = rs.getInt("word_id");
 
-            Card cardData = new Card();
-            cardData.setVocabId(vocabId);
-            cardData.setStatus(StringUtils.hasText(status) ? CardStatus.valueOf(status) : CardStatus.UNSEEN);
-            cardData.setScore(score);
-            cardData.setWordId(wordId);
-            Timestamp createTime = rs.getTimestamp("create_time");
-            if (createTime != null) {
-                cardData.setInsertedAt(createTime.toInstant());
-            }
-            Timestamp updateTime = rs.getTimestamp("last_update_time");
-            if (updateTime != null) {
-                cardData.setUpdatedAt(updateTime.toInstant());
-            }
-
-            Word word = new Word(wordId,
+            Word word = new Word(
+                    wordId,
                     rs.getString("word"),
                     rs.getString("part_of_speech"),
                     rs.getString("transcription"),
                     rs.getString("meaning"));
-            cardData.setWord(word);
 
             String[] cardSentences = (String[]) rs.getArray("card_sentences").getArray();
             String[] cardCollocations = (String[]) rs.getArray("card_collocations").getArray();
@@ -163,7 +96,7 @@ public class CardHeadlineDao {
             word.setStrSentences(sentences);
             word.setCollocations(collocations);
 
-            return cardData;
+            return word;
         }
     }
 
@@ -193,25 +126,6 @@ public class CardHeadlineDao {
             return Arrays.stream(exerciseSentences)
                     .map(parser::parseSentence)
                     .toList();
-        }
-    }
-
-    private static class SentencesMapper implements ResultSetExtractor<Map<Integer, List<Sentence>>> {
-
-        @Override
-        public Map<Integer, List<Sentence>> extractData(ResultSet rs) throws SQLException, DataAccessException {
-            List<Sentence> result = new ArrayList<>();
-            while (rs.next()) {
-                int wordId = rs.getInt("word_id");
-                String example = rs.getString("example");
-                String matchedWords = rs.getString("matched_words");
-                Sentence sentence = new Sentence(example, wordId)
-                        .withMatchedWords(matchedWords);
-                result.add(sentence);
-            }
-            return result
-                    .stream()
-                    .collect(Collectors.groupingBy(Sentence::getWordId));
         }
     }
 

@@ -10,7 +10,6 @@ import java.util.List;
 
 public interface IUserCardsService {
 
-    @Deprecated
     List<Card> getCards(OwnerId ownerId, int vocabId);
 
     List<Progress> getProgress(OwnerId ownerId, int vocabId);

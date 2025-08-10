@@ -21,6 +21,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -237,33 +238,50 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
 
     @Override
     public List<Card> getCards(OwnerId ownerId, int vocabId) {
+        Vocabulary vocabulary = findVocab(ownerId, vocabId);
+
         String key = String.join(":", ownerId.ownerId(), String.valueOf(vocabId));
 
         if (cardsCache.containsKey(key)) {
-            List<Card> cardListFull = cardsCache.get(key);
-            return List.copyOf(cardListFull);
+            List<Card> cards = cardsCache.get(key);
+            return List.copyOf(cards);
         }
 
-        List<Card> cardListFull;
+        List<Card> cards;
         try {
             connection.open();
-            cardListFull = cardHeadlineDao.getCards(ownerId.ownerId(), findVocab(ownerId, vocabId).getVocabId());
-            connection.commit();
-            List<Word> list = cardListFull
+            // vocab words
+            List<Word> wordsHeadlines = cardHeadlineDao.getWordsHeadlines(vocabulary.getVocabId());
+            int[] wordRefs = wordsHeadlines.stream().mapToInt(Word::getId).toArray();
+            // user progress
+            Map<Integer, Progress> progress = progressDao.selectCards(ownerId, vocabId, wordRefs)
                     .stream()
-                    .map(Card::getWord)
+                    .collect(Collectors.toMap(Progress::getWordId, Function.identity()));
+            connection.commit();
+
+            // to cards with progress
+            cards = wordsHeadlines
+                    .stream()
+                    .map(word -> {
+                        Card card = new Card();
+                        card.setVocabId(vocabId);
+                        card.setWord(word);
+                        card.setProgress(progress.getOrDefault(word.getId(), Progress.ofNullProgress(vocabId, word.getId())));
+                        return card;
+                    })
                     .toList();
-            wordsInVocabularyCache.put(vocabId, new ArrayList<>(list));
+
+            wordsInVocabularyCache.put(vocabId, wordsHeadlines);
+
         } catch (DaoException e) {
             LOG.error("Error while loading all cards in vocabulary by id = {}", vocabId, e);
             return Collections.emptyList();
         } finally {
             connection.close();
         }
+        cardsCache.put(key, cards);
 
-        cardsCache.put(key, cardListFull);
-
-        return List.copyOf(cardListFull);
+        return List.copyOf(cards);
     }
 
     @Override
@@ -509,7 +527,7 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
                 .flatMap(cards -> cards.stream()
                         .filter(card -> card.getWordId() == wordId)
                         .findFirst()
-                        .map(card -> (Progress) card))
+                        .map(card -> (Progress) card.getProgress()))
                 .orElseGet(() -> loadCardFromDb(ownerId, vocabId, wordId));
     }
 

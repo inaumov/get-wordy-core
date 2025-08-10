@@ -76,4 +76,13 @@ public class Progress {
         return Objects.hash(vocabId, wordId);
     }
 
+    public static Progress ofNullProgress(int vocabId, Integer wordId) {
+        Progress progress = new Progress();
+        progress.setVocabId(vocabId);
+        progress.setWordId(wordId);
+        progress.setStatus(CardStatus.UNSEEN);
+        progress.setScore(0);
+        return progress;
+    }
+
 }

@@ -279,22 +279,31 @@ public class GetWordyServiceTest {
         expect(wordMock.getId()).andReturn(1).anyTimes();
         replay(wordMock);
 
-        Card cardMock = strictMock(Card.class);
-        expect(cardMock.getWord()).andReturn(wordMock);
-        expect(cardMock.getVocabId()).andReturn(1);
-        expect(cardMock.getWordId()).andReturn(1);
-        replay(cardMock);
-
-        expect(headlineDaoMock.getCards(JOHN_DOE.ownerId(), VOCAB_ID))
-                .andReturn(Collections.singletonList(cardMock));
+        expect(headlineDaoMock.getWordsHeadlines(VOCAB_ID))
+                .andReturn(Collections.singletonList(wordMock));
         expectLastCall().once();
         replay(headlineDaoMock);
+
+        // card 1
+        Card cardMock = mock(Card.class);
+        expect(cardMock.getWordId()).andReturn(1).anyTimes();
+
+        Progress progressMock = mock(Progress.class);
+        expect(progressMock.getWordId()).andReturn(1).anyTimes();
+        cardMock.setProgress(progressMock);
+        expectLastCall().once();
+        expect(cardMock.getWord()).andReturn(wordMock);
+        replay(cardMock, progressMock);
+
+        progressDaoMock.selectCards(JOHN_DOE, VOCAB_ID, 1);
+        expectLastCall().andReturn(List.of(progressMock)).once();
+        replay(progressDaoMock);
 
         List<Card> cards = sut.getCards(JOHN_DOE, VOCAB_ID);
         assertNotNull(cards);
         assertEquals(1, cards.size());
 
-        verify(headlineDaoMock);
+        verify(headlineDaoMock, progressDaoMock);
     }
 
     @Test
@@ -433,12 +442,14 @@ public class GetWordyServiceTest {
 
         Card cardMock = strictMock(Card.class);
         expect(cardMock.getWordId()).andStubReturn(1);
-        cardMock.setScore(0);
-        cardMock.setStatus(CardStatus.TO_LEARN);
+        Progress progressMock = mock(Progress.class);
+        progressMock.setScore(0);
+        progressMock.setStatus(CardStatus.TO_LEARN);
+        expect(cardMock.getProgress()).andReturn(progressMock);
         replay(cardMock);
         addCardToCache(JOHN_DOE, VOCAB_ID, cardMock);
 
-        progressDaoMock.updateProgress(JOHN_DOE, cardMock);
+        progressDaoMock.updateProgress(JOHN_DOE, progressMock);
         expectLastCall().andReturn(1).once();
 
         replay(progressDaoMock);
@@ -455,13 +466,15 @@ public class GetWordyServiceTest {
 
         Card cardMock = strictMock(Card.class);
         expect(cardMock.getWordId()).andReturn(1).anyTimes();
-        cardMock.setScore(0);
-        cardMock.setStatus(CardStatus.TO_LEARN);
+        Progress progressMock = mock(Progress.class);
+        progressMock.setScore(0);
+        progressMock.setStatus(CardStatus.TO_LEARN);
+        expect(cardMock.getProgress()).andReturn(progressMock);
         replay(cardMock);
 
         addCardToCache(JOHN_DOE, VOCAB_ID, cardMock);
 
-        progressDaoMock.updateProgress(JOHN_DOE, cardMock);
+        progressDaoMock.updateProgress(JOHN_DOE, progressMock);
         expectLastCall().andStubThrow(new DaoException("resetScore", null));
         replay(progressDaoMock);
 
@@ -475,36 +488,36 @@ public class GetWordyServiceTest {
     public void testUpdateProgress_whenCardsExisting() throws Exception {
         replayTxCommited();
 
-        Card cardMock1 = strictMock(Card.class);
-        expect(cardMock1.getWordId()).andReturn(1);
-        expect(cardMock1.getStatus()).andReturn(CardStatus.TO_LEARN);
-        expect(cardMock1.getScore()).andReturn(10).once();
-        cardMock1.setScore(20);
+        // card 1
+        Progress progressMock1 = mock(Progress.class);
+        expect(progressMock1.getWordId()).andReturn(1);
+        expect(progressMock1.getStatus()).andReturn(CardStatus.TO_LEARN);
+        expect(progressMock1.getScore()).andReturn(10).once();
+        progressMock1.setScore(20);
         expectLastCall().once();
-        //
-        Card cardMock2 = strictMock(Card.class);
-        expect(cardMock2.getWordId()).andReturn(2);
-        expect(cardMock2.getStatus()).andReturn(CardStatus.TO_LEARN);
-        expect(cardMock2.getScore()).andReturn(95).once();
-        cardMock2.setStatus(CardStatus.LEARNT);
+        // card 2
+        Progress progressMock2 = mock(Progress.class);
+        expect(progressMock2.getWordId()).andReturn(2);
+        expect(progressMock2.getStatus()).andReturn(CardStatus.TO_LEARN);
+        expect(progressMock2.getScore()).andReturn(95).once();
+        progressMock2.setStatus(CardStatus.LEARNT);
         expectLastCall().once();
-        cardMock2.setScore(100);
+        progressMock2.setScore(100);
         expectLastCall().once();
 
-        replay(cardMock1, cardMock2);
-        addCardToCache(JOHN_DOE, VOCAB_ID, cardMock1, cardMock2);
+        replay(progressMock1, progressMock2);
 
         progressDaoMock.selectCards(JOHN_DOE, VOCAB_ID, 1, 2);
-        expectLastCall().andReturn(List.of(cardMock1, cardMock2)).once();
+        expectLastCall().andReturn(List.of(progressMock1, progressMock2)).once();
 
-        progressDaoMock.batchUpsertProgress(JOHN_DOE, List.of(cardMock1, cardMock2));
+        progressDaoMock.batchUpsertProgress(JOHN_DOE, List.of(progressMock1, progressMock2));
         expectLastCall().once();
         replay(progressDaoMock);
 
         int[] idsSubmit = {1, 2, 2, 2, 1};
         sut.saveProgress(JOHN_DOE, VOCAB_ID, idsSubmit, 10);
 
-        verify(cardMock1, cardMock2, progressDaoMock);
+        verify(progressMock1, progressMock2, progressDaoMock);
     }
 
     @Test
@@ -588,11 +601,11 @@ public class GetWordyServiceTest {
         Objects.requireNonNull(wordsCache).put(vocabId, list);
     }
 
-    private void addCardToCache(OwnerId ownerId, int vocabId, Progress... progressMocks) {
+    private void addCardToCache(OwnerId ownerId, int vocabId, Card... cardsMocks) {
         @SuppressWarnings("unchecked")
-        var cardsCache = (Map<String, List<Progress>>) ReflectionTestUtils.getField(sut, "cardsCache");
+        var cardsCache = (Map<String, List<Card>>) ReflectionTestUtils.getField(sut, "cardsCache");
         String key = String.format("%s:%d", ownerId.ownerId(), vocabId);
-        List<Progress> list = new ArrayList<>(Arrays.asList(progressMocks));
+        List<Card> list = new ArrayList<>(Arrays.asList(cardsMocks));
         Objects.requireNonNull(cardsCache).put(key, list);
     }
 

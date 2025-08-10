@@ -4,19 +4,41 @@ import get.wordy.core.dao.exception.InconsistentDataException;
 
 import java.util.Objects;
 
-public class Card extends Progress {
+public class Card {
 
+    private Integer vocabId;
     private Word word;
+    private Progress progress;
 
-    public Word getWord() {
-        return word;
+    public int getVocabId() {
+        return vocabId;
+    }
+
+    public void setVocabId(Integer vocabId) {
+        this.vocabId = vocabId;
     }
 
     public void setWord(Word word) {
-        if (!Objects.equals(super.getWordId(), word.getId())) {
+        this.word = word;
+    }
+
+    public Word getWord() {
+        return this.word;
+    }
+
+    public void setProgress(Progress progress) {
+        if (!Objects.equals(this.word.getId(), progress.getWordId())) {
             throw new InconsistentDataException("Progress.wordId and Word.id are not consistent");
         }
-        this.word = word;
+        this.progress = progress;
+    }
+
+    public Progress getProgress() {
+        return progress;
+    }
+
+    public Integer getWordId() {
+        return this.word.getId();
     }
 
     @Override
