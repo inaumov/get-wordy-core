@@ -280,4 +280,26 @@ public class WordDao extends BaseDao<Word> {
         }
     }
 
+    public List<Word> selectByValue(String value) throws DaoException {
+        List<Word> words = new ArrayList<>();
+        String query = "SELECT * FROM words WHERE word LIKE ?";
+
+        try (var statement = prepareStatement(query)) {
+            statement.setString(1, "%" + value + "%");
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                Word word = mapResultSetToWordEntity(resultSet);
+                int wordId = word.getId();
+                word.setSentences(getSentencesFor(wordId));
+                word.setCollocations(getCollocationsFor(wordId));
+                words.add(word);
+            }
+        } catch (SQLException ex) {
+            throw new DaoException("Error while retrieving word records by value", ex);
+        }
+
+        return words;
+    }
+
 }

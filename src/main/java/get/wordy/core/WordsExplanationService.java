@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -33,6 +34,11 @@ public class WordsExplanationService implements IWordExplanationService {
     ) {
         this.wordDao = wordDao;
         this.connection = connection;
+    }
+
+    @Override
+    public List<Word> findExplanations(String value) {
+        return loadFullWordHeadlinesFromDb(value);
     }
 
     @Override
@@ -97,6 +103,22 @@ public class WordsExplanationService implements IWordExplanationService {
         }
         wordsCache.put(wordId, word);
         return word;
+    }
+
+    private List<Word> loadFullWordHeadlinesFromDb(String value) {
+        List<Word> words;
+        try {
+            connection.open();
+            words = wordDao.selectByValue(value);
+            connection.commit();
+        } catch (DaoException e) {
+            LOG.error("Error while loading a word by value = {}", value, e);
+            throw new DictionaryServiceException();
+        }
+        for (Word word : words) {
+            wordsCache.put(word.getId(), word);
+        }
+        return words;
     }
 
 }

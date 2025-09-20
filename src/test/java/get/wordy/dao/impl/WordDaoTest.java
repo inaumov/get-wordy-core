@@ -183,6 +183,18 @@ public class WordDaoTest extends BaseDaoTest {
         assertNull(word);
     }
 
+    @Test
+    void testSearch() throws DaoException {
+        // verify search
+        var word = wordDao.selectByValue("example1").getFirst();
+        assertNotNull(word);
+        assertEquals(1, word.getId());
+        assertEquals("example1", word.getValue());
+        assertTrue(word.getMeaning().contains("a word"));
+        assertEquals("noun", word.getPartOfSpeech());
+        assertNotNull(word.getTranscription());
+    }
+
     private static void assertSentences(List<InContext> expectedSentences, List<InContext> actualSentences) {
         assertNotNull(actualSentences);
 

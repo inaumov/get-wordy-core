@@ -2,7 +2,11 @@ package get.wordy.core.api;
 
 import get.wordy.core.api.bean.Word;
 
+import java.util.List;
+
 public interface IWordExplanationService {
+
+    List<Word> findExplanations(String value);
 
     Word getWordExplanation(int wordId);
 
