@@ -436,7 +436,14 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
             Word word = wordDao.selectById(wordRef);
             if (wordsInVocabularyCache.containsKey(vocabId)) {
                 List<Word> wordsInVocab = wordsInVocabularyCache.get(vocabId);
-                wordsInVocab.add(word);
+                boolean exists = wordsInVocab.stream()
+                        .anyMatch(w -> Objects.equals(w.getId(), wordRef));
+                if (!exists) {
+                    wordsInVocab.add(word);
+                    String key = String.join(":", ownerId.ownerId(), String.valueOf(vocabId));
+                    List<Card> cards = cardsCache.get(key);
+                    cards.clear();
+                }
             }
             return word;
         } catch (DaoException e) {

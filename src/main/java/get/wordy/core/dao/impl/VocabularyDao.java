@@ -235,6 +235,7 @@ public class VocabularyDao {
         String query = """
                 INSERT INTO vocab_has_words (vocab_id, word_ref)
                 VALUES (:vocabId, :wordRef)
+                ON CONFLICT (vocab_id, word_ref) DO NOTHING
                 """;
         bulkWordsUpdate(query, vocabId, wordRefs);
     }
