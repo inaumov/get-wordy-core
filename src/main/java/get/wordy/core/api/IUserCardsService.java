@@ -2,30 +2,24 @@ package get.wordy.core.api;
 
 import get.wordy.core.api.bean.Card;
 import get.wordy.core.api.bean.Exercise;
+import get.wordy.core.api.bean.Progress;
 import get.wordy.core.api.bean.wrapper.Score;
 import get.wordy.core.api.id.OwnerId;
 
 import java.util.List;
-import java.util.Set;
 
 public interface IUserCardsService {
 
     List<Card> getCards(OwnerId ownerId, int vocabId);
 
+    List<Progress> getProgress(OwnerId ownerId, int vocabId);
+
     List<Exercise> getCardsForExercise(OwnerId ownerId, int vocabId, int limit);
 
-    Card addCard(OwnerId ownerId, int vocabId, int wordId);
+    void saveProgress(OwnerId ownerId, int vocabId, int[] wordsRefs, int repetitions);
 
-    Card loadCard(int cardId);
+    boolean resetProgress(OwnerId ownerId, int vocabId, int wordId);
 
-    boolean deleteCard(OwnerId ownerId, int cardId);
-
-    boolean resetScore(OwnerId ownerId, int cardId);
-
-    boolean increaseScoreUp(OwnerId ownerId, int vocabId, int[] cardIds, int repetitions);
-
-    List<Card> generateCards(OwnerId ownerId, int vocabId, Set<Integer> wordRefs);
-
-    Score getScoreSummary(OwnerId ownerId, int vocabId);
+    Score getProgressSummary(OwnerId ownerId, int vocabId);
 
 }

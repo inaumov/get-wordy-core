@@ -6,7 +6,7 @@ import get.wordy.core.api.exception.VocabNotFoundException;
 import get.wordy.core.api.exception.DictionaryServiceException;
 import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
-import get.wordy.core.dao.impl.CardDao;
+import get.wordy.core.dao.impl.ProgressDao;
 import get.wordy.core.dao.impl.CardHeadlineDao;
 import get.wordy.core.dao.impl.VocabularyDao;
 import get.wordy.core.dao.impl.WordDao;
@@ -37,7 +37,7 @@ public class GetWordyServiceTest {
     @Mock(name = "vocabularyDao")
     private VocabularyDao vocabularyDaoMock;
     @Mock(name = "cardDao")
-    private CardDao cardDaoMock;
+    private ProgressDao progressDaoMock;
     @Mock(name = "wordDao")
     private WordDao wordDaoMock;
     @Mock
@@ -275,192 +275,165 @@ public class GetWordyServiceTest {
         Vocabulary vocabularyMock = createVocabularyMock();
         replay(vocabularyMock);
         addVocabularyToCache(vocabularyMock);
+        Word wordMock = niceMock(Word.class);
+        expect(wordMock.getId()).andReturn(1).anyTimes();
+        replay(wordMock);
 
-        Card cardMock = strictMock(Card.class);
-        expect(cardMock.getId()).andReturn(1);
-        expect(cardMock.getVocabId()).andReturn(1);
-        expect(cardMock.getWordId()).andReturn(1);
-        replay(cardMock);
-
-        expect(headlineDaoMock.getCards(VOCAB_ID))
-                .andReturn(Collections.singletonList(cardMock));
+        expect(headlineDaoMock.getWordsHeadlines(VOCAB_ID))
+                .andReturn(Collections.singletonList(wordMock));
         expectLastCall().once();
         replay(headlineDaoMock);
+
+        // card 1
+        Card cardMock = mock(Card.class);
+        expect(cardMock.getWordId()).andReturn(1).anyTimes();
+
+        Progress progressMock = mock(Progress.class);
+        expect(progressMock.getWordId()).andReturn(1).anyTimes();
+        cardMock.setProgress(progressMock);
+        expectLastCall().once();
+        expect(cardMock.getWord()).andReturn(wordMock);
+        replay(cardMock, progressMock);
+
+        progressDaoMock.selectCards(JOHN_DOE, VOCAB_ID, 1);
+        expectLastCall().andReturn(List.of(progressMock)).once();
+        replay(progressDaoMock);
 
         List<Card> cards = sut.getCards(JOHN_DOE, VOCAB_ID);
         assertNotNull(cards);
         assertEquals(1, cards.size());
 
-        verify(headlineDaoMock);
+        verify(headlineDaoMock, progressDaoMock);
     }
 
     @Test
-    public void testGetCardsForExercise_Full() throws Exception {
+    public void testGetCardsForExercise_FromDb() throws Exception {
         replayTxCommited();
 
-        Vocabulary vocabularyMock = createVocabularyMock();
-        replay(vocabularyMock);
-        addVocabularyToCache(vocabularyMock);
+        int[] wordIds = {2, 5};
+        List<Exercise> fromDb = Arrays.stream(wordIds)
+                .mapToObj(wordId -> {
+                    Exercise exercise = strictMock(Exercise.class);
+                    expect(exercise.getWordId()).andReturn(wordId);
+                    return exercise;
+                }).toList();
+        addExerciseToCache(VOCAB_ID + ":" + JOHN_DOE.ownerId(), List.of(fromDb.getFirst()));
 
-        int[] selectedIds = {8, 1, 3};
-        expect(cardDaoMock.selectCardIdsForExercise(eq(JOHN_DOE), anyInt(), anyInt()))
-                .andReturn(selectedIds)
-                .once();
+        expect(headlineDaoMock.getCardsForExercise(JOHN_DOE.ownerId(), VOCAB_ID, 5))
+                .andReturn(fromDb);
+        expectLastCall().once();
+        replay(headlineDaoMock);
 
-        int[] inCache = {2, 5, 13};
-        for (int cardId : inCache) {
-            Card cardMock = strictMock(Card.class);
-            addCardToCache(cardId, cardMock);
-        }
-        expect(headlineDaoMock.getCardsForExercise(selectedIds))
-                .andReturn(Collections.nCopies(3, niceMock(Exercise.class)));
+        List<Exercise> result = sut.getCardsForExercise(JOHN_DOE, VOCAB_ID, 5);
+        assertEquals(2, result.size());
 
-        replay(cardDaoMock, headlineDaoMock);
-
-        List<Exercise> cards = sut.getCardsForExercise(JOHN_DOE, 1, 10);
-        assertEquals(3, cards.size());
-        verify(cardDaoMock, headlineDaoMock);
+        verify(headlineDaoMock); // no interaction
     }
 
     @Test
-    public void testGetCardsForExercise_SentencesOnly() throws Exception {
+    public void testGetCardsForExercise_FromCache() throws Exception {
         replayTxCommited();
 
-        Vocabulary vocabularyMock = createVocabularyMock();
-        replay(vocabularyMock);
-        addVocabularyToCache(vocabularyMock);
+        int[] wordIds = {1, 2, 3, 5, 8, 13};
+        List<Exercise> inCache = Arrays.stream(wordIds)
+                .mapToObj(wordId -> {
+                    Word wordMock = niceMock(Word.class);
+                    expect(wordMock.getId()).andReturn(wordId).anyTimes();
+                    replay(wordMock);
 
-        int[] selectedIds = {8, 1, 3};
-        expect(cardDaoMock.selectCardIdsForExercise(eq(JOHN_DOE), anyInt(), anyInt()))
-                .andReturn(selectedIds)
-                .once();
+                    Exercise exercise = niceMock(Exercise.class);
+                    expect(exercise.getWordId()).andReturn(wordId).anyTimes();
+                    expect(exercise.getWord()).andReturn(wordMock).anyTimes();
+                    expect(exercise.getSentences()).andReturn(List.of()).anyTimes();
+                    replay(exercise);
+                    return exercise;
+                }).toList();
+        addExerciseToCache(JOHN_DOE.ownerId() + ":" + VOCAB_ID, inCache);
 
-        int[] inCache = {1, 2, 3, 5, 8, 13};
-        for (int cardId : inCache) {
-            int wordId = new Random().nextInt(101);
-            Word wordMock = niceMock(Word.class);
-            expect(wordMock.getId()).andReturn(wordId);
-            replay(wordMock);
+        replay(headlineDaoMock);
 
-            Card cardMock = strictMock(Card.class);
-            expect(cardMock.getId()).andReturn(cardId);
-            expect(cardMock.getWord()).andReturn(wordMock).times(2);
-            cardMock.setWord(wordMock);
-            expectLastCall().once();
-            replay(cardMock);
-
-            addCardToCache(cardId, cardMock);
-        }
-        expect(headlineDaoMock.getSentencesFor(selectedIds))
-                .andReturn(Map.of(
-                        1, Collections.nCopies(1, niceMock(Sentence.class)),
-                        3, Collections.nCopies(2, niceMock(Sentence.class)),
-                        8, Collections.nCopies(1, niceMock(Sentence.class))
-                ));
-
-        replay(cardDaoMock, headlineDaoMock);
-
-        List<Exercise> cards = sut.getCardsForExercise(JOHN_DOE, 1, 10);
-        assertEquals(3, cards.size());
+        List<Exercise> cards = sut.getCardsForExercise(JOHN_DOE, VOCAB_ID, 5);
+        assertEquals(5, cards.size());
         for (Exercise card : cards) {
             assertTrue(card.getWordId() > 0);
             assertNotNull(card.getWord());
-            assertFalse(card.getSentences().isEmpty());
+            assertTrue(card.getSentences().isEmpty());
         }
-        verify(cardDaoMock, headlineDaoMock);
+        verify(headlineDaoMock); // no interaction
     }
 
     @Test
-    void loadCardFullData() throws Exception {
+    void addToVocabulary() throws Exception {
+        Word wordMock = niceMock(Word.class);
+        replay(wordMock);
+
         replayTxCommited();
+        expect(wordDaoMock.selectById(99)).andReturn(wordMock);
+        replay(wordDaoMock);
 
-        int cardId = 1;
+        expect(vocabularyDaoMock.hasAccess(JOHN_DOE, VOCAB_ID))
+                .andReturn(true);
+        vocabularyDaoMock.addWordsToVocabulary(VOCAB_ID, 99);
+        expectLastCall().once();
+        replay(vocabularyDaoMock);
 
-        Card cardMock = niceMock(Card.class);
-        replay(cardMock);
+        sut.addToVocabulary(JOHN_DOE, VOCAB_ID, 99);
 
-        headlineDaoMock.getCardById(cardId);
-        expectLastCall().andAnswer(() -> cardMock);
-        replay(headlineDaoMock);
-
-        Card card = sut.loadCard(cardId);
-        assertNotNull(card);
-
-        verify(cardMock);
-        verify(headlineDaoMock);
-    }
-
-    @Test
-    public void testSaveNewCard() throws Exception {
-        replayTxCommited();
-
-        Card insertedCardMock = strictMock(Card.class);
-        expect(insertedCardMock.getId()).andReturn(1);
-        replay(insertedCardMock);
-
-        Capture<Card> cardCapture = Capture.newInstance();
-        cardDaoMock.insert(eq(JOHN_DOE), capture(cardCapture));
-        expectLastCall().andAnswer(() -> insertedCardMock);
-        replay(cardDaoMock);
-
-        Card done = sut.addCard(JOHN_DOE, VOCAB_ID, 105);
-        assertNotNull(done);
-        Assertions.assertEquals(VOCAB_ID, cardCapture.getValue().getVocabId());
-        Assertions.assertEquals(105, cardCapture.getValue().getWordId());
-        Assertions.assertEquals(CardStatus.TO_LEARN, cardCapture.getValue().getStatus());
-
-        verify(cardDaoMock);
+        verify(vocabularyDaoMock);
     }
 
     @Test
     public void testDeleteCard() throws Exception {
-        // prepare vocabulary
-        Vocabulary vocabularyMock = createVocabularyMock();
-        expect(vocabularyMock.getWordsTotal()).andReturn(1); // override
-        replay(vocabularyMock);
-        addVocabularyToCache(vocabularyMock);
+
+        Word wordMock = niceMock(Word.class);
+        expect(wordMock.getId()).andReturn(99).anyTimes();
+        replay(wordMock);
+        addWordsToVocab(VOCAB_ID, wordMock);
 
         replayTxCommited();
 
         Card cardMock = strictMock(Card.class);
-        expect(cardMock.getId()).andStubReturn(1);
+        expect(cardMock.getWordId()).andReturn(99);
         replay(cardMock);
-        addCardToCache(1, cardMock);
+        addCardToCache(JOHN_DOE, VOCAB_ID, cardMock);
 
-        cardDaoMock.delete(JOHN_DOE, 1);
+        progressDaoMock.delete(JOHN_DOE, VOCAB_ID, 99);
         expectLastCall().once();
-        replay(cardDaoMock);
+        replay(progressDaoMock);
 
-        boolean done = sut.deleteCard(JOHN_DOE, 1);
-        assertTrue(done);
+        vocabularyDaoMock.removeWordsFromVocabulary(VOCAB_ID, 99);
+        expectLastCall().once();
+        replay(vocabularyDaoMock);
+
+        sut.removeFromVocabulary(JOHN_DOE, VOCAB_ID, 99);
 
         verify(cardMock);
-        verify(cardDaoMock);
+        verify(progressDaoMock);
     }
 
     @Test
-    public void getScoreSummary() throws Exception {
+    public void getProgressSummary() throws Exception {
         replayTxCommited();
 
         Vocabulary vocabularyMock = createVocabularyMock();
         addVocabularyToCache(vocabularyMock);
         replay(vocabularyMock);
 
-        expect(cardDaoMock.getScoreSummary(JOHN_DOE, VOCAB_ID)).andReturn(Map.of("DEFERRED", 1, "LEARNT", 3));
-        replay(cardDaoMock);
+        expect(progressDaoMock.getProgressSummary(JOHN_DOE, VOCAB_ID)).andReturn(Map.of("DEFERRED", 1, "LEARNT", 3));
+        replay(progressDaoMock);
 
-        Score score = sut.getScoreSummary(JOHN_DOE, VOCAB_ID);
+        Score score = sut.getProgressSummary(JOHN_DOE, VOCAB_ID);
         assertEquals(0, score.getToLearnCnt());
         assertEquals(1, score.getDeferredCnt());
         assertEquals(3, score.getLearntCnt());
         assertEquals(4, score.getTotalCount());
         assertNotNull(score);
 
-        verify(cardDaoMock);
+        verify(progressDaoMock);
     }
 
     @Test
-    public void testResetScore() throws Exception {
+    public void testResetProgress() throws Exception {
         replayTxCommited();
 
         Vocabulary vocabularyMock = createVocabularyMock();
@@ -468,122 +441,149 @@ public class GetWordyServiceTest {
         addVocabularyToCache(vocabularyMock);
 
         Card cardMock = strictMock(Card.class);
-        expect(cardMock.getId()).andStubReturn(1);
+        expect(cardMock.getWordId()).andStubReturn(1);
+        Progress progressMock = mock(Progress.class);
+        progressMock.setScore(0);
+        progressMock.setStatus(CardStatus.TO_LEARN);
+        expect(cardMock.getProgress()).andReturn(progressMock);
         replay(cardMock);
-        addCardToCache(1, cardMock);
+        addCardToCache(JOHN_DOE, VOCAB_ID, cardMock);
 
-        cardDaoMock.updateStatus(1, CardStatus.TO_LEARN);
+        progressDaoMock.updateProgress(JOHN_DOE, progressMock);
         expectLastCall().andReturn(1).once();
 
-        cardDaoMock.updateScore(1, 0);
-        expectLastCall().andReturn(1).once();
+        replay(progressDaoMock);
 
-        replay(cardDaoMock);
-
-        boolean done = sut.resetScore(JOHN_DOE, 1);
+        boolean done = sut.resetProgress(JOHN_DOE, VOCAB_ID, 1);
         assertTrue(done);
 
-        verify(cardDaoMock);
+        verify(progressDaoMock);
     }
 
     @Test
-    public void testResetScoreWhenThrowDaoException() throws Exception {
+    public void testResetProgressWhenThrowDaoException() throws Exception {
         replayTxRollback();
 
         Card cardMock = strictMock(Card.class);
-        expect(cardMock.getId()).andReturn(1).anyTimes();
-        expect(cardMock.getScore()).andReturn(0);
-        expect(cardMock.getStatus()).andReturn(CardStatus.TO_LEARN);
-        cardMock.setScore(0);
+        expect(cardMock.getWordId()).andReturn(1).anyTimes();
+        Progress progressMock = mock(Progress.class);
+        progressMock.setScore(0);
+        progressMock.setStatus(CardStatus.TO_LEARN);
+        expect(cardMock.getProgress()).andReturn(progressMock);
         replay(cardMock);
 
-        addCardToCache(1, cardMock);
+        addCardToCache(JOHN_DOE, VOCAB_ID, cardMock);
 
-        cardDaoMock.updateStatus(1, CardStatus.DEFAULT_STATUS);
-        expectLastCall().andReturn(1);
-        cardDaoMock.updateScore(1, 0);
+        progressDaoMock.updateProgress(JOHN_DOE, progressMock);
         expectLastCall().andStubThrow(new DaoException("resetScore", null));
-        replay(cardDaoMock);
+        replay(progressDaoMock);
 
-        boolean done = sut.resetScore(JOHN_DOE, 1);
+        boolean done = sut.resetProgress(JOHN_DOE, VOCAB_ID, 1);
         assertFalse(done);
 
-        verify(cardDaoMock);
+        verify(progressDaoMock);
     }
 
     @Test
-    public void testIncreaseScoreUpAndOneReachesFinalScore() throws Exception {
+    public void testUpdateProgress_whenCardsExisting() throws Exception {
         replayTxCommited();
-        Vocabulary vocabularyMock = createVocabularyMock();
-        replay(vocabularyMock);
-        addVocabularyToCache(vocabularyMock);
 
-        Card cardMock1 = strictMock(Card.class);
-        expect(cardMock1.getScore()).andReturn(10).once();
-        cardMock1.setScore(20);
+        // card 1
+        Progress progressMock1 = mock(Progress.class);
+        expect(progressMock1.getWordId()).andReturn(1);
+        expect(progressMock1.getStatus()).andReturn(CardStatus.TO_LEARN);
+        expect(progressMock1.getScore()).andReturn(10).once();
+        progressMock1.setScore(20);
         expectLastCall().once();
-        Card cardMock2 = strictMock(Card.class);
-        expect(cardMock2.getScore()).andReturn(95).once();
-        cardMock2.setStatus(CardStatus.LEARNT);
+        // card 2
+        Progress progressMock2 = mock(Progress.class);
+        expect(progressMock2.getWordId()).andReturn(2);
+        expect(progressMock2.getStatus()).andReturn(CardStatus.TO_LEARN);
+        expect(progressMock2.getScore()).andReturn(95).once();
+        progressMock2.setStatus(CardStatus.LEARNT);
         expectLastCall().once();
-        cardMock2.setScore(100);
+        progressMock2.setScore(100);
         expectLastCall().once();
-        replay(cardMock1, cardMock2);
-        addCardToCache(1, cardMock1);
-        addCardToCache(2, cardMock2);
 
-        cardDaoMock.batchUpdateScores(List.of(cardMock1, cardMock2));
-        cardDaoMock.batchUpdateStatuses(List.of(cardMock2));
+        replay(progressMock1, progressMock2);
+
+        progressDaoMock.selectCards(JOHN_DOE, VOCAB_ID, 1, 2);
+        expectLastCall().andReturn(List.of(progressMock1, progressMock2)).once();
+
+        progressDaoMock.batchUpsertProgress(JOHN_DOE, List.of(progressMock1, progressMock2));
         expectLastCall().once();
-        replay(cardDaoMock);
+        replay(progressDaoMock);
 
-        int[] cardIdsSubmit = {1, 2, 2, 2, 1};
-        boolean done = sut.increaseScoreUp(JOHN_DOE, VOCAB_ID, cardIdsSubmit, 10);
-        assertTrue(done);
+        int[] idsSubmit = {1, 2, 2, 2, 1};
+        sut.saveProgress(JOHN_DOE, VOCAB_ID, idsSubmit, 10);
 
-        verify(cardMock1, cardDaoMock);
+        verify(progressMock1, progressMock2, progressDaoMock);
     }
 
     @Test
-    public void testGenerateCards() throws Exception {
+    public void testUpdateProgress_whenGenerateOneCard() throws Exception {
         replayTxCommited();
 
-        Vocabulary vocabularyMock = createVocabularyMock();
-        replay(vocabularyMock);
-        addVocabularyToCache(vocabularyMock);
-
-        Word wordMock42 = strictMock(Word.class);
-        expect(wordMock42.getId()).andReturn(42).times(2);
-        expect(wordMock42.getValue()).andReturn("singleton").anyTimes();
-        replay(wordMock42);
-
-        Word wordMock87 = strictMock(Word.class);
-        expect(wordMock87.getId()).andReturn(87).times(2);
-        expect(wordMock87.getValue()).andReturn("generated").anyTimes();
-        replay(wordMock87);
-
-        Set<Integer> wordIds = Set.of(42, 87);
-        cardDaoMock.addCards(eq(JOHN_DOE), anyInt(), eq(wordIds));
+        Progress insertedProgressMock = strictMock(Progress.class);
+        expect(insertedProgressMock.getWordId()).andReturn(5).anyTimes();
+        expect(insertedProgressMock.getStatus()).andReturn(CardStatus.TO_LEARN);
+        expect(insertedProgressMock.getScore()).andReturn(30);
+        insertedProgressMock.setScore(40);
         expectLastCall().once();
-        expect(wordDaoMock.selectAll(wordIds))
-                .andReturn(List.of(wordMock42, wordMock87));
+        replay(insertedProgressMock);
+
+        progressDaoMock.selectCards(JOHN_DOE, VOCAB_ID, 5);
+        expectLastCall().andReturn(Collections.emptyList());
+
+        Capture<Progress> cardCapture = Capture.newInstance();
+        progressDaoMock.insert(eq(JOHN_DOE), capture(cardCapture));
+        expectLastCall().andAnswer(() -> insertedProgressMock);
+
+        progressDaoMock.batchUpsertProgress(JOHN_DOE, List.of(insertedProgressMock));
         expectLastCall().once();
-        cardDaoMock.selectCards(JOHN_DOE, VOCAB_ID);
-        Card card98 = new Card();
-        card98.setId(98);
-        card98.setVocabId(VOCAB_ID);
-        card98.setWordId(42);
-        Card card99 = new Card();
-        card99.setId(99);
-        card99.setVocabId(VOCAB_ID);
-        card99.setWordId(87);
-        expectLastCall().andReturn(List.of(card98, card99)).once();
-        replay(wordDaoMock, cardDaoMock);
+        replay(progressDaoMock);
 
-        List<Card> done = sut.generateCards(JOHN_DOE, VOCAB_ID, wordIds);
-        assertFalse(done.isEmpty());
+        int[] idsSubmit = {5};
+        sut.saveProgress(JOHN_DOE, VOCAB_ID, idsSubmit, 10);
 
-        verify(wordDaoMock, cardDaoMock);
+        Assertions.assertEquals(VOCAB_ID, cardCapture.getValue().getVocabId());
+        Assertions.assertEquals(5, cardCapture.getValue().getWordId());
+        Assertions.assertEquals(CardStatus.TO_LEARN, cardCapture.getValue().getStatus());
+
+        verify(progressDaoMock);
+    }
+
+    @Test
+    public void testUpdateProgress_whenGenerateSeveralCards() throws Exception {
+        replayTxCommited();
+
+        Progress progress98 = new Progress();
+        progress98.setVocabId(VOCAB_ID);
+        progress98.setWordId(42);
+        progress98.setStatus(CardStatus.TO_LEARN);
+        //
+        Progress progress99 = new Progress();
+        progress99.setVocabId(VOCAB_ID);
+        progress99.setWordId(87);
+        progress99.setStatus(CardStatus.TO_LEARN);
+
+        progressDaoMock.selectCards(JOHN_DOE, VOCAB_ID, 42, 87);
+        expectLastCall().andReturn(Collections.emptyList());
+
+        progressDaoMock.addCards(JOHN_DOE, List.of(progress98, progress99));
+        expectLastCall().once();
+
+        progressDaoMock.selectCards(JOHN_DOE, VOCAB_ID, 42, 87);
+        expectLastCall().andReturn(List.of(progress98, progress99)).anyTimes();
+
+        progressDaoMock.batchUpsertProgress(JOHN_DOE, List.of(progress98, progress99));
+        expectLastCall().once();
+        replay(progressDaoMock);
+
+        int[] idsSubmit = {42, 87};
+        sut.saveProgress(JOHN_DOE, VOCAB_ID, idsSubmit, 10);
+
+        verify(progressDaoMock);
     }
 
     private void addVocabularyToCache(Vocabulary vocabularyMock) {
@@ -594,10 +594,25 @@ public class GetWordyServiceTest {
         Objects.requireNonNull(vocabsCache).put(JOHN_DOE, vocabularies);
     }
 
-    private void addCardToCache(int id, Card cardMock) {
+    private void addWordsToVocab(int vocabId, Word... wordMocks) {
         @SuppressWarnings("unchecked")
-        var cardsCache = (Map<Integer, Card>) ReflectionTestUtils.getField(sut, "cardsCache");
-        Objects.requireNonNull(cardsCache).put(id, cardMock);
+        var wordsCache = (Map<Integer, List<Word>>) ReflectionTestUtils.getField(sut, "wordsInVocabularyCache");
+        List<Word> list = new ArrayList<>(Arrays.asList(wordMocks));
+        Objects.requireNonNull(wordsCache).put(vocabId, list);
+    }
+
+    private void addCardToCache(OwnerId ownerId, int vocabId, Card... cardsMocks) {
+        @SuppressWarnings("unchecked")
+        var cardsCache = (Map<String, List<Card>>) ReflectionTestUtils.getField(sut, "cardsCache");
+        String key = String.format("%s:%d", ownerId.ownerId(), vocabId);
+        List<Card> list = new ArrayList<>(Arrays.asList(cardsMocks));
+        Objects.requireNonNull(cardsCache).put(key, list);
+    }
+
+    private void addExerciseToCache(String key, List<Exercise> cardsMock) {
+        @SuppressWarnings("unchecked")
+        var exerciseCache = (Map<String, List<Exercise>>) ReflectionTestUtils.getField(sut, "exerciseCache");
+        Objects.requireNonNull(exerciseCache).put(key, cardsMock);
     }
 
     private Vocabulary createVocabularyMock() {

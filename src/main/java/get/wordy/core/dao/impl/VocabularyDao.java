@@ -8,7 +8,6 @@ import get.wordy.core.api.id.OwnersId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -132,6 +131,21 @@ public class VocabularyDao {
         }
     }
 
+    public boolean hasAccess(OwnerId ownerId, int vocabId) {
+        String query = """
+                SELECT COUNT(*)
+                FROM vocabularies
+                WHERE vocab_id = :vocabId AND owner_id = :ownerId AND owner_type = :ownerType
+                """;
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("vocabId", vocabId)
+                .addValue("ownerId", ownerId.ownerId())
+                .addValue("ownerType", ownerId.ownerType());
+
+        Integer count = jdbcTemplate.queryForObject(query, params, Integer.class);
+        return count != null && count > 0;
+    }
+
     public Vocabulary insert(OwnerId ownerId, Vocabulary vocabulary) {
         String query = """
                 INSERT INTO vocabularies (owner_id, owner_type, name, picture_url)
@@ -217,16 +231,24 @@ public class VocabularyDao {
         return jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> processRecord(rs));
     }
 
-    public void addWordsToVocabulary(int vocabId, Set<Integer> wordRefs) {
+    public void addWordsToVocabulary(int vocabId, Integer... wordRefs) {
         String query = """
                 INSERT INTO vocab_has_words (vocab_id, word_ref)
                 VALUES (:vocabId, :wordRef)
                 """;
-        bulkWordsUpdate(vocabId, wordRefs, query);
+        bulkWordsUpdate(query, vocabId, wordRefs);
     }
 
-    private void bulkWordsUpdate(int vocabId, Set<Integer> wordRefs, String query) {
-        int[] results = jdbcTemplate.batchUpdate(query, wordRefs.stream()
+    public void removeWordsFromVocabulary(int vocabId, Integer... wordRefs) {
+        String deleteQuery = """
+                DELETE FROM vocab_has_words
+                WHERE vocab_id = :vocabId AND word_ref = :wordRef
+                """;
+        bulkWordsUpdate(deleteQuery, vocabId, wordRefs);
+    }
+
+    private void bulkWordsUpdate(String query, int vocabId, Integer... wordRefs) {
+        int[] results = jdbcTemplate.batchUpdate(query, Arrays.stream(wordRefs)
                 .map(wordRef -> new MapSqlParameterSource()
                         .addValue("vocabId", vocabId)
                         .addValue("wordRef", wordRef))
@@ -236,14 +258,6 @@ public class VocabularyDao {
             String updateInteractionQuery = "UPDATE vocabularies SET update_time = NOW() WHERE vocab_id = :vocabId";
             jdbcTemplate.update(updateInteractionQuery, new MapSqlParameterSource("vocabId", vocabId));
         }
-    }
-
-    public void removeWordsFromVocabulary(int vocabId, Set<Integer> wordRefs) {
-        String deleteQuery = """
-                DELETE FROM vocab_has_words
-                WHERE vocab_id = :vocabId AND word_ref = :wordRef
-                """;
-        bulkWordsUpdate(vocabId, wordRefs, deleteQuery);
     }
 
     public Set<Integer> getWordRefs(int vocabId) {
@@ -277,11 +291,11 @@ public class VocabularyDao {
         );
         Timestamp createTime = rs.getTimestamp("create_time");
         if (createTime != null) {
-            vocabulary.setCreateTime(createTime.toLocalDateTime());
+            vocabulary.setCreateTime(createTime.toInstant());
         }
         Timestamp updateTime = rs.getTimestamp("update_time");
         if (updateTime != null) {
-            vocabulary.setUpdateTime(updateTime.toLocalDateTime());
+            vocabulary.setUpdateTime(updateTime.toInstant());
         }
         return vocabulary;
     }

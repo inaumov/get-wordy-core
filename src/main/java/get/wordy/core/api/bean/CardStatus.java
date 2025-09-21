@@ -4,8 +4,7 @@ public enum CardStatus {
 
     TO_LEARN,
     DEFERRED,
-    LEARNT;
-
-    public static final CardStatus DEFAULT_STATUS = CardStatus.TO_LEARN;
+    LEARNT,
+    UNSEEN
 
 }

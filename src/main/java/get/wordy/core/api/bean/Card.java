@@ -2,104 +2,53 @@ package get.wordy.core.api.bean;
 
 import get.wordy.core.dao.exception.InconsistentDataException;
 
-import java.time.Instant;
 import java.util.Objects;
 
 public class Card {
 
-    private int id;
-    private int vocabId;
-    private int wordId;
-    private CardStatus status = CardStatus.DEFAULT_STATUS;
-    private int score;
-    private Instant insertedAt;
-    private Instant updatedAt;
+    private Integer vocabId;
     private Word word;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int cardId) {
-        this.id = cardId;
-    }
+    private Progress progress;
 
     public int getVocabId() {
         return vocabId;
     }
 
-    public void setVocabId(int vocabId) {
+    public void setVocabId(Integer vocabId) {
         this.vocabId = vocabId;
     }
 
-    public int getWordId() {
-        return wordId;
-    }
-
-    public void setWordId(int wordId) {
-        this.wordId = wordId;
-    }
-
-    public int getScore() {
-        return score;
-    }
-
-    public void setScore(int score) {
-        this.score = score;
-    }
-
-    public CardStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(CardStatus status) {
-        this.status = status;
-    }
-
-    public Instant getInsertedAt() {
-        return insertedAt;
-    }
-
-    public void setInsertedAt(Instant insertedAt) {
-        this.insertedAt = insertedAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setWord(Word word) {
+        this.word = word;
     }
 
     public Word getWord() {
-        return word;
+        return this.word;
     }
 
-    public void setWord(Word word) {
-        if (wordId != word.getId()) {
-            throw new InconsistentDataException("Card.wordId and Word.id are not consistent");
+    public void setProgress(Progress progress) {
+        if (!Objects.equals(this.word.getId(), progress.getWordId())) {
+            throw new InconsistentDataException("Progress.wordId and Word.id are not consistent");
         }
-        this.word = word;
+        this.progress = progress;
+    }
+
+    public Progress getProgress() {
+        return progress;
+    }
+
+    public Integer getWordId() {
+        return this.word.getId();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Card that = (Card) o;
-
-        return this.id == that.id
-                && this.wordId == that.wordId
-                && this.vocabId == that.vocabId
-                && this.status == that.status
-                && this.score == that.score;
+        return super.equals(o);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, wordId, vocabId, status, score);
+        return super.hashCode();
     }
 
 }

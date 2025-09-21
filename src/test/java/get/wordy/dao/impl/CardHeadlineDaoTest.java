@@ -9,10 +9,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,47 +20,34 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class CardHeadlineDaoTest {
 
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
-            .ofPattern("yyyy-MM-dd HH:mm:ss")
-            .withZone(ZoneId.systemDefault());
-
     @Autowired
     private CardHeadlineDao cardHeadlineDao;
 
     @Test
-    public void testGetCards() {
-        // Define test data
+    public void testGetWordsHeadlines() {
+
         int vocabId = 1;
 
         // Execute DAO method
-        List<Card> cards = cardHeadlineDao.getCards(vocabId);
+        List<Word> cards = cardHeadlineDao.getWordsHeadlines(vocabId);
 
         // Assert results
         assertEquals(1, cards.size());
-        Card card = cards.getFirst();
+        Word word = cards.getFirst();
+        assertNotNull(word);
 
-        String formattedInstant = DATE_TIME_FORMATTER.format(card.getInsertedAt());
-
-        List<String> sentences = card.getWord().getStrSentences();
+        List<String> sentences = word.getStrSentences();
         assertAll(
-                "Grouped assertions of Card Headline",
-                () -> assertThat(card.getId()).isEqualTo(1),
-                () -> assertThat(card.getVocabId()).isEqualTo(1),
-                () -> assertThat(card.getWordId()).isEqualTo(1),
-                () -> assertThat(card.getScore()).isEqualTo(50),
-                () -> assertThat(card.getStatus()).isEqualTo(CardStatus.DEFAULT_STATUS),
-                () -> assertThat(formattedInstant).isEqualTo("2014-08-17 17:40:03"),
-                () -> assertThat(card.getUpdatedAt()).isNotNull(),
+                "Grouped assertions of Word Headline",
+                () -> assertThat(word.getId()).isEqualTo(1),
 
                 () -> assertEquals(3, sentences.size()),
                 () -> assertEquals("Test sentence 1", sentences.getFirst()),
                 () -> assertEquals("Test sentence 4", sentences.getLast()),
 
-                () -> assertEquals(1, card.getWord().getCollocations().size()),
-                () -> assertEquals("collocation1", card.getWord().getCollocations().getFirst())
+                () -> assertEquals(1, word.getCollocations().size()),
+                () -> assertEquals("collocation1", word.getCollocations().getFirst())
         );
-        Word word = card.getWord();
-        assertNotNull(word);
         assertAll(
                 "Grouped assertions of Word sub-entity",
                 () -> assertEquals(1, word.getId()),
@@ -76,36 +60,27 @@ public class CardHeadlineDaoTest {
 
     @Test
     public void testGetCard() {
-        // Define test data
-        int cardId = 1; // Example card ID for testing
+
+        int wordId = 1;
 
         // Execute DAO method
-        Card card = cardHeadlineDao.getCardById(cardId);
+        Word word = cardHeadlineDao.getWordHeadlineById(1, wordId);
+        assertNotNull(word);
 
         // Assert results
 
-        String formattedInstant = DATE_TIME_FORMATTER.format(card.getInsertedAt());
-
-        List<String> sentences = card.getWord().getStrSentences();
+        List<String> sentences = word.getStrSentences();
         assertAll(
                 "Grouped assertions of Card Headline",
-                () -> assertThat(card.getId()).isEqualTo(1),
-                () -> assertThat(card.getVocabId()).isEqualTo(1),
-                () -> assertThat(card.getWordId()).isEqualTo(1),
-                () -> assertThat(card.getScore()).isEqualTo(50),
-                () -> assertThat(card.getStatus()).isEqualTo(CardStatus.DEFAULT_STATUS),
-                () -> assertThat(formattedInstant).isEqualTo("2014-08-17 17:40:03"),
-                () -> assertThat(card.getUpdatedAt()).isNotNull(),
+                () -> assertThat(word.getId()).isEqualTo(1),
 
                 () -> assertEquals(3, sentences.size()),
                 () -> assertEquals("Test sentence 1", sentences.getFirst()),
                 () -> assertEquals("Test sentence 4", sentences.getLast()),
 
-                () -> assertEquals(1, card.getWord().getCollocations().size()),
-                () -> assertEquals("collocation1", card.getWord().getCollocations().getFirst())
+                () -> assertEquals(1, word.getCollocations().size()),
+                () -> assertEquals("collocation1", word.getCollocations().getFirst())
         );
-        Word word = card.getWord();
-        assertNotNull(word);
         assertAll(
                 "Grouped assertions of Word sub-entity",
                 () -> assertEquals(1, word.getId()),
@@ -117,12 +92,9 @@ public class CardHeadlineDaoTest {
     }
 
     @Test
-    void testGetCardsForExercise() {
-        // Define test data
-        int cardIds = 1; // Example card ID for testing
-
+    void testGetWordsHeadlinesForExercise() {
         // Execute DAO method
-        List<Exercise> cards = cardHeadlineDao.getCardsForExercise(cardIds);
+        List<Exercise> cards = cardHeadlineDao.getCardsForExercise("john-123", 1, 5);
 
         // Assert results
         assertEquals(1, cards.size());
@@ -130,7 +102,6 @@ public class CardHeadlineDaoTest {
 
         assertAll(
                 "Grouped assertions of Card Headline",
-                () -> assertThat(card.getCardId()).isEqualTo(1),
                 () -> assertThat(card.getWordId()).isEqualTo(1),
 
                 // select only those which has both example and matched words value. as most viable
@@ -150,31 +121,6 @@ public class CardHeadlineDaoTest {
                 () -> assertEquals("noun", word.getPartOfSpeech()),
                 () -> assertEquals("a word in vocab 1", word.getMeaning())
         );
-    }
-
-    @Test
-    void getSentencesFor() {
-        // Define test data
-        int cardIdExpected = 1;
-        int[] wordIds = {1, 3, 4};
-
-        // Execute DAO method
-        Map<Integer, List<Sentence>> result = cardHeadlineDao.getSentencesFor(wordIds);
-
-        assertEquals(1, result.size());
-        assertTrue(result.containsKey(cardIdExpected));
-        // Assert sentences
-        assertEquals(2, result.get(cardIdExpected).size());
-
-        Sentence first = result.get(cardIdExpected)
-                .getFirst();
-        assertEquals("Test sentence 1", first.getExample());
-        assertEquals("sentence 1", first.getMatchedWords());
-
-        Sentence last = result.get(cardIdExpected)
-                .getLast();
-        assertEquals("Test sentence 4", last.getExample());
-        assertEquals("sentence 4", last.getMatchedWords());
     }
 
 }

@@ -17,7 +17,7 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -98,7 +98,7 @@ public class VocabularyDaoTest {
         Vocabulary result = vocabularyDao.rename(classOwner, 101, "Updated Vocabulary Basics");
         assertNotNull(result);
         assertEquals("Updated Vocabulary Basics", result.getName());
-        assertTrue(LocalDateTime.now().minusSeconds(3).isBefore(result.getUpdateTime()));
+        assertTrue(Instant.now().minusSeconds(3).isBefore(result.getUpdateTime()));
     }
 
     @Test
@@ -130,7 +130,7 @@ public class VocabularyDaoTest {
         assertNotNull(result);
         assertTrue(result.isShared());
         assertEquals(4, result.getWordsTotal());
-        assertTrue(LocalDateTime.now().minusSeconds(3).isBefore(result.getUpdateTime()));
+        assertTrue(Instant.now().minusSeconds(3).isBefore(result.getUpdateTime()));
     }
 
     @Test
@@ -154,6 +154,13 @@ public class VocabularyDaoTest {
     }
 
     @Test
+    void hasAccess() {
+        OwnerId user = new OwnerId("john-123", "user");
+        boolean hasAccess = vocabularyDao.hasAccess(user, 1);
+        assertTrue(hasAccess);
+    }
+
+    @Test
     public void testDeleteVocabularyById() {
         int deleted = vocabularyDao.deleteVocabularyById(101);
         assertEquals(1, deleted);
@@ -169,25 +176,25 @@ public class VocabularyDaoTest {
 
     @ParameterizedTest
     @MethodSource("provideIdsAdd")
-    public void testAddRefsToVocabulary(int vocabId, Set<Integer> toAdd, int expectedTotal) {
+    public void testAddRefsToVocabulary(int vocabId, Integer[] toAdd, int expectedTotal) {
         vocabularyDao.addWordsToVocabulary(vocabId, toAdd);
 
         Set<Integer> wordsRefs = vocabularyDao.getWordRefs(vocabId);
         assertEquals(expectedTotal, wordsRefs.size());
         // verify added references
-        assertTrue(wordsRefs.containsAll(toAdd));
+        assertTrue(wordsRefs.containsAll(Set.of(toAdd)));
         // verify updateTime
         Vocabulary result = vocabularyDao.selectById(vocabId)
                 .orElseThrow(() -> new AssertionError("Vocabulary not found"));
         assertTrue(
-                LocalDateTime.now().minusSeconds(3).isBefore(result.getUpdateTime()),
+                Instant.now().minusSeconds(3).isBefore(result.getUpdateTime()),
                 "Expected updateTime to be updated recently"
         );
     }
 
     @Test
     public void testRemoveRefsFromVocabulary() {
-        vocabularyDao.removeWordsFromVocabulary(101, Set.of(10, 13));
+        vocabularyDao.removeWordsFromVocabulary(101, 10, 13);
 
         Set<Integer> wordsRefs = vocabularyDao.getWordRefs(101);
         assertEquals(Set.of(11, 12), wordsRefs);
@@ -195,7 +202,7 @@ public class VocabularyDaoTest {
         Vocabulary result = vocabularyDao.selectById(101)
                 .orElseThrow(() -> new AssertionError("Vocabulary not found"));
         assertTrue(
-                LocalDateTime.now().minusSeconds(3).isBefore(result.getUpdateTime()),
+                Instant.now().minusSeconds(3).isBefore(result.getUpdateTime()),
                 "Expected updateTime to be updated recently"
         );
     }
@@ -219,9 +226,9 @@ public class VocabularyDaoTest {
 
     private static Stream<Arguments> provideIdsAdd() {
         return Stream.of(
-                Arguments.of(101, Set.of(14, 15, 16, 17, 18, 19, 20), 11),
-                Arguments.of(102, Set.of(10, 11, 12, 13), 11),
-                Arguments.of(103, Set.of(10, 20), 2)
+                Arguments.of(101, new Integer[]{14, 15, 16, 17, 18, 19, 20}, 11),
+                Arguments.of(102, new Integer[]{10, 11, 12, 13}, 11),
+                Arguments.of(103, new Integer[]{10, 20}, 2)
         );
     }
 
