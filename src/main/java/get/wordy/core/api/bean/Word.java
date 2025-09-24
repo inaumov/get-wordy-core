@@ -7,25 +7,27 @@ import java.util.Objects;
 public class Word {
 
     private Integer id;
-    private String value;
+    private String lemma;
     private String partOfSpeech;
     private String transcription;
     private String meaning;
-    private final List<InContext> sentences = new ArrayList<>();
+    private String register;
+    private String domain;
+    private final List<Sentence> sentences = new ArrayList<>();
     private final List<String> collocations = new ArrayList<>();
 
     public Word() {
     }
 
-    public Word(String value, String partOfSpeech, String transcription, String meaning) {
-        this.value = value;
+    public Word(String lemma, String partOfSpeech, String transcription, String meaning) {
+        this.lemma = lemma;
         this.partOfSpeech = partOfSpeech;
         this.transcription = transcription;
         this.meaning = meaning;
     }
 
-    public Word(Integer id, String value, String partOfSpeech, String transcription, String meaning) {
-        this(value, partOfSpeech, transcription, meaning);
+    public Word(Integer id, String lemma, String partOfSpeech, String transcription, String meaning) {
+        this(lemma, partOfSpeech, transcription, meaning);
         this.id = id;
     }
 
@@ -33,8 +35,12 @@ public class Word {
         return id;
     }
 
-    public String getValue() {
-        return value;
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getLemma() {
+        return lemma;
     }
 
     public String getPartOfSpeech() {
@@ -54,26 +60,42 @@ public class Word {
         return this;
     }
 
-    public List<InContext> getSentences() {
+    public String getRegister() {
+        return register;
+    }
+
+    public void setRegister(String register) {
+        this.register = register;
+    }
+
+    public String getDomain() {
+        return domain;
+    }
+
+    public void setDomain(String domain) {
+        this.domain = domain;
+    }
+
+    public List<Sentence> getSentences() {
         return List.copyOf(sentences);
     }
 
     public List<String> getStrSentences() {
         return sentences
                 .stream()
-                .map(InContext::getExample)
+                .map(Sentence::example)
                 .toList();
     }
 
-    public void addSentence(InContext sentence) {
+    public void addSentence(Sentence sentence) {
         sentences.add(sentence);
     }
 
     public void addStrSentence(String sentence) {
-        sentences.add(InContext.of(sentence));
+        sentences.add(Sentence.of(sentence));
     }
 
-    public void setSentences(List<InContext> sentences) {
+    public void setSentences(List<Sentence> sentences) {
         this.sentences.clear();
         this.sentences.addAll(sentences);
     }
@@ -82,7 +104,7 @@ public class Word {
         this.sentences.clear();
         this.sentences.addAll(strSentences
                 .stream()
-                .map(InContext::of)
+                .map(Sentence::of)
                 .toList());
     }
 
@@ -105,7 +127,7 @@ public class Word {
         if (o == null || getClass() != o.getClass()) return false;
         Word that = (Word) o;
         return Objects.equals(id, that.id)
-                && Objects.equals(value, that.value)
+                && Objects.equals(lemma, that.lemma)
                 && Objects.equals(partOfSpeech, that.partOfSpeech)
                 && Objects.equals(transcription, that.transcription)
                 && Objects.equals(meaning, that.meaning);
@@ -113,7 +135,7 @@ public class Word {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, value, partOfSpeech, transcription, meaning);
+        return Objects.hash(id, lemma, partOfSpeech, transcription, meaning);
     }
 
 }

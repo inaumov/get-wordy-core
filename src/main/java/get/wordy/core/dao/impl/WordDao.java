@@ -1,305 +1,260 @@
 package get.wordy.core.dao.impl;
 
-import get.wordy.core.api.bean.InContext;
-import get.wordy.core.dao.exception.DaoException;
+import get.wordy.core.api.bean.Sentence;
 import get.wordy.core.api.bean.Word;
-import get.wordy.core.db.LocalTxManager;
+import get.wordy.core.dao.exception.DaoException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class WordDao extends BaseDao<Word> {
+@Repository
+public class WordDao {
 
-    public static final String INSERT_QUERY = "INSERT INTO words (word, part_of_speech, transcription, meaning) VALUES (?, ?, ?, ?)";
-    public static final String DELETE_QUERY = "DELETE FROM words WHERE id = ?";
-    public static final String UPDATE_QUERY = "UPDATE words SET word = ?, part_of_speech = ?, transcription = ?, meaning = ? WHERE id = ?";
-    public static final String SELECT_ALL_QUERY = "SELECT * FROM words WHERE id IN (%s)";
-    public static final String SELECT_BY_ID_QUERY = "SELECT * FROM words WHERE id = ?";
+    private final JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    public WordDao(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    private static final String INSERT_QUERY = """
+            INSERT INTO words (lemma, part_of_speech, transcription, meaning, register, domain)
+            VALUES (?, ?, ?, ?, ?, ?)
+            RETURNING id
+            """;
+    private static final String DELETE_QUERY = "DELETE FROM words WHERE id = ?";
+    private static final String FIND_BY_ID_QUERY = "SELECT * FROM words WHERE id = ?";
+    private static final String FIND_ALL_QUERY = "SELECT * FROM words WHERE id IN (%s)";
+    private static final String FIND_BY_LEMMA_QUERY = "SELECT * FROM words WHERE lemma LIKE ?";
+
+    private static final String UPDATE_QUERY = """
+            UPDATE words
+            SET lemma = ?, part_of_speech = ?, transcription = ?, meaning = ?, register = ?, domain = ?
+            WHERE id = ?
+            """;
 
     // sentences and collocations
-    private static final String INSERT_SENTENCE_QUERY = "INSERT INTO in_context (word_id, example, matched_words) VALUES (?,?,?)";
-    private static final String INSERT_COLLOCATIONS_QUERY = "INSERT INTO collocations (word_id, example) VALUES (?,?)";
-    private static final String SELECT_FROM_CONTEXT_QUERY = "SELECT * FROM in_context WHERE word_id=?";
-    private static final String SELECT_COLLOCATIONS_QUERY = "SELECT * FROM collocations WHERE word_id=?";
-    private static final String DELETE_FROM_CONTEXT_QUERY = "DELETE FROM in_context WHERE word_id=?";
-    private static final String DELETE_COLLOCATIONS_QUERY = "DELETE FROM collocations WHERE word_id=?";
+    private static final String INSERT_SENTENCE_QUERY =
+            "INSERT INTO in_context (word_id, example, matched_words) VALUES (?,?,?)";
+    private static final String INSERT_COLLOCATIONS_QUERY =
+            "INSERT INTO collocations (word_id, phrase) VALUES (?,?)";
+    private static final String SELECT_FROM_CONTEXT_QUERY =
+            "SELECT * FROM in_context WHERE word_id=?";
+    private static final String SELECT_COLLOCATIONS_QUERY =
+            "SELECT * FROM collocations WHERE word_id=?";
+    private static final String DELETE_FROM_CONTEXT_QUERY =
+            "DELETE FROM in_context WHERE word_id=?";
+    private static final String DELETE_COLLOCATIONS_QUERY =
+            "DELETE FROM collocations WHERE word_id=?";
 
-    public WordDao(LocalTxManager txManager) {
-        super(txManager);
+    public Word insert(Word word) {
+        Integer id = jdbcTemplate.queryForObject(INSERT_QUERY, Integer.class,
+                word.getLemma(),
+                word.getPartOfSpeech(),
+                word.getTranscription(),
+                word.getMeaning(),
+                word.getRegister(),
+                word.getDomain());
+
+        insertSentences(id, word.getSentences());
+        insertCollocations(id, word.getCollocations());
+        return word.withId(id);
     }
 
-    public Word insert(Word word) throws DaoException {
-        try (var statement = prepareStatementForInsert(INSERT_QUERY)) {
-            statement.setString(1, word.getValue());
-            statement.setString(2, word.getPartOfSpeech());
-            statement.setString(3, word.getTranscription());
-            statement.setString(4, word.getMeaning());
-            statement.execute();
-            // get last inserted id
-            ResultSet keys = statement.getGeneratedKeys();
-            if (keys.next()) {
-                int id = keys.getInt(1);
-                insertSentences(id, word.getSentences());
-                insertCollocations(id, word.getCollocations());
-                return word.withId(id);
-            }
-        } catch (SQLException ex) {
-            throw new DaoException("Error while inserting a word record", ex);
-        }
-        return word;
-    }
-
-    public List<Word> addWords(Collection<Word> words) throws DaoException {
-
-        // copy to collect sentences and collocations for bulk insertion later
-        List<Word> copyWithIds = new ArrayList<>();
-
-        try (var statement = prepareStatementForInsert(INSERT_QUERY)) {
-            for (Word word : words) {
-                statement.setString(1, word.getValue());
-                statement.setString(2, word.getPartOfSpeech());
-                statement.setString(3, word.getTranscription());
-                statement.setString(4, word.getMeaning());
-                statement.execute();
-                // get last inserted id
-                ResultSet keys = statement.getGeneratedKeys();
-                while (keys.next()) {
-                    int id = keys.getInt(1);
-                    copyWithIds.add(word.withId(id));
-                }
-            }
-
-            insertAllSentencesInBatch(copyWithIds);
-            insertAllCollocationsInBatch(copyWithIds);
-
-        } catch (SQLException ex) {
-            throw new DaoException("Error while generating word records", ex);
+    public List<Word> addWords(Collection<Word> words) {
+        if (words.isEmpty()) {
+            return List.of();
         }
 
-        return copyWithIds;
+        // Build bulk INSERT with RETURNING
+        String sql = """
+                INSERT INTO words (lemma, part_of_speech, transcription, meaning, register, domain)
+                VALUES %s
+                RETURNING id
+                """;
+
+        String placeholders = words.stream()
+                .map(l -> "(?, ?, ?, ?, ?, ?)")
+                .collect(Collectors.joining(", "));
+        sql = sql.formatted(placeholders);
+
+        Object[] params = words.stream()
+                .flatMap(word -> Stream.of(
+                        word.getLemma(),
+                        word.getPartOfSpeech(),
+                        word.getTranscription(),
+                        word.getMeaning(),
+                        word.getRegister(),
+                        word.getDomain()
+                ))
+                .toArray();
+
+        List<Integer> ids = jdbcTemplate.query(sql, rs -> {
+            List<Integer> result = new ArrayList<>();
+            while (rs.next()) {
+                result.add(rs.getInt("id"));
+            }
+            return result;
+        }, params);
+
+        List<Word> withIds = new ArrayList<>();
+        Iterator<Integer> idIterator = ids.iterator();
+        for (Word lemma : words) {
+            if (idIterator.hasNext()) {
+                withIds.add(lemma.withId(idIterator.next()));
+            }
+        }
+
+        insertAllSentencesInBatch(withIds);
+        insertAllCollocationsInBatch(withIds);
+
+        return withIds;
     }
 
     public void delete(int wordId) throws DaoException {
-        try (var statement = prepareStatement(DELETE_QUERY)) {
-            statement.setInt(1, wordId);
-            statement.execute();
-        } catch (SQLException ex) {
+        try {
+            jdbcTemplate.update(DELETE_QUERY, wordId);
+        } catch (DataIntegrityViolationException ex) {
             throw new DaoException("Error while deleting a word record", ex);
         }
     }
 
-    public int update(Word word) throws DaoException {
-        int records = 0;
-        try (var statement = prepareStatement(UPDATE_QUERY)) {
-            statement.setString(1, word.getValue());
-            statement.setString(2, word.getPartOfSpeech());
-            statement.setString(3, word.getTranscription());
-            statement.setString(4, word.getMeaning());
-            statement.setInt(5, word.getId());
-            records = statement.executeUpdate();
-        } catch (SQLException ex) {
-            throw new DaoException("Error while updating a word record", ex);
-        }
+    public int update(Word word) {
+        int updated = jdbcTemplate.update(UPDATE_QUERY,
+                word.getLemma(),
+                word.getPartOfSpeech(),
+                word.getTranscription(),
+                word.getMeaning(),
+                word.getRegister(),
+                word.getDomain(),
+                word.getId());
 
         deleteFromContext(word.getId());
         deleteFromCollocations(word.getId());
-
         insertSentences(word.getId(), word.getSentences());
         insertCollocations(word.getId(), word.getCollocations());
-
-        return records;
+        return updated;
     }
 
-    public List<Word> selectAll(Collection<Integer> wordRefs) throws DaoException {
-
-        if (wordRefs == null || wordRefs.isEmpty()) {
-            throw new IllegalArgumentException("The set of wordRefs cannot be null or empty");
+    public Word findById(int id) {
+        try {
+            return jdbcTemplate.queryForObject(FIND_BY_ID_QUERY, this::mapRowToObject, id);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
         }
-
-        // generate the dynamic query
-        String placeholders = String.join(",", Collections.nCopies(wordRefs.size(), "?"));
-        String selectInQuery = String.format(SELECT_ALL_QUERY, placeholders);
-
-        List<Word> words = new ArrayList<>();
-
-        try (var preparedStatement = prepareStatement(selectInQuery)) {
-            // bind parameters
-            int index = 1;
-            for (Integer id : wordRefs) {
-                preparedStatement.setInt(index++, id);
-            }
-            ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                var word = mapResultSetToWordEntity(resultSet);
-                word.setSentences(getSentencesFor(word.getId()));
-                word.setCollocations(getCollocationsFor(word.getId()));
-                words.add(word);
-            }
-        } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving word records by ids", ex);
-        }
-        return words;
     }
 
-    public Word selectById(int wordId) throws DaoException {
-        try (var statement = prepareStatement(SELECT_BY_ID_QUERY)) {
-            statement.setInt(1, wordId);
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                Word word = mapResultSetToWordEntity(resultSet);
-                word.setSentences(getSentencesFor(wordId));
-                word.setCollocations(getCollocationsFor(wordId));
-                return word;
-            }
-        } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving a word record", ex);
+    public List<Word> findAllByIds(Collection<Integer> ids) {
+        if (ids.isEmpty()) {
+            return List.of(); // safer than throwing
         }
-        return null;
+        String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
+        String sql = String.format(FIND_ALL_QUERY, placeholders);
+        return jdbcTemplate.query(sql, this::mapRowToObject, ids.toArray());
     }
 
-    private Word mapResultSetToWordEntity(ResultSet resultSet) throws SQLException {
-        int id = resultSet.getInt(1);
-        String word = resultSet.getString(2);
-        String partOfSpeech = resultSet.getString(3);
-        String transcription = resultSet.getString(4);
-        String meaning = resultSet.getString(5);
-        return new Word(id, word, partOfSpeech, transcription, meaning);
+    public List<Word> findByLemma(String lemma) {
+        return jdbcTemplate.query(FIND_BY_LEMMA_QUERY, this::mapRowToObject, "%" + lemma + "%");
     }
 
-    public List<InContext> getSentencesFor(int wordId) throws DaoException {
-        ArrayList<InContext> result = new ArrayList<>();
-        try (var statement = prepareStatement(SELECT_FROM_CONTEXT_QUERY)) {
-            statement.setInt(1, wordId);
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                String example = resultSet.getString("example");
-                InContext sentence = new InContext(example);
-                result.add(sentence);
-            }
-        } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving sentence examples for word with id = " + wordId, ex);
-        }
-        return result;
+    private Word mapRowToObject(ResultSet rs, int rowNum) throws SQLException {
+        Word word = new Word(
+                rs.getInt("id"),
+                rs.getString("lemma"),
+                rs.getString("part_of_speech"),
+                rs.getString("transcription"),
+                rs.getString("meaning")
+        );
+        word.setRegister(rs.getString("register"));
+        word.setDomain(rs.getString("domain"));
+        word.setSentences(getSentencesFor(word.getId()));
+        word.setCollocations(getCollocationsFor(word.getId()));
+        return word;
     }
 
-    public List<String> getCollocationsFor(int wordId) throws DaoException {
-        ArrayList<String> collocations = new ArrayList<>();
-        try (var statement = prepareStatement(SELECT_COLLOCATIONS_QUERY)) {
-            statement.setInt(1, wordId);
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                String example = resultSet.getString("example");
-                collocations.add(example);
-            }
-        } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving collocations for word with id = " + wordId, ex);
-        }
-        return collocations;
+    private List<Sentence> getSentencesFor(int wordId) {
+        return jdbcTemplate.query(SELECT_FROM_CONTEXT_QUERY,
+                (rs, rowNum) -> new Sentence(rs.getString("example"), rs.getString("matched_words")),
+                wordId);
     }
 
-    private void insertSentences(int wordId, List<InContext> sentences) throws DaoException {
-        try (var statement = prepareStatementForInsert(INSERT_SENTENCE_QUERY)) {
-            for (InContext sentence : sentences) {
-                statement.setInt(1, wordId);
-                statement.setString(2, sentence.getExample());
-                statement.setString(3, sentence.getMatchedWords());
-                statement.addBatch();
-            }
-            statement.executeBatch();
-        } catch (SQLException ex) {
-            throw new DaoException("Error while inserting sentence examples", ex);
-        }
+    private List<String> getCollocationsFor(int wordId) {
+        return jdbcTemplate.query(SELECT_COLLOCATIONS_QUERY,
+                (rs, rowNum) -> rs.getString("phrase"), // fixed column name
+                wordId);
+    }
+
+    private void insertSentences(Integer wordId, List<Sentence> sentences) {
+        if (sentences == null || sentences.isEmpty()) return;
+        jdbcTemplate.batchUpdate(INSERT_SENTENCE_QUERY,
+                sentences,
+                sentences.size(),
+                (ps, sentence) -> {
+                    ps.setInt(1, wordId);
+                    ps.setString(2, sentence.example());
+                    ps.setString(3, sentence.matchedWords());
+                });
+    }
+
+    private void insertCollocations(Integer wordId, List<String> collocations) {
+        if (collocations == null || collocations.isEmpty()) return;
+        jdbcTemplate.batchUpdate(INSERT_COLLOCATIONS_QUERY,
+                collocations,
+                collocations.size(),
+                (ps, collocation) -> {
+                    ps.setInt(1, wordId);
+                    ps.setString(2, collocation);
+                });
     }
 
     public void insertAllSentencesInBatch(List<Word> words) throws DaoException {
-        if (words.isEmpty()) {
+        if (words == null || words.isEmpty()) {
             return;
         }
-        try (var statement = prepareStatementForInsert(INSERT_SENTENCE_QUERY)) {
-            for (Word word : words) {
-                for (InContext sentence : word.getSentences()) {
-                    statement.setInt(1, word.getId());
-                    statement.setString(2, sentence.getExample());
-                    statement.setString(3, sentence.getMatchedWords());
-                    statement.addBatch();
-                }
-            }
-            statement.executeBatch();
-        } catch (SQLException ex) {
-            throw new DaoException("Error while inserting sentence examples", ex);
-        }
-    }
 
-    private void insertCollocations(int wordId, List<String> collocations) throws DaoException {
-        try (var statement = prepareStatementForInsert(INSERT_COLLOCATIONS_QUERY)) {
-            for (String collocation : collocations) {
-                statement.setInt(1, wordId);
-                statement.setString(2, collocation);
-                statement.addBatch();
-            }
-            statement.executeBatch();
-        } catch (SQLException ex) {
-            throw new DaoException("Error while inserting collocation examples", ex);
+        try {
+            List<Object[]> params = words.stream()
+                    .flatMap(word -> word.getSentences().stream()
+                            .map(s -> new Object[]{word.getId(), s.example(), s.matchedWords()}))
+                    .toList();
+
+            jdbcTemplate.batchUpdate(INSERT_SENTENCE_QUERY, params);
+        } catch (DataAccessException ex) {
+            throw new DaoException("Error while inserting sentence examples", ex);
         }
     }
 
     public void insertAllCollocationsInBatch(List<Word> words) throws DaoException {
-        if (words.isEmpty()) {
+        if (words == null || words.isEmpty()) {
             return;
         }
-        try (var statement = prepareStatementForInsert(INSERT_COLLOCATIONS_QUERY)) {
-            for (Word word : words) {
-                for (String collocation : word.getCollocations()) {
-                    statement.setInt(1, word.getId());
-                    statement.setString(2, collocation);
-                    statement.addBatch();
-                }
-            }
-            statement.executeBatch();
-        } catch (SQLException ex) {
+
+        try {
+            List<Object[]> params = words.stream()
+                    .flatMap(word -> word.getCollocations().stream()
+                            .map(c -> new Object[]{word.getId(), c}))
+                    .toList();
+
+            jdbcTemplate.batchUpdate(INSERT_COLLOCATIONS_QUERY, params);
+        } catch (DataAccessException ex) {
             throw new DaoException("Error while inserting collocation examples", ex);
         }
     }
 
-
-    private void deleteFromContext(int wordId) throws DaoException {
-        try (var statement = prepareStatement(DELETE_FROM_CONTEXT_QUERY)) {
-            statement.setInt(1, wordId);
-            statement.execute();
-        } catch (SQLException ex) {
-            throw new DaoException("Error while deleting in_context record", ex);
-        }
+    private void deleteFromContext(int wordId) {
+        jdbcTemplate.update(DELETE_FROM_CONTEXT_QUERY, wordId);
     }
 
-    private void deleteFromCollocations(int wordId) throws DaoException {
-        try (var statement = prepareStatement(DELETE_COLLOCATIONS_QUERY)) {
-            statement.setInt(1, wordId);
-            statement.execute();
-        } catch (SQLException ex) {
-            throw new DaoException("Error while deleting collocation record", ex);
-        }
-    }
-
-    public List<Word> selectByValue(String value) throws DaoException {
-        List<Word> words = new ArrayList<>();
-        String query = "SELECT * FROM words WHERE word LIKE ?";
-
-        try (var statement = prepareStatement(query)) {
-            statement.setString(1, "%" + value + "%");
-            ResultSet resultSet = statement.executeQuery();
-
-            while (resultSet.next()) {
-                Word word = mapResultSetToWordEntity(resultSet);
-                int wordId = word.getId();
-                word.setSentences(getSentencesFor(wordId));
-                word.setCollocations(getCollocationsFor(wordId));
-                words.add(word);
-            }
-        } catch (SQLException ex) {
-            throw new DaoException("Error while retrieving word records by value", ex);
-        }
-
-        return words;
+    private void deleteFromCollocations(int wordId) {
+        jdbcTemplate.update(DELETE_COLLOCATIONS_QUERY, wordId);
     }
 
 }

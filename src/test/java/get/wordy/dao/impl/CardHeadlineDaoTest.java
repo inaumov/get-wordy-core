@@ -29,11 +29,11 @@ public class CardHeadlineDaoTest {
         int vocabId = 1;
 
         // Execute DAO method
-        List<Word> cards = cardHeadlineDao.getWordsHeadlines(vocabId);
+        List<Word> words = cardHeadlineDao.getWordsHeadlines(vocabId);
 
         // Assert results
-        assertEquals(1, cards.size());
-        Word word = cards.getFirst();
+        assertEquals(1, words.size());
+        Word word = words.getFirst();
         assertNotNull(word);
 
         List<String> sentences = word.getStrSentences();
@@ -51,7 +51,7 @@ public class CardHeadlineDaoTest {
         assertAll(
                 "Grouped assertions of Word sub-entity",
                 () -> assertEquals(1, word.getId()),
-                () -> assertEquals("example1", word.getValue()),
+                () -> assertEquals("example1", word.getLemma()),
                 () -> assertEquals("ɪgˈzɑːmpl", word.getTranscription()),
                 () -> assertEquals("noun", word.getPartOfSpeech()),
                 () -> assertEquals("a word in vocab 1", word.getMeaning())
@@ -84,7 +84,7 @@ public class CardHeadlineDaoTest {
         assertAll(
                 "Grouped assertions of Word sub-entity",
                 () -> assertEquals(1, word.getId()),
-                () -> assertEquals("example1", word.getValue()),
+                () -> assertEquals("example1", word.getLemma()),
                 () -> assertEquals("ɪgˈzɑːmpl", word.getTranscription()),
                 () -> assertEquals("noun", word.getPartOfSpeech()),
                 () -> assertEquals("a word in vocab 1", word.getMeaning())
@@ -94,32 +94,30 @@ public class CardHeadlineDaoTest {
     @Test
     void testGetWordsHeadlinesForExercise() {
         // Execute DAO method
-        List<Exercise> cards = cardHeadlineDao.getCardsForExercise("john-123", 1, 5);
+        List<FlashCard> cards = cardHeadlineDao.getFlashCards("john-123", 1);
 
         // Assert results
         assertEquals(1, cards.size());
-        Exercise card = cards.getFirst();
+        FlashCard card = cards.getFirst();
 
         assertAll(
                 "Grouped assertions of Card Headline",
-                () -> assertThat(card.getWordId()).isEqualTo(1),
+                () -> assertThat(card.wordId()).isEqualTo(1),
 
                 // select only those which has both example and matched words value. as most viable
-                () -> assertEquals(2, card.getSentences().size()),
-                () -> assertEquals("Test sentence 1", card.getSentences().getFirst().getExample()),
-                () -> assertEquals("sentence 1", card.getSentences().getFirst().getMatchedWords()),
-                () -> assertEquals("Test sentence 4", card.getSentences().getLast().getExample()),
-                () -> assertEquals("sentence 4", card.getSentences().getLast().getMatchedWords())
+                () -> assertEquals(2, card.getStrSentences().size()),
+                () -> assertEquals("Test sentence 1", card.sentences().getFirst().example()),
+                () -> assertEquals("sentence 1", card.sentences().getFirst().matchedWords()),
+                () -> assertEquals("Test sentence 4", card.sentences().getLast().example()),
+                () -> assertEquals("sentence 4", card.sentences().getLast().matchedWords())
         );
-        Word word = card.getWord();
-        assertNotNull(word);
         assertAll(
                 "Grouped assertions of Word sub-entity",
-                () -> assertEquals(1, word.getId()),
-                () -> assertEquals("example1", word.getValue()),
-                () -> assertEquals("ɪgˈzɑːmpl", word.getTranscription()),
-                () -> assertEquals("noun", word.getPartOfSpeech()),
-                () -> assertEquals("a word in vocab 1", word.getMeaning())
+                () -> assertEquals(1, card.wordId()),
+                () -> assertEquals("example1", card.lemma()),
+                () -> assertEquals("ɪgˈzɑːmpl", card.transcription()),
+                () -> assertEquals("noun", card.partOfSpeech()),
+                () -> assertEquals("a word in vocab 1", card.meaning())
         );
     }
 

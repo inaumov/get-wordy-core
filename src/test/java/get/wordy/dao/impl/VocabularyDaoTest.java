@@ -170,7 +170,7 @@ public class VocabularyDaoTest {
         assertTrue(deletedVocabulary.isEmpty());
 
         // Verify associated word references are deleted
-        Set<Integer> wordsRefs = vocabularyDao.getWordRefs(101);
+        Set<Integer> wordsRefs = vocabularyDao.getWordIds(101);
         assertTrue(wordsRefs.isEmpty());
     }
 
@@ -179,7 +179,7 @@ public class VocabularyDaoTest {
     public void testAddRefsToVocabulary(int vocabId, Integer[] toAdd, int expectedTotal) {
         vocabularyDao.addWordsToVocabulary(vocabId, toAdd);
 
-        Set<Integer> wordsRefs = vocabularyDao.getWordRefs(vocabId);
+        Set<Integer> wordsRefs = vocabularyDao.getWordIds(vocabId);
         assertEquals(expectedTotal, wordsRefs.size());
         // verify added references
         assertTrue(wordsRefs.containsAll(Set.of(toAdd)));
@@ -196,7 +196,7 @@ public class VocabularyDaoTest {
     public void testRemoveRefsFromVocabulary() {
         vocabularyDao.removeWordsFromVocabulary(101, 10, 13);
 
-        Set<Integer> wordsRefs = vocabularyDao.getWordRefs(101);
+        Set<Integer> wordsRefs = vocabularyDao.getWordIds(101);
         assertEquals(Set.of(11, 12), wordsRefs);
         // verify updateTime
         Vocabulary result = vocabularyDao.selectById(101)
@@ -210,7 +210,7 @@ public class VocabularyDaoTest {
     @ParameterizedTest
     @MethodSource(value = "provideIdsGet")
     public void testGetRefsByVocabularyId(int vocabId, Set<Integer> expected) {
-        Set<Integer> wordsRefs = vocabularyDao.getWordRefs(vocabId);
+        Set<Integer> wordsRefs = vocabularyDao.getWordIds(vocabId);
 
         assertNotNull(wordsRefs);
         assertEquals(expected, wordsRefs);

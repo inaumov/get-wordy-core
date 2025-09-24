@@ -14,10 +14,6 @@ public class DaoFactory {
         return new DaoFactory(txManager);
     }
 
-    public WordDao getWordDao() {
-        return new WordDao(txManager);
-    }
-
     public ProgressDao getCardDao() {
         return new ProgressDao(txManager);
     }

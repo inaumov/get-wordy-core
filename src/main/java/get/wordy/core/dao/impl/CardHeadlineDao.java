@@ -28,25 +28,22 @@ public class CardHeadlineDao {
     private static final String GET_CARDS_FOR_EXERCISE = """
             SELECT
                 vhw.vocab_id,
-                vhw.word_ref as word_id,
-                c.score,
-                c.last_update_time,
-                w.word,
+                vhw.word_id AS word_id,
+                w.lemma,
                 w.part_of_speech,
                 w.transcription,
                 w.meaning,
+                w.register,
+                w.domain,
                 array_remove(
                     array_agg(DISTINCT 'example:' || in_context.example || ';' || 'matchedWords:' || in_context.matched_words),
                     NULL
                 ) AS exercise_sentences
             FROM vocab_has_words vhw
-                JOIN words w ON vhw.word_ref = w.id
-                LEFT JOIN in_context ON vhw.word_ref = in_context.word_id
-                LEFT JOIN progress c ON vhw.word_ref = c.word_id AND vhw.vocab_id = c.vocab_id AND c.user_id = :userId
-            WHERE vhw.vocab_id = :vocabId AND (c.status != 'LEARNED' OR c.status IS NULL)
-            GROUP BY vhw.vocab_id, vhw.word_ref, w.id, c.score, c.last_update_time
-            ORDER BY c.score
-            LIMIT :limit;
+                JOIN words w ON vhw.word_id = w.id
+                LEFT JOIN in_context ON w.id = in_context.word_id
+            WHERE vhw.vocab_id = :vocabId
+            GROUP BY vhw.vocab_id, vhw.word_id, w.lemma, w.transcription, w.id;
     """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -67,10 +64,9 @@ public class CardHeadlineDao {
         return jdbcTemplate.queryForObject(GET_WORD_HEADLINE, parameters, new WordHeadlineRowMapper());
     }
 
-    public List<Exercise> getCardsForExercise(String userId, int vocabId, int limit) {
+    public List<FlashCard> getFlashCards(String userId, int vocabId) {
         MapSqlParameterSource parameters = new MapSqlParameterSource("userId", userId);
         parameters.addValue("vocabId", vocabId);
-        parameters.addValue("limit", limit);
         return jdbcTemplate.query(GET_CARDS_FOR_EXERCISE, parameters, new ExerciseRowMapper());
     }
 
@@ -82,7 +78,7 @@ public class CardHeadlineDao {
 
             Word word = new Word(
                     wordId,
-                    rs.getString("word"),
+                    rs.getString("lemma"),
                     rs.getString("part_of_speech"),
                     rs.getString("transcription"),
                     rs.getString("meaning"));
@@ -100,25 +96,25 @@ public class CardHeadlineDao {
         }
     }
 
-    private static class ExerciseRowMapper implements RowMapper<Exercise> {
+    private static class ExerciseRowMapper implements RowMapper<FlashCard> {
         @Override
-        public Exercise mapRow(ResultSet rs, int rowNum) throws SQLException {
+        public FlashCard mapRow(ResultSet rs, int rowNum) throws SQLException {
+            // words table
             Integer wordId = rs.getInt("word_id");
-
-            Exercise exercise = new Exercise();
-            exercise.setWordId(wordId);
-
-            Word word = new Word(wordId,
-                    rs.getString("word"),
-                    rs.getString("part_of_speech"),
-                    rs.getString("transcription"),
-                    rs.getString("meaning"));
-            exercise.setWord(word);
-
+            String word = rs.getString("lemma");
+            String transcription = rs.getString("transcription");
+            String partOfSpeech = rs.getString("part_of_speech");
+            String meaning = rs.getString("meaning");
+            // aggregation
             Array exerciseSentencesArr = rs.getArray("exercise_sentences");
-            exercise.setSentences(asModelList((String[]) exerciseSentencesArr.getArray()));
-
-            return exercise;
+            return new FlashCard(
+                    wordId,
+                    word,
+                    transcription,
+                    partOfSpeech,
+                    meaning,
+                    asModelList((String[]) exerciseSentencesArr.getArray())
+            );
         }
 
         private static List<Sentence> asModelList(String[] exerciseSentences) {

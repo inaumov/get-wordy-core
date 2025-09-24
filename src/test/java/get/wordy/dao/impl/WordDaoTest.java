@@ -1,37 +1,44 @@
 package get.wordy.dao.impl;
 
-import get.wordy.core.api.bean.InContext;
+import get.wordy.core.api.bean.Sentence;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.api.bean.Word;
 import get.wordy.core.dao.impl.WordDao;
-import org.junit.jupiter.api.BeforeEach;
+import get.wordy.dao.config.SpringJdbcConfig;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlConfig;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_CLASS;
 
-public class WordDaoTest extends BaseDaoTest {
+@Sql(
+        value = "/test-data.sql",
+        executionPhase = BEFORE_TEST_CLASS,
+        config = @SqlConfig(encoding = "utf-8")
+)
+@SpringJUnitConfig(classes = {WordDao.class, SpringJdbcConfig.class})
+@JdbcTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+public class WordDaoTest {
 
     private static final int PREDEFINED_WORDS_CNT = 3;
     private static final int EXPECTED_NEW_ID = 4;
 
+    @Autowired
     private WordDao wordDao;
-
-    private static final Random random = new Random();
-
-    @BeforeEach
-    public void setUp() throws Exception {
-        super.setUp();
-        wordDao = daoFactory.getWordDao();
-        assertNotNull(wordDao);
-    }
 
     @Test
     public void testInsert() throws DaoException {
         Word word = new Word("apple", "noun", "transcription", "Some text");
-        InContext testSentence = InContext.of("Test sentence")
+        Sentence testSentence = Sentence.of("Test sentence")
                 .withMatchedWords("test");
         word.addSentence(testSentence);
         word.addCollocation("Test collocation");
@@ -40,23 +47,23 @@ public class WordDaoTest extends BaseDaoTest {
         assertTrue(inserted.getId() >= EXPECTED_NEW_ID);
 
         Set<Integer> ids = Set.of(1, 2, 3, inserted.getId());
+        List<Word> words = wordDao.findAllByIds(ids);
 
-        List<Word> words = wordDao.selectAll(ids);
         assertNotNull(words);
         assertEquals(PREDEFINED_WORDS_CNT + 1, words.size());
 
         int id = 1;
         for (Word actual : words) {
-            if (actual.getId() >= EXPECTED_NEW_ID) {
-                assertEquals(word.getValue(), actual.getValue());
-                assertEquals("noun", actual.getPartOfSpeech());
-                assertEquals("transcription", actual.getTranscription());
-                assertEquals("Some text", actual.getMeaning());
-                assertSentences(actual.getSentences(), wordDao.getSentencesFor(actual.getId()));
-                assertCollocations(actual.getCollocations(), wordDao.getCollocationsFor(actual.getId()));
+            if (Objects.equals(actual.getId(), inserted.getId())) {
+                assertEquals(word.getLemma(), actual.getLemma());
+                assertEquals(word.getPartOfSpeech(), actual.getPartOfSpeech());
+                assertEquals(word.getTranscription(), actual.getTranscription());
+                assertEquals(word.getMeaning(), actual.getMeaning());
+                assertSentences(word.getSentences(), actual.getSentences());
+                assertCollocations(word.getCollocations(), actual.getCollocations());
             } else {
                 assertEquals(id, actual.getId());
-                assertEquals("example" + id, actual.getValue());
+                assertEquals("example" + id, actual.getLemma());
                 assertNotNull(actual.getTranscription());
             }
             id++;
@@ -65,45 +72,40 @@ public class WordDaoTest extends BaseDaoTest {
 
     @Test
     public void testUpdate() throws DaoException {
-        // update an existed word
         for (int id = 1; id <= PREDEFINED_WORDS_CNT; id++) {
             Word word = new Word(id, "to test " + id, "VERB", "transcription" + id, "test");
-            InContext testSentence = InContext.of("Test sentence")
-                    .withMatchedWords("test");
+            Sentence testSentence = Sentence.of("Test sentence").withMatchedWords("test");
             word.addSentence(testSentence);
             word.addStrSentence("Test sentence 2");
             word.addCollocation("Test collocation");
-            int i = wordDao.update(word);
-            assertEquals(1, i);
-        }
-        // count words after updating
-        List<Word> words = wordDao.selectAll(Set.of(1, 2, 3));
-        assertNotNull(words);
-        assertEquals(PREDEFINED_WORDS_CNT, words.size());
 
-        int id = 1;
-        for (Word actual : words) {
-            assertEquals(id, actual.getId());
-            assertEquals("to test " + id, actual.getValue());
-            assertEquals("transcription" + id, actual.getTranscription());
-            assertSentences(actual.getSentences(), wordDao.getSentencesFor(actual.getId()));
-            assertCollocations(actual.getCollocations(), wordDao.getCollocationsFor(actual.getId()));
-            id++;
+            int updated = wordDao.update(word);
+            assertEquals(1, updated);
+
+            Word updatedWord = wordDao.findById(id);
+            assertNotNull(updatedWord);
+            assertEquals(word.getLemma(), updatedWord.getLemma());
+            assertEquals(word.getPartOfSpeech(), updatedWord.getPartOfSpeech());
+            assertEquals(word.getTranscription(), updatedWord.getTranscription());
+            assertEquals(word.getMeaning(), updatedWord.getMeaning());
+            assertSentences(word.getSentences(), updatedWord.getSentences());
+            assertCollocations(word.getCollocations(), updatedWord.getCollocations());
         }
     }
 
     @Test
-    public void testDeleteAbandonedWord() throws DaoException {
+    public void delete_whenAbandonedWord() throws DaoException {
         int abandonedWordId = 3;
         wordDao.delete(abandonedWordId);
-        List<Word> wordsAfter = wordDao.selectAll(Set.of(1, 2, 3));
+
+        List<Word> wordsAfter = wordDao.findAllByIds(Set.of(1, 2, 3));
         assertNotNull(wordsAfter);
         assertEquals(PREDEFINED_WORDS_CNT - 1, wordsAfter.size());
         assertTestData(wordsAfter);
     }
 
     @Test
-    public void testDeleteWordViolationException() throws DaoException {
+    public void delete_whenViolationException() throws DaoException {
         int wordIdReferenced = 1;
         DaoException daoException = assertThrows(DaoException.class,
                 () -> wordDao.delete(wordIdReferenced)
@@ -112,46 +114,36 @@ public class WordDaoTest extends BaseDaoTest {
     }
 
     @Test
-    public void testSelectAll() throws DaoException {
-        List<Word> words = wordDao.selectAll(Set.of(1, 2, 3, 4));
+    public void findAllByIds() throws DaoException {
+        List<Word> words = wordDao.findAllByIds(Set.of(1, 2, 3, 4));
         assertNotNull(words);
         assertEquals(PREDEFINED_WORDS_CNT, words.size());
         assertTestData(words);
     }
 
     @Test
-    public void testAddWords() throws Exception {
-        // generate realistic test data
+    public void addWords() {
         List<Word> words = generateTestData();
-        List<Word> copyReturned = wordDao.addWords(words);
+        List<Word> inserted = wordDao.addWords(words);
 
-        List<Integer> generated = copyReturned
-                .stream()
-                .map(Word::getId)
-                .toList();
-        Set<Integer> all = new HashSet<>();
-        all.add(1);
-        all.add(2);
-        all.add(3);
-        all.addAll(generated);
+        List<Integer> generatedIds = inserted.stream().map(Word::getId).toList();
+        Set<Integer> allIds = new HashSet<>(Set.of(1, 2, 3));
+        allIds.addAll(generatedIds);
 
-        List<Word> allWordsAfter = wordDao.selectAll(all);
+        List<Word> allWordsAfter = wordDao.findAllByIds(allIds);
         assertNotNull(allWordsAfter);
         assertEquals(PREDEFINED_WORDS_CNT + words.size(), allWordsAfter.size());
 
-        Map<String, Word> returnedWordsByValue = copyReturned.stream()
-                .collect(Collectors.toMap(Word::getValue, word -> word));
+        Map<String, Word> returnedByValue = inserted.stream()
+                .collect(Collectors.toMap(Word::getLemma, w -> w));
 
-        // now, check that each generated word is present in copyReturned
-        for (Word expectedWord : words) {
-            // look for the expected word in the returned map (by value or id)
-            assertTrue(returnedWordsByValue.containsKey(expectedWord.getValue()),
-                    "Missing word: " + expectedWord.getValue());
-
-            // optional: You could also assert that the ID matches if you want to be more specific:
-            Word actualWord = returnedWordsByValue.get(expectedWord.getValue());
-            assertTrue(actualWord.getId() >= EXPECTED_NEW_ID, "Word id should not be 0.");;
-            assertEquals(expectedWord.getValue(), actualWord.getValue(), "Word values should match.");
+        for (Word expected : words) {
+            Word actual = returnedByValue.get(expected.getLemma());
+            assertNotNull(actual, "Missing word: " + expected.getLemma());
+            assertTrue(actual.getId() >= EXPECTED_NEW_ID);
+            assertEquals(expected.getLemma(), actual.getLemma());
+            assertSentences(expected.getSentences(), actual.getSentences());
+            assertCollocations(expected.getCollocations(), actual.getCollocations());
         }
     }
 
@@ -159,7 +151,7 @@ public class WordDaoTest extends BaseDaoTest {
         for (int i = 0, id = 1; i < words.size(); i++, id++) {
             Word next = words.get(i);
             assertEquals(id, next.getId());
-            assertEquals("example" + id, next.getValue());
+            assertEquals("example" + id, next.getLemma());
             assertNotNull(next.getTranscription());
             assertEquals("noun", next.getPartOfSpeech().toLowerCase());
             assertNotNull(next.getMeaning());
@@ -167,51 +159,46 @@ public class WordDaoTest extends BaseDaoTest {
     }
 
     @Test
-    void testGetWord() throws DaoException {
-        var word = wordDao.selectById(1);
+    void findById() throws DaoException {
+        var word = wordDao.findById(1);
         assertNotNull(word);
         assertEquals(1, word.getId());
-        assertEquals("example1", word.getValue());
+        assertEquals("example1", word.getLemma());
         assertTrue(word.getMeaning().contains("a word"));
         assertEquals("noun", word.getPartOfSpeech());
         assertNotNull(word.getTranscription());
     }
 
     @Test
-    void testGetWordNotExists() throws DaoException {
-        var word = wordDao.selectById(100);
+    void findById_whenNotExists() throws DaoException {
+        var word = wordDao.findById(100);
         assertNull(word);
     }
 
     @Test
-    void testSearch() throws DaoException {
-        // verify search
-        var word = wordDao.selectByValue("example1").getFirst();
+    void findByLemma() throws DaoException {
+        var word = wordDao.findByLemma("example1").getFirst();
         assertNotNull(word);
         assertEquals(1, word.getId());
-        assertEquals("example1", word.getValue());
+        assertEquals("example1", word.getLemma());
         assertTrue(word.getMeaning().contains("a word"));
         assertEquals("noun", word.getPartOfSpeech());
         assertNotNull(word.getTranscription());
     }
 
-    private static void assertSentences(List<InContext> expectedSentences, List<InContext> actualSentences) {
-        assertNotNull(actualSentences);
-
-        for (int i = 0; i < expectedSentences.size(); i++) {
-            String expected = expectedSentences.get(i).getExample();
-            InContext actual = actualSentences.get(i);
-            assertEquals(expected, actual.getExample());
+    private static void assertSentences(List<Sentence> expected, List<Sentence> actual) {
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        for (int i = 0; i < expected.size(); i++) {
+            assertEquals(expected.get(i).example(), actual.get(i).example());
         }
     }
 
-    private static void assertCollocations(List<String> expectedCollocations, List<String> actualCollocations) {
-        assertNotNull(actualCollocations);
-
-        for (int i = 0; i < expectedCollocations.size(); i++) {
-            String expected = expectedCollocations.get(i);
-            String actual = actualCollocations.get(i);
-            assertEquals(expected, actual);
+    private static void assertCollocations(List<String> expected, List<String> actual) {
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        for (int i = 0; i < expected.size(); i++) {
+            assertEquals(expected.get(i), actual.get(i));
         }
     }
 
@@ -229,19 +216,17 @@ public class WordDaoTest extends BaseDaoTest {
                 .toList();
     }
 
-    private List<String> generateSentences(String wordValue) {
-        // generate some sentences that include the word (to make it more realistic)
+    private List<String> generateSentences(String lemma) {
         return List.of(
-                "The " + wordValue + " is a common term used in the industry.",
-                "Many people find the " + wordValue + " concept difficult to understand.",
-                "It is crucial to grasp the idea of " + wordValue + " for better performance.",
-                wordValue + " is often misunderstood in discussions about technology."
+                "The " + lemma + " is a common term used in the industry.",
+                "Many people find the " + lemma + " concept difficult to understand.",
+                "It is crucial to grasp the idea of " + lemma + " for better performance.",
+                lemma + " is often misunderstood in discussions about technology."
         );
     }
 
-    private List<String> generateCollocations(String wordValue) {
-        // simple predefined collocations that can be related to the word
-        return switch (wordValue.toLowerCase()) {
+    private List<String> generateCollocations(String lemma) {
+        return switch (lemma.toLowerCase()) {
             case "explain" -> List.of("explain in detail", "explain clearly", "explain further");
             case "plan" -> List.of("long-term plan", "strategic plan", "action plan");
             case "singleton" -> List.of("singleton pattern", "singleton class", "singleton instance");

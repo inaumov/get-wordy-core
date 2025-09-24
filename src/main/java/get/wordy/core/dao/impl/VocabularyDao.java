@@ -44,9 +44,9 @@ import java.util.stream.Collectors;
  *   </li>
  *   <li><b>Word Management:</b>
  *     <ul>
- *       <li>{@code addWordsToVocabulary(int vocabId, Set<Integer> wordRefs)}: Associates multiple words with a vocabulary.</li>
- *       <li>{@code removeWordsFromVocabulary(int vocabId, Set<Integer> wordRefs)}: Removes multiple words from a vocabulary.</li>
- *       <li>{@code getWordRefs(int vocabId)}: Retrieves all word references associated with a vocabulary.</li>
+ *       <li>{@code addWordsToVocabulary(int vocabId, Set<Integer> wordIds)}: Associates multiple words with a vocabulary.</li>
+ *       <li>{@code removeWordsFromVocabulary(int vocabId, Set<Integer> wordIds)}: Removes multiple words from a vocabulary.</li>
+ *       <li>{@code getWordIds(int vocabId)}: Retrieves all word references associated with a vocabulary.</li>
  *     </ul>
  *   </li>
  *   <li><b>Query Features:</b>
@@ -90,7 +90,7 @@ public class VocabularyDao {
                        vocabs.is_shared,
                        vocabs.create_time,
                        vocabs.update_time,
-                       COUNT(refs.word_ref) AS words_total
+                       COUNT(refs.word_id) AS words_total
                 FROM vocabularies vocabs
                 LEFT JOIN vocab_has_words refs ON refs.vocab_id = vocabs.vocab_id
                 WHERE vocabs.owner_id = :ownerId AND vocabs.owner_type = :ownerType
@@ -231,28 +231,28 @@ public class VocabularyDao {
         return jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> processRecord(rs));
     }
 
-    public void addWordsToVocabulary(int vocabId, Integer... wordRefs) {
+    public void addWordsToVocabulary(int vocabId, Integer... wordIds) {
         String query = """
-                INSERT INTO vocab_has_words (vocab_id, word_ref)
-                VALUES (:vocabId, :wordRef)
-                ON CONFLICT (vocab_id, word_ref) DO NOTHING
+                INSERT INTO vocab_has_words (vocab_id, word_id)
+                VALUES (:vocabId, :wordId)
+                ON CONFLICT (vocab_id, word_id) DO NOTHING
                 """;
-        bulkWordsUpdate(query, vocabId, wordRefs);
+        bulkWordsUpdate(query, vocabId, wordIds);
     }
 
-    public void removeWordsFromVocabulary(int vocabId, Integer... wordRefs) {
+    public void removeWordsFromVocabulary(int vocabId, Integer... wordIds) {
         String deleteQuery = """
                 DELETE FROM vocab_has_words
-                WHERE vocab_id = :vocabId AND word_ref = :wordRef
+                WHERE vocab_id = :vocabId AND word_id = :wordId
                 """;
-        bulkWordsUpdate(deleteQuery, vocabId, wordRefs);
+        bulkWordsUpdate(deleteQuery, vocabId, wordIds);
     }
 
-    private void bulkWordsUpdate(String query, int vocabId, Integer... wordRefs) {
-        int[] results = jdbcTemplate.batchUpdate(query, Arrays.stream(wordRefs)
-                .map(wordRef -> new MapSqlParameterSource()
+    private void bulkWordsUpdate(String query, int vocabId, Integer... wordIds) {
+        int[] results = jdbcTemplate.batchUpdate(query, Arrays.stream(wordIds)
+                .map(wordId -> new MapSqlParameterSource()
                         .addValue("vocabId", vocabId)
-                        .addValue("wordRef", wordRef))
+                        .addValue("wordId", wordId))
                 .toArray(MapSqlParameterSource[]::new));
 
         if (Arrays.stream(results).anyMatch(i -> i > 0)) {
@@ -261,21 +261,21 @@ public class VocabularyDao {
         }
     }
 
-    public Set<Integer> getWordRefs(int vocabId) {
+    public Set<Integer> getWordIds(int vocabId) {
         String query = """
-                SELECT word_ref
+                SELECT word_id
                 FROM vocab_has_words
                 WHERE vocab_id = :vocabId
                 """;
         MapSqlParameterSource params = new MapSqlParameterSource("vocabId", vocabId);
-        return jdbcTemplate.queryForStream(query, params, (rs, rowNum) -> rs.getInt("word_ref"))
+        return jdbcTemplate.queryForStream(query, params, (rs, rowNum) -> rs.getInt("word_id"))
                 .collect(Collectors.toSet());
     }
 
     public int deleteVocabularyById(int vocabId) {
         // Delete related entries first
-        String deleteWordsRefs = "DELETE FROM vocab_has_words WHERE vocab_id = :vocabId";
-        jdbcTemplate.update(deleteWordsRefs, new MapSqlParameterSource("vocabId", vocabId));
+        String deleteWordsIds = "DELETE FROM vocab_has_words WHERE vocab_id = :vocabId";
+        jdbcTemplate.update(deleteWordsIds, new MapSqlParameterSource("vocabId", vocabId));
 
         // Delete the vocabulary entry
         String deleteVocabulary = "DELETE FROM vocabularies WHERE vocab_id = :vocabId";

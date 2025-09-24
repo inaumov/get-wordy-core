@@ -93,7 +93,7 @@ public class WordsExplanationService implements IWordExplanationService {
     private Word loadFullWordHeadlineFromDb(int wordId) {
         Word word;
         try {
-            word = wordDao.selectById(wordId);
+            word = wordDao.findById(wordId);
         } catch (DaoException e) {
             LOG.error("Error while loading a word headline by id = {}", wordId, e);
             throw new DictionaryServiceException();
@@ -105,14 +105,14 @@ public class WordsExplanationService implements IWordExplanationService {
         return word;
     }
 
-    private List<Word> loadFullWordHeadlinesFromDb(String value) {
+    private List<Word> loadFullWordHeadlinesFromDb(String lemma) {
         List<Word> words;
         try {
             connection.open();
-            words = wordDao.selectByValue(value);
+            words = wordDao.findByLemma(lemma);
             connection.commit();
         } catch (DaoException e) {
-            LOG.error("Error while loading a word by value = {}", value, e);
+            LOG.error("Error while loading a word by lemma = {}", lemma, e);
             throw new DictionaryServiceException();
         }
         for (Word word : words) {

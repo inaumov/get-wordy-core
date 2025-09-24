@@ -28,6 +28,9 @@ public class ProgressDao extends BaseDao<Progress> {
     private static final String GET_PROGRESS_IN_VOCAB_QUERY = """
             SELECT * FROM progress WHERE vocab_id=? AND user_id=?
             """;
+    private static final String PICK_CARD_FOR_EXERCISE_QUERY = """
+            SELECT * FROM progress WHERE vocab_id=? AND user_id=? AND (status != 'LEARNED' OR status IS NULL) LIMIT ?
+            """;
     private static final String GET_PROGRESS_BY_WORD_REFS_QUERY = """
             SELECT * FROM progress WHERE vocab_id=? AND user_id=? AND word_id IN (%s)
             """;
@@ -77,13 +80,13 @@ public class ProgressDao extends BaseDao<Progress> {
         }
     }
 
-    public List<Progress> selectCards(OwnerId ownerId, int vocabId, int... wordRefs) throws DaoException {
+    public List<Progress> selectByWordIds(OwnerId ownerId, int vocabId, int... wordIds) throws DaoException {
         // generate the dynamic query
         String selectInQuery;
-        if (wordRefs.length == 0) {
+        if (wordIds.length == 0) {
             selectInQuery = GET_PROGRESS_IN_VOCAB_QUERY;
         } else {
-            String placeholders = String.join(",", Collections.nCopies(wordRefs.length, "?"));
+            String placeholders = String.join(",", Collections.nCopies(wordIds.length, "?"));
             selectInQuery = String.format(GET_PROGRESS_BY_WORD_REFS_QUERY, placeholders);
         }
 
@@ -93,9 +96,27 @@ public class ProgressDao extends BaseDao<Progress> {
             preparedStatement.setString(2, ownerId.ownerId());
             // bind parameters
             int index = 3;
-            for (Integer id : wordRefs) {
+            for (Integer id : wordIds) {
                 preparedStatement.setInt(index++, id);
             }
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Progress progress = new Progress();
+                mapResultSetToProgress(resultSet, progress);
+                data.add(progress);
+            }
+        } catch (SQLException ex) {
+            throw new DaoException("Error while retrieving progress records for vocabulary id", ex);
+        }
+        return data;
+    }
+
+    public List<Progress> pickForExercise(OwnerId ownerId, int vocabId, int limit) throws DaoException {
+        ArrayList<Progress> data = new ArrayList<>();
+        try (var preparedStatement = prepareStatement(PICK_CARD_FOR_EXERCISE_QUERY)) {
+            preparedStatement.setInt(1, vocabId);
+            preparedStatement.setString(2, ownerId.ownerId());
+            preparedStatement.setInt(3, limit);
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 Progress progress = new Progress();

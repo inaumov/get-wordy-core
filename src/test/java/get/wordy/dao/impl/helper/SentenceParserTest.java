@@ -25,8 +25,8 @@ public class SentenceParserTest {
         String expectedFullSentence = getFullSentenceFromRowData(rowData);
         String expectedMatchedWords = getMatchedWordsFromRowData(rowData);
 
-        assertEquals(expectedFullSentence, parsedSentence.getExample());
-        assertEquals(expectedMatchedWords, parsedSentence.getMatchedWords());
+        assertEquals(expectedFullSentence, parsedSentence.example());
+        assertEquals(expectedMatchedWords, parsedSentence.matchedWords());
     }
 
     private String getFullSentenceFromRowData(String rowData) {

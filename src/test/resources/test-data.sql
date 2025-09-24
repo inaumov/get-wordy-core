@@ -7,19 +7,19 @@ truncate table vocabularies cascade;
 insert into vocabularies (vocab_id, name) values (1, 'vocabulary1');
 insert into vocabularies (vocab_id, name) values (2, 'other vocabulary');
 
-insert into words (id, word, part_of_speech, transcription, meaning) values (1, 'example1', 'noun', 'ɪgˈzɑːmpl', 'a word in vocab 1');
-insert into words (id, word, part_of_speech, transcription, meaning) values (2, 'example2', 'noun', 'ɪgˈzɑːmpl', 'other word in vocab 2');
-insert into words (id, word, part_of_speech, transcription, meaning) values (3, 'example3', 'noun', 'ɪgˈzɑːmpl', 'not assigned word');
+insert into words (id, lemma, part_of_speech, transcription, meaning, created_at) values (1, 'example1', 'noun', 'ɪgˈzɑːmpl', 'a word in vocab 1', now());
+insert into words (id, lemma, part_of_speech, transcription, meaning, created_at) values (2, 'example2', 'noun', 'ɪgˈzɑːmpl', 'other word in vocab 2', now());
+insert into words (id, lemma, part_of_speech, transcription, meaning, created_at) values (3, 'example3', 'noun', 'ɪgˈzɑːmpl', 'not assigned word', now());
 
-INSERT INTO vocab_has_words (vocab_id, word_ref)
+INSERT INTO vocab_has_words (vocab_id, word_id)
 VALUES (1, 1),
        (2, 2);
 
 insert into progress (vocab_id, word_id, status, score, create_time, last_update_time) values (1, 1, 'TO_LEARN', 3, '2014-08-17 17:40:03', CURRENT_TIMESTAMP);
 insert into progress (vocab_id, word_id, status, score, create_time, last_update_time) values (2, 2, 'TO_LEARN', 95, '2014-08-17 17:40:04', CURRENT_TIMESTAMP);
 
-insert into collocations (word_id, example) values (1, 'collocation1');
-insert into collocations (word_id, example) values (2, 'collocation2');
+insert into collocations (word_id, phrase) values (1, 'collocation1');
+insert into collocations (word_id, phrase) values (2, 'collocation2');
 
 insert into in_context (word_id, example, matched_words) values (1, 'Test sentence 1', 'sentence 1');
 insert into in_context (word_id, example) values (2, 'Test sentence 2');
@@ -41,7 +41,7 @@ VALUES (101, 'class001', 'class', 'Vocabulary Basics', false),
        (103, 'class002', 'class', 'Advanced Vocabulary', false);
 
 -- words table
-INSERT INTO words (id, word, part_of_speech)
+INSERT INTO words (id, lemma, part_of_speech)
 VALUES (10, 'run', 'verb'),
        (11, 'jump', 'verb'),
        (12, 'blue', 'adjective'),
@@ -55,7 +55,7 @@ VALUES (10, 'run', 'verb'),
        (20, 'happy', 'adjective');
 
 -- vocab-has-words relation
-INSERT INTO vocab_has_words (vocab_id, word_ref)
+INSERT INTO vocab_has_words (vocab_id, word_id)
 VALUES (101, 10),
        (101, 11),
        (101, 12),
