@@ -603,10 +603,10 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
                         .collect(Collectors.toList());
 
                 if (cardsToInsert.size() == 1) {
-                    Progress inserted = progressDao.insert(ownerId, cardsToInsert.getFirst());
+                    Progress inserted = progressDao.addRecord(ownerId, cardsToInsert.getFirst());
                     allProgresses.add(inserted);
                 } else {
-                    progressDao.addCards(ownerId, cardsToInsert);
+                    progressDao.addRecords(ownerId, cardsToInsert);
                     // Fetch newly inserted cards back
                     int[] insertedWordIds = cardsToInsert.stream()
                             .mapToInt(Progress::getWordId)

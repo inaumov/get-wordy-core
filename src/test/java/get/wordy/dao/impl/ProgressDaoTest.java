@@ -5,28 +5,29 @@ import get.wordy.core.api.bean.CardStatus;
 import get.wordy.core.api.id.OwnerId;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.ProgressDao;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import java.time.Instant;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringJUnitConfig(classes = {ProgressDao.class})
+@JdbcTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class ProgressDaoTest extends BaseDaoTest {
 
+    @Autowired
     private ProgressDao progressDao;
+
     private final OwnerId ownerId = new OwnerId("john-123", "user");
 
-    @BeforeEach
-    public void setUp() throws Exception {
-        super.setUp();
-        progressDao = daoFactory.getCardDao();
-        assertNotNull(progressDao);
-    }
-
     @Test
-    public void testInsert() throws DaoException {
+    public void testAddRecord() throws DaoException {
         Progress newCard = new Progress();
         newCard.setWordId(3);
         newCard.setVocabId(2);
@@ -35,7 +36,7 @@ public class ProgressDaoTest extends BaseDaoTest {
         newCard.setInsertedAt(Instant.now());
 
         // insert
-        progressDao.insert(ownerId, newCard);
+        progressDao.addRecord(ownerId, newCard);
 
         // assert
         List<Progress> cards = progressDao.selectByWordIds(ownerId, 2, 2, 3);
@@ -113,7 +114,7 @@ public class ProgressDaoTest extends BaseDaoTest {
     }
 
     @Test
-    public void testAddCards() throws DaoException {
+    public void testAddRecords() throws DaoException {
         int vocabId = 2;
 
         Progress newCard = new Progress();
@@ -123,7 +124,7 @@ public class ProgressDaoTest extends BaseDaoTest {
         newCard.setStatus(CardStatus.TO_LEARN);
         newCard.setInsertedAt(Instant.now());
 
-        progressDao.addCards(ownerId, List.of(newCard));
+        progressDao.addRecords(ownerId, List.of(newCard));
 
         // assert
         List<Progress> cards = progressDao.selectByWordIds(ownerId, vocabId, 2, 3);

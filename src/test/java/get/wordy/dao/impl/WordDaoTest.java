@@ -4,30 +4,21 @@ import get.wordy.core.api.bean.Sentence;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.api.bean.Word;
 import get.wordy.core.dao.impl.WordDao;
-import get.wordy.dao.config.SpringJdbcConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
-import org.springframework.test.context.jdbc.Sql;
-import org.springframework.test.context.jdbc.SqlConfig;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_CLASS;
 
-@Sql(
-        value = "/test-data.sql",
-        executionPhase = BEFORE_TEST_CLASS,
-        config = @SqlConfig(encoding = "utf-8")
-)
-@SpringJUnitConfig(classes = {WordDao.class, SpringJdbcConfig.class})
+@SpringJUnitConfig(classes = {WordDao.class})
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-public class WordDaoTest {
+public class WordDaoTest extends BaseDaoTest {
 
     private static final int PREDEFINED_WORDS_CNT = 3;
     private static final int EXPECTED_NEW_ID = 4;

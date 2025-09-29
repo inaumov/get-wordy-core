@@ -547,7 +547,7 @@ public class GetWordyServiceTest {
         expectLastCall().andReturn(Collections.emptyList());
 
         Capture<Progress> cardCapture = Capture.newInstance();
-        progressDaoMock.insert(eq(JOHN_DOE), capture(cardCapture));
+        progressDaoMock.addRecord(eq(JOHN_DOE), capture(cardCapture));
         expectLastCall().andAnswer(() -> insertedProgressMock);
 
         progressDaoMock.batchUpsertProgress(JOHN_DOE, List.of(insertedProgressMock));
@@ -581,7 +581,7 @@ public class GetWordyServiceTest {
         progressDaoMock.selectByWordIds(JOHN_DOE, VOCAB_ID, 42, 87);
         expectLastCall().andReturn(Collections.emptyList());
 
-        progressDaoMock.addCards(JOHN_DOE, List.of(progress98, progress99));
+        progressDaoMock.addRecords(JOHN_DOE, List.of(progress98, progress99));
         expectLastCall().once();
 
         progressDaoMock.selectByWordIds(JOHN_DOE, VOCAB_ID, 42, 87);
