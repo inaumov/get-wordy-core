@@ -25,10 +25,10 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-boot.version>3.5.7</spring-boot.version>
-        <easymock.version>5.2.0</easymock.version>
-        <gw.jdbc.test-url>jdbc:postgresql://localhost:5432/get_wordy_test?schema=public</gw.jdbc.test-url>
-        <gw.jdbc.test-user>postgres</gw.jdbc.test-user>
-        <gw.jdbc.test-password>postgres</gw.jdbc.test-password>
+        <easymock.version>5.6.0</easymock.version>
+        <jdbc.test-url>jdbc:postgresql://localhost:5432/get_wordy_test?schema=public</jdbc.test-url>
+        <jdbc.test-user>postgres</jdbc.test-user>
+        <jdbc.test-password>postgres</jdbc.test-password>
     </properties>
 
     <dependencyManagement>
@@ -69,6 +69,10 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -132,19 +136,11 @@
             <plugin>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
-                <version>11.7.2</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.postgresql</groupId>
-                        <artifactId>postgresql</artifactId>
-                        <version>42.7.2</version>
-                    </dependency>
-                </dependencies>
                 <configuration>
                     <driver>org.postgresql.Driver</driver>
-                    <url>${gw.jdbc.test-url}</url>
-                    <user>${gw.jdbc.test-user}</user>
-                    <password>${gw.jdbc.test-password}</password>
+                    <url>${jdbc.test-url}</url>
+                    <user>${jdbc.test-user}</user>
+                    <password>${jdbc.test-password}</password>
                     <schemas>
                         <schema>public</schema>
                     </schemas>
@@ -156,6 +152,7 @@
                     <encoding>UTF-8</encoding>
                     <validateOnMigrate>true</validateOnMigrate>
                     <cleanDisabled>false</cleanDisabled>
+                    <baselineOnMigrate>true</baselineOnMigrate>
                 </configuration>
             </plugin>
         </plugins>
@@ -171,9 +168,9 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <environmentVariables>
-                                <get.wordy.jdbc.url>${gw.jdbc.test-url}</get.wordy.jdbc.url>
-                                <get.wordy.jdbc.user>${gw.jdbc.test-user}</get.wordy.jdbc.user>
-                                <get.wordy.jdbc.password>${gw.jdbc.test-password}</get.wordy.jdbc.password>
+                                <get.wordy.jdbc.url>${jdbc.test-url}</get.wordy.jdbc.url>
+                                <get.wordy.jdbc.user>${jdbc.test-user}</get.wordy.jdbc.user>
+                                <get.wordy.jdbc.password>${jdbc.test-password}</get.wordy.jdbc.password>
                             </environmentVariables>
                             <includes>
                                 <includes>%regex[.*(Service|Dao).*Test.*]</includes>
