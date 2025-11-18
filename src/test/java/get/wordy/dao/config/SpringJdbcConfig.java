@@ -40,7 +40,7 @@ public class SpringJdbcConfig {
     public Flyway flyway(DataSource dataSource) {
         FluentConfiguration configuration = Flyway.configure()
                 .dataSource(dataSource)
-                .locations("/db/migration")
+                .locations("/db/migration/core")
                 .table("schema_history");
         return new Flyway(configuration);
     }

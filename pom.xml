@@ -4,7 +4,7 @@
 
     <groupId>get.wordy</groupId>
     <artifactId>core</artifactId>
-    <version>2.5.0-SNAPSHOT</version>
+    <version>2.5.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Get Wordy :: Backend</name>
@@ -24,13 +24,11 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring-boot.version>3.4.10</spring-boot.version>
-        <junit.version>5.10.1</junit.version>
-        <easymock.version>5.2.0</easymock.version>
-        <flyway.version>9.22.3</flyway.version>
-        <gw.jdbc.test-url>jdbc:postgresql://localhost:5432/get_wordy_test?schema=public</gw.jdbc.test-url>
-        <gw.jdbc.test-user>postgres</gw.jdbc.test-user>
-        <gw.jdbc.test-password>postgres</gw.jdbc.test-password>
+        <spring-boot.version>3.5.7</spring-boot.version>
+        <easymock.version>5.6.0</easymock.version>
+        <jdbc.test-url>jdbc:postgresql://localhost:5432/get_wordy_test?schema=public</jdbc.test-url>
+        <jdbc.test-user>postgres</jdbc.test-user>
+        <jdbc.test-password>postgres</jdbc.test-password>
     </properties>
 
     <dependencyManagement>
@@ -39,13 +37,6 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit</groupId>
-                <artifactId>junit-bom</artifactId>
-                <version>${junit.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -74,13 +65,14 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>${flyway.version}</version>
-            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -106,30 +98,18 @@
     </dependencies>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.flywaydb</groupId>
-                    <artifactId>flyway-maven-plugin</artifactId>
-                    <version>${flyway.version}</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.12.1</version>
                 <configuration>
-                    <source>21</source>
-                    <target>21</target>
+                    <release>25</release>
                     <showWarnings>true</showWarnings>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>3.3.0</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -143,7 +123,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.5</version>
                 <configuration>
                     <includes>
                         <includes>%regex[.*(Service).*Test.*]</includes>
@@ -153,20 +132,23 @@
             <plugin>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
-                <version>${flyway.version}</version>
                 <configuration>
                     <driver>org.postgresql.Driver</driver>
-                    <url>${gw.jdbc.test-url}</url>
-                    <user>${gw.jdbc.test-user}</user>
-                    <password>${gw.jdbc.test-password}</password>
+                    <url>${jdbc.test-url}</url>
+                    <user>${jdbc.test-user}</user>
+                    <password>${jdbc.test-password}</password>
                     <schemas>
                         <schema>public</schema>
                     </schemas>
+                    <locations>
+                        <location>db/migration/core</location>
+                    </locations>
                     <createSchemas>true</createSchemas>
                     <table>schema_history</table>
                     <encoding>UTF-8</encoding>
                     <validateOnMigrate>true</validateOnMigrate>
                     <cleanDisabled>false</cleanDisabled>
+                    <baselineOnMigrate>true</baselineOnMigrate>
                 </configuration>
             </plugin>
         </plugins>
@@ -182,9 +164,9 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <environmentVariables>
-                                <get.wordy.jdbc.url>${gw.jdbc.test-url}</get.wordy.jdbc.url>
-                                <get.wordy.jdbc.user>${gw.jdbc.test-user}</get.wordy.jdbc.user>
-                                <get.wordy.jdbc.password>${gw.jdbc.test-password}</get.wordy.jdbc.password>
+                                <get.wordy.jdbc.url>${jdbc.test-url}</get.wordy.jdbc.url>
+                                <get.wordy.jdbc.user>${jdbc.test-user}</get.wordy.jdbc.user>
+                                <get.wordy.jdbc.password>${jdbc.test-password}</get.wordy.jdbc.password>
                             </environmentVariables>
                             <includes>
                                 <includes>%regex[.*(Service|Dao).*Test.*]</includes>
