@@ -170,8 +170,10 @@ public class WordDaoTest extends BaseDaoTest {
     }
 
     @Test
-    void findByLemma() throws DaoException {
-        var word = wordDao.findByLemma("example1").getFirst();
+    void findByLemma_withTypo() throws DaoException {
+        List<Word> words = wordDao.findByLemma("exampl1");
+        assertFalse(words.isEmpty());
+        var word = words.getFirst();
         assertNotNull(word);
         assertEquals(1, word.getId());
         assertEquals("example1", word.getLemma());

@@ -34,8 +34,12 @@ public class WordDao {
     private static final String DELETE_QUERY = "DELETE FROM words WHERE id = ?";
     private static final String FIND_BY_ID_QUERY = "SELECT * FROM words WHERE id = ?";
     private static final String FIND_ALL_QUERY = "SELECT * FROM words WHERE id IN (%s)";
-    private static final String FIND_BY_LEMMA_QUERY = "SELECT * FROM words WHERE lemma LIKE ?";
-
+    private static final String FUZZY_SEARCH_QUERY = """
+            SELECT *
+            FROM words
+            WHERE similarity(lemma, ?) > 0.5
+            ORDER BY similarity(lemma, ?) DESC;
+            """;
     private static final String UPDATE_QUERY = """
             UPDATE words
             SET lemma = ?, part_of_speech = ?, transcription = ?, meaning = ?, register = ?, domain = ?, level = ?
@@ -109,6 +113,10 @@ public class WordDao {
             return result;
         }, params);
 
+        if (ids == null || words.size() != ids.size()) {
+            throw new IllegalArgumentException("Words and IDs must have the same size");
+        }
+
         List<Word> withIds = new ArrayList<>();
         Iterator<Integer> idIterator = ids.iterator();
         for (Word lemma : words) {
@@ -168,7 +176,7 @@ public class WordDao {
     }
 
     public List<Word> findByLemma(String lemma) {
-        return jdbcTemplate.query(FIND_BY_LEMMA_QUERY, this::mapRowToObject, "%" + lemma + "%");
+        return jdbcTemplate.query(FUZZY_SEARCH_QUERY, this::mapRowToObject, lemma, lemma);
     }
 
     public List<Word> findExistingWords(Set<String> lemmas) {
@@ -227,13 +235,16 @@ public class WordDao {
 
     private List<Sentence> getSentencesFor(int wordId) {
         return jdbcTemplate.query(SELECT_FROM_CONTEXT_QUERY,
-                (rs, rowNum) -> new Sentence(rs.getString("example"), rs.getString("matched_words")),
+                (rs, rowNum) -> new Sentence(
+                        rs.getString("example"),
+                        rs.getString("matched_words")
+                ),
                 wordId);
     }
 
     private List<String> getCollocationsFor(int wordId) {
         return jdbcTemplate.query(SELECT_COLLOCATIONS_QUERY,
-                (rs, rowNum) -> rs.getString("phrase"), // fixed column name
+                (rs, rowNum) -> rs.getString("phrase"),
                 wordId);
     }
 
@@ -290,7 +301,7 @@ public class WordDao {
 
             jdbcTemplate.batchUpdate(INSERT_COLLOCATIONS_QUERY, params);
         } catch (DataAccessException ex) {
-            throw new DaoException("Error while inserting collocation examples", ex);
+            throw new DaoException("Error while inserting collocation phrases", ex);
         }
     }
 
