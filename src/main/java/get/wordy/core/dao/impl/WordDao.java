@@ -37,8 +37,9 @@ public class WordDao {
     private static final String FUZZY_SEARCH_QUERY = """
             SELECT *
             FROM words
-            WHERE similarity(lemma, ?) > 0.5
-            ORDER BY similarity(lemma, ?) DESC;
+            WHERE similarity(lemma, ?) > ? OR levenshtein(lemma, ?) <= 1
+            ORDER BY similarity(lemma, ?) DESC
+            LIMIT 4
             """;
     private static final String UPDATE_QUERY = """
             UPDATE words
@@ -176,7 +177,16 @@ public class WordDao {
     }
 
     public List<Word> findByLemma(String lemma) {
-        return jdbcTemplate.query(FUZZY_SEARCH_QUERY, this::mapRowToObject, lemma, lemma);
+        double threshold = autoThreshold(lemma);
+        return jdbcTemplate.query(FUZZY_SEARCH_QUERY, this::mapRowToObject, lemma, threshold, lemma, lemma);
+    }
+
+    private double autoThreshold(String lemma) {
+        int len = lemma.length();
+
+        if (len <= 4) return 0.75;
+        if (len <= 8) return 0.60;
+        return 0.50;
     }
 
     public List<Word> findExistingWords(Set<String> lemmas) {

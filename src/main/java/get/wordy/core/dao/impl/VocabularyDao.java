@@ -287,7 +287,7 @@ public class VocabularyDao {
         return jdbcTemplate.update(deleteVocabulary, new MapSqlParameterSource("vocabId", vocabId));
     }
 
-    private static Vocabulary processRecord(ResultSet rs) throws SQLException {
+    private Vocabulary processRecord(ResultSet rs) throws SQLException {
         Vocabulary vocabulary = new Vocabulary(
                 rs.getInt("vocab_id"),
                 rs.getString("name"),
