@@ -1,6 +1,7 @@
 package get.wordy.dao.impl;
 
 import get.wordy.core.api.bean.Sentence;
+import get.wordy.core.api.bean.WordKey;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.api.bean.Word;
 import get.wordy.core.dao.impl.WordDao;
@@ -8,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlConfig;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import java.util.*;
@@ -27,7 +30,7 @@ public class WordDaoTest extends BaseDaoTest {
     private WordDao wordDao;
 
     @Test
-    public void testInsert() throws DaoException {
+    public void insert() throws DaoException {
         Word word = new Word("apple", "noun", "transcription", "Some text");
         Sentence testSentence = Sentence.of("Test sentence")
                 .withMatchedWords("test");
@@ -62,7 +65,7 @@ public class WordDaoTest extends BaseDaoTest {
     }
 
     @Test
-    public void testUpdate() throws DaoException {
+    public void update() throws DaoException {
         for (int id = 1; id <= PREDEFINED_WORDS_CNT; id++) {
             Word word = new Word(id, "to test " + id, "VERB", "transcription" + id, "test");
             Sentence testSentence = Sentence.of("Test sentence").withMatchedWords("test");
@@ -175,6 +178,24 @@ public class WordDaoTest extends BaseDaoTest {
         assertTrue(word.getMeaning().contains("a word"));
         assertEquals("noun", word.getPartOfSpeech());
         assertNotNull(word.getTranscription());
+    }
+
+    @Sql(value = "/themes.sql", config = @SqlConfig(encoding = "utf-8"))
+    @Test
+    void findExistingWords() {
+        Set<String> input = Set.of(
+                "Airport",
+                "PASSPORT",
+                "unknownWord"
+        );
+
+        List<Word> result = wordDao.findExistingWords(input);
+        assertEquals(2, result.size());
+
+        assertEquals("airport", result.getFirst().getLemma());
+        assertEquals("noun", result.getFirst().getPartOfSpeech());
+        assertEquals("passport", result.get(1).getLemma());
+        assertEquals("noun", result.get(1).getPartOfSpeech());
     }
 
     private static void assertSentences(List<Sentence> expected, List<Sentence> actual) {

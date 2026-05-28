@@ -2,6 +2,7 @@ package get.wordy.core.dao.impl;
 
 import get.wordy.core.api.bean.Sentence;
 import get.wordy.core.api.bean.Word;
+import get.wordy.core.api.bean.WordKey;
 import get.wordy.core.dao.exception.DaoException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -163,6 +164,42 @@ public class WordDao {
 
     public List<Word> findByLemma(String lemma) {
         return jdbcTemplate.query(FIND_BY_LEMMA_QUERY, this::mapRowToObject, "%" + lemma + "%");
+    }
+
+    public List<Word> findExistingWords(Set<String> lemmas) {
+
+        if (lemmas.isEmpty()) {
+            return List.of();
+        }
+
+        String sql = """
+                SELECT lower(lemma) AS lemma,
+                       lower(part_of_speech) AS part_of_speech,
+                       id
+                FROM words
+                WHERE lower(lemma) = ANY(CAST(? AS text[]))
+                """;
+
+        List<Word> result = jdbcTemplate.query(
+                sql,
+                ps -> ps.setArray(
+                        1,
+                        ps.getConnection().createArrayOf(
+                                "text",
+                                lemmas.stream()
+                                        .map(String::toLowerCase)
+                                        .toArray()
+                        )
+                ),
+                (rs, rowNum) -> new Word(
+                        rs.getInt("id"),
+                        rs.getString("lemma"),
+                        rs.getString("part_of_speech"),
+                        null,
+                        null
+                )
+        );
+        return new ArrayList<>(result);
     }
 
     private Word mapRowToObject(ResultSet rs, int rowNum) throws SQLException {
