@@ -1,8 +1,9 @@
 package get.wordy.core.api.bean;
 
 public enum ThemeStatus {
-    DRAFT,
+    NEW,
     GENERATING,
+    DRAFT,
     READY,
     FAILED
 }

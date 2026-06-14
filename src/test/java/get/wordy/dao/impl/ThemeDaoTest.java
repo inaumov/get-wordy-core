@@ -41,6 +41,13 @@ class ThemeDaoTest extends BaseDaoTest {
         assertEquals(2, themes.size());
         assertEquals("Animals", themes.getFirst().name());
         assertEquals(2, themes.getFirst().wordsTotal());
+
+        themes = themeDao.findAll(anotherOwner);
+        assertEquals(2, themes.size());
+        assertEquals("Pets", themes.getFirst().name());
+        assertEquals(5, themes.getFirst().wordsTotal());
+        assertEquals("Sports", themes.getLast().name());
+        assertEquals(0, themes.getLast().wordsTotal());
     }
 
     @Test
@@ -57,6 +64,10 @@ class ThemeDaoTest extends BaseDaoTest {
         assertEquals(1, theme.themeId());
         assertEquals("Animals", theme.name());
         assertEquals(2, theme.wordsTotal());
+
+        theme = themeDao.findById(anotherOwner, 4).orElseThrow();
+        assertEquals("Pets", theme.name());
+        assertEquals(5, theme.wordsTotal());
     }
 
     @Test
@@ -179,6 +190,69 @@ class ThemeDaoTest extends BaseDaoTest {
 
         assertTrue(themeDao.findById(another, 1).isEmpty());
         assertFalse(themeDao.delete(another, 1));
+    }
+
+    @Test
+    void testSaveCandidateWordsJson() {
+        var draft = """
+                [{
+                "lemma":"run",
+                "partOfSpeech":"verb",
+                "meaning":"to move quickly on foot",
+                "level":"A1"
+                }]
+                """;
+        themeDao.saveCandidateWordsJson(anotherOwner, 3, draft);
+        themeDao.updateStatus(anotherOwner, 3, ThemeStatus.DRAFT);
+        var theme = themeDao.findById(anotherOwner, 3).orElseThrow();
+        assertEquals(1, theme.wordsTotal());
+    }
+
+    @Test
+    void testGetCandidateWordsJson() {
+        var draft = themeDao.getCandidateWordsJson(anotherOwner, 4);
+        assertNotNull(draft);
+        assertTrue(draft.contains("lemma"));
+    }
+
+    @Test
+    void testRemoveCandidateWord() {
+        themeDao.saveCandidateWordsJson(
+                anotherOwner,
+                3,
+                """
+                        [
+                          {
+                            "lemma":"dog",
+                            "partOfSpeech":"noun",
+                            "meaning":"pet dog",
+                            "level":"A1"
+                          },
+                          {
+                            "lemma":"cat",
+                            "partOfSpeech":"noun",
+                            "meaning":"pet cat",
+                            "level":"A1"
+                          },
+                          {
+                            "lemma":"run",
+                            "partOfSpeech":"verb",
+                            "meaning":"move quickly",
+                            "level":"A1"
+                          }
+                        ]
+                        """
+        );
+
+        themeDao.removeCandidateWord(anotherOwner, 3, "dog", "noun");
+
+        String json = themeDao.getCandidateWordsJson(anotherOwner, 3);
+        assertNotNull(json);
+        // removed:
+        assertFalse(json.contains("dog"));
+        // still present:
+        assertTrue(json.contains("cat"));
+        assertTrue(json.contains("run"));
     }
 
 }

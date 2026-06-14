@@ -41,7 +41,13 @@ public class ThemeDao {
         String query = """
                 select
                     th.*,
-                    count(refs.word_id) as words_total
+                    case
+                        when th.status = 'DRAFT'
+                            then coalesce(jsonb_array_length(th.candidate_words_draft), 0)
+                        when th.status = 'READY'
+                            then count(refs.word_id)
+                        else 0
+                    end as words_total
                 from theme th
                 left join theme_has_words refs
                     on refs.theme_id = th.theme_id
@@ -62,11 +68,17 @@ public class ThemeDao {
         String query = """
                 select
                     th.*,
-                    (
-                        select count(*)
-                        from theme_has_words refs
-                        where refs.theme_id = th.theme_id
-                    ) as words_total
+                    case
+                        when th.status = 'DRAFT'
+                            then coalesce(jsonb_array_length(th.candidate_words_draft), 0)
+                        when th.status = 'READY'
+                            then (
+                                select count(*)
+                                from theme_has_words refs
+                                where refs.theme_id = th.theme_id
+                            )
+                        else 0
+                    end as words_total
                 from theme th
                 where th.theme_id = :themeId
                   and th.owner_id = :ownerId
@@ -288,17 +300,12 @@ public class ThemeDao {
     }
 
     public Set<Integer> getWordIds(int themeId) {
-
         return jdbcTemplate.queryForStream("""
                         select word_id
                         from theme_has_words
                         where theme_id=:themeId
                         """,
-                new MapSqlParameterSource(
-                        "themeId",
-                        themeId
-                ),
-                (rs, rowNum) -> rs.getInt("word_id")
+                new MapSqlParameterSource("themeId", themeId), (rs, rowNum) -> rs.getInt("word_id")
         ).collect(Collectors.toSet());
     }
 
@@ -306,6 +313,72 @@ public class ThemeDao {
         return new MapSqlParameterSource()
                 .addValue("ownerId", ownerId.ownerId())
                 .addValue("ownerType", ownerId.ownerType());
+    }
+
+    public void saveCandidateWordsJson(OwnerId ownerId, int themeId, String candidateWords) {
+
+        String query = """
+                update theme
+                set candidate_words_draft = cast(:candidateWordsJson as jsonb)
+                where theme_id = :themeId
+                  and owner_id = :ownerId
+                  and owner_type = :ownerType
+                """;
+        jdbcTemplate.update(
+                query,
+                ownerParams(ownerId)
+                        .addValue("themeId", themeId)
+                        .addValue(
+                                "candidateWordsJson",
+                                candidateWords
+                        )
+        );
+    }
+
+    public String getCandidateWordsJson(OwnerId ownerId, int themeId) {
+
+        String query = """
+                select candidate_words_draft
+                from theme
+                where theme_id = :themeId
+                  and owner_id = :ownerId
+                  and owner_type = :ownerType
+                """;
+
+        return jdbcTemplate.queryForObject(
+                query,
+                ownerParams(ownerId)
+                        .addValue("themeId", themeId),
+                String.class
+        );
+    }
+
+    public void removeCandidateWord(OwnerId ownerId, int themeId, String lemma, String partOfSpeech) {
+        String query = """
+                update theme
+                set candidate_words_draft = (
+                    select coalesce(
+                        jsonb_agg(elem),
+                        '[]'::jsonb
+                    )
+                    from jsonb_array_elements(candidate_words_draft) elem
+                    where not (
+                        elem->>'lemma' = :lemma
+                        and elem->>'partOfSpeech' = :partOfSpeech
+                    )
+                )
+                where theme_id = :themeId
+                  and owner_id = :ownerId
+                  and owner_type = :ownerType
+                """;
+
+        jdbcTemplate.update(
+                query,
+                ownerParams(ownerId)
+                        .addValue("themeId", themeId)
+                        .addValue("lemma", lemma)
+                        .addValue("partOfSpeech", partOfSpeech)
+        );
     }
 
 }

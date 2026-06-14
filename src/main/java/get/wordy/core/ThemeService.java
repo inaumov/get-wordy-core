@@ -1,10 +1,8 @@
 package get.wordy.core;
 
-import get.wordy.core.api.bean.Theme;
-import get.wordy.core.api.bean.ThemeStatus;
-import get.wordy.core.api.bean.Word;
-import get.wordy.core.api.bean.WordKey;
+import get.wordy.core.api.bean.*;
 import get.wordy.core.api.exception.DictionaryServiceException;
+import get.wordy.core.api.exception.InvalidOperationException;
 import get.wordy.core.api.exception.ThemeNotFoundException;
 import get.wordy.core.api.exception.WordNotFoundException;
 import get.wordy.core.api.id.OwnerId;
@@ -65,8 +63,7 @@ public class ThemeService {
         }
         try {
             connection.open();
-            return themeDao.findById(ownerId, themeId)
-                    .orElseThrow(() -> new ThemeNotFoundException("Theme with id = " + themeId + " not found for owner id = " + ownerId));
+            return findTheme(ownerId, themeId);
         } catch (DaoException e) {
             LOG.error("Error while getting theme={}, owner={}", themeId, ownerId, e);
             return null;
@@ -115,13 +112,60 @@ public class ThemeService {
         try {
             connection.open();
             var updated = themeDao.updateStatus(ownerId, themeId, status);
-            updateCache(ownerId, updated);
             connection.commit();
+            invalidateThemeCache(ownerId, themeId);
             return updated;
         } catch (DaoException e) {
             LOG.error("Error while updating theme={} status, owner={}", themeId, ownerId, e);
             connection.rollback();
             return null;
+        } finally {
+            connection.close();
+        }
+    }
+
+    public void saveCandidateWords(OwnerId ownerId, int themeId, String candidateWordsJson) {
+        try {
+            connection.open();
+            themeDao.saveCandidateWordsJson(ownerId, themeId, candidateWordsJson);
+            connection.commit();
+            invalidateThemeCache(ownerId, themeId);
+        } catch (DaoException e) {
+            LOG.error("Error while saving candidate words (draft) for theme={}, owner={}", themeId, ownerId, e);
+            connection.rollback();
+        } finally {
+            connection.close();
+        }
+    }
+
+    public String getCandidateWordsJson(OwnerId ownerId, int themeId) {
+        try {
+            connection.open();
+            return themeDao.getCandidateWordsJson(ownerId, themeId);
+        } catch (DaoException e) {
+            LOG.error("Error while getting candidate words (draft) for theme={}, owner={}", themeId, ownerId, e);
+            connection.rollback();
+            return null;
+        } finally {
+            connection.close();
+        }
+    }
+
+    public boolean removeCandidateWordsFromTheme(OwnerId ownerId, int themeId, String lemma, String partOfSpeech) {
+        try {
+            connection.open();
+            Theme theme = findTheme(ownerId, themeId);
+            if (theme.status() != ThemeStatus.DRAFT) {
+                throw new InvalidOperationException("Operation allowed only for theme in DRAFT status");
+            }
+            themeDao.removeCandidateWord(ownerId, themeId, lemma, partOfSpeech);
+            connection.commit();
+            invalidateThemeCache(ownerId, themeId);
+            return true;
+        } catch (DaoException e) {
+            LOG.error("Error while removing lemma={} from draft theme={}, owner={}", partOfSpeech + ":" + lemma, themeId, ownerId, e);
+            connection.rollback();
+            return false;
         } finally {
             connection.close();
         }
@@ -152,7 +196,6 @@ public class ThemeService {
             Set<String> lemmas = words.stream()
                     .map(WordKey::lemma)
                     .collect(Collectors.toSet());
-
             return wordDao.findExistingWords(lemmas);
         } catch (DaoException e) {
             LOG.error("Error while finding words = {}", words, e);
@@ -182,19 +225,19 @@ public class ThemeService {
         }
     }
 
-    public Word addWordToTheme(OwnerId ownerId, int themeId, int wordId) {
+    public void addWordsToTheme(OwnerId ownerId, int themeId, Collection<Integer> wordIds) {
         try {
             connection.open();
             if (!themeDao.hasAccess(ownerId, themeId)) {
                 throw new DictionaryServiceException("Cannot modify theme");
             }
-            themeDao.addWordsToTheme(themeId, wordId);
+            Integer[] boxed = wordIds
+                    .toArray(Integer[]::new);
+            themeDao.addWordsToTheme(themeId, boxed);
             connection.commit();
-            Word word = loadWordFromDb(wordId);
             invalidateThemeCache(ownerId, themeId);
-            return word;
         } catch (DaoException e) {
-            LOG.error("Error adding word={} theme={}", wordId, themeId, e);
+            LOG.error("Error adding word ids={} to theme={}", wordIds, themeId, e);
             connection.rollback();
             throw new DictionaryServiceException();
         } finally {
@@ -202,18 +245,29 @@ public class ThemeService {
         }
     }
 
-    public void removeWordFromTheme(OwnerId ownerId, int themeId, int wordId) {
+    public void removeWordsFromTheme(OwnerId ownerId, int themeId, Collection<Integer> wordIds) {
         try {
             connection.open();
-            themeDao.removeWordsFromTheme(themeId, wordId);
+            Theme theme = findTheme(ownerId, themeId);
+            if (theme.status() != ThemeStatus.READY) {
+                throw new InvalidOperationException("Operation allowed only for theme in READY status");
+            }
+            Integer[] boxed = wordIds
+                    .toArray(Integer[]::new);
+            themeDao.removeWordsFromTheme(themeId, boxed);
             connection.commit();
             invalidateThemeCache(ownerId, themeId);
         } catch (DaoException e) {
-            LOG.error("Error removing word={} theme={}", wordId, themeId, e);
+            LOG.error("Error removing word ids={} theme={}", wordIds, themeId, e);
             connection.rollback();
         } finally {
             connection.close();
         }
+    }
+
+    private Theme findTheme(OwnerId ownerId, int themeId) {
+        return themeDao.findById(ownerId, themeId)
+                .orElseThrow(() -> new ThemeNotFoundException("Theme with id = " + themeId + " not found for owner id = " + ownerId));
     }
 
     private Word loadWordFromDb(int wordId) {
