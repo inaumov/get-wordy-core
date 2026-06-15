@@ -6,8 +6,9 @@ public record Theme(
         int themeId,
         String name,
         String notes, // optional richer context
-        ThemeStatus status, // DRAFT, GENERATING, READY, FAILED
+        ThemeStatus status, // NEW, GENERATING, DRAFT, READY, FAILED
         Instant generatedAt,
+        Instant lastUpdatedAt,
         int wordsTotal
 ) {
 }

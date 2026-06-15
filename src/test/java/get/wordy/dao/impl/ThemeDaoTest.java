@@ -17,7 +17,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Sql(scripts = "classpath:themes.sql")
+@Sql(scripts = "/themes.sql")
 @SpringJUnitConfig(classes = {ThemeDao.class, SpringJdbcConfig.class})
 @JdbcTest
 @AutoConfigureTestDatabase(

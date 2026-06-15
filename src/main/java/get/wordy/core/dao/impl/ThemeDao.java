@@ -11,6 +11,10 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +36,8 @@ public class ThemeDao {
                     rs.getString("name"),
                     rs.getString("notes"),
                     ThemeStatus.valueOf(rs.getString("status")),
-                    rs.getTimestamp("create_time").toInstant(),
+                    checkTime(rs, "create_time"),
+                    checkTime(rs, "last_update_time"),
                     rs.getInt("words_total")
             );
 
@@ -160,7 +165,8 @@ public class ThemeDao {
 
         String query = """
                 update theme th
-                set name = :name
+                set name = :name,
+                last_update_time = NOW()
                 where th.theme_id = :themeId
                 returning
                     th.theme_id,
@@ -168,6 +174,7 @@ public class ThemeDao {
                     th.notes,
                     th.status,
                     th.create_time,
+                    th.last_update_time,
                     (
                         select count(*)
                         from theme_has_words refs
@@ -187,7 +194,8 @@ public class ThemeDao {
     public Theme updateStatus(OwnerId ownerId, int themeId, ThemeStatus status) {
         String query = """
                 update theme th
-                set status = :status
+                set status = :status,
+                last_update_time = NOW()
                 where th.theme_id = :themeId
                 returning
                     th.theme_id,
@@ -195,6 +203,7 @@ public class ThemeDao {
                     th.notes,
                     th.status,
                     th.create_time,
+                    th.last_update_time,
                     (
                         select count(*)
                         from theme_has_words refs
@@ -297,6 +306,12 @@ public class ThemeDao {
                                         .addValue("wordId", id))
                         .toArray(MapSqlParameterSource[]::new)
         );
+        jdbcTemplate.update("""
+                        UPDATE theme SET last_update_time=NOW() WHERE theme_id=:themeId
+                        """,
+                new MapSqlParameterSource()
+                        .addValue("themeId", themeId)
+        );
     }
 
     public Set<Integer> getWordIds(int themeId) {
@@ -319,7 +334,8 @@ public class ThemeDao {
 
         String query = """
                 update theme
-                set candidate_words_draft = cast(:candidateWordsJson as jsonb)
+                set candidate_words_draft = cast(:candidateWordsJson as jsonb),
+                last_update_time = NOW()
                 where theme_id = :themeId
                   and owner_id = :ownerId
                   and owner_type = :ownerType
@@ -366,7 +382,8 @@ public class ThemeDao {
                         elem->>'lemma' = :lemma
                         and elem->>'partOfSpeech' = :partOfSpeech
                     )
-                )
+                ),
+                last_update_time = NOW()
                 where theme_id = :themeId
                   and owner_id = :ownerId
                   and owner_type = :ownerType
@@ -379,6 +396,17 @@ public class ThemeDao {
                         .addValue("lemma", lemma)
                         .addValue("partOfSpeech", partOfSpeech)
         );
+    }
+
+    private static Instant checkTime(ResultSet rs, String fieldName) throws SQLException {
+        try {
+            rs.findColumn(fieldName);
+        } catch (SQLException e) {
+            return null; // no such column
+        }
+
+        Timestamp timestamp = rs.getTimestamp(fieldName);
+        return timestamp != null ? timestamp.toInstant() : null;
     }
 
 }
