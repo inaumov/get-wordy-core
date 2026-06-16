@@ -4,6 +4,8 @@ public enum ThemeStatus {
     NEW,
     GENERATING,
     DRAFT,
+    CONFIRMED,
+    PROCESSING,
     READY,
     FAILED
 }
