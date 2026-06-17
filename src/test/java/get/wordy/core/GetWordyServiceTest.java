@@ -91,7 +91,7 @@ public class GetWordyServiceTest {
         replay(vocabularyMock);
 
         Capture<Vocabulary> dictionaryCapture = Capture.newInstance();
-        vocabularyDaoMock.insert(eq(JOHN_DOE), capture(dictionaryCapture));
+        vocabularyDaoMock.create(eq(JOHN_DOE), capture(dictionaryCapture));
         expectLastCall().andReturn(vocabularyMock);
         replay(vocabularyDaoMock);
 
@@ -108,7 +108,7 @@ public class GetWordyServiceTest {
         replayTxRollback();
 
         Capture<Vocabulary> dictionaryCapture = Capture.newInstance();
-        vocabularyDaoMock.insert(eq(JOHN_DOE), capture(dictionaryCapture));
+        vocabularyDaoMock.create(eq(JOHN_DOE), capture(dictionaryCapture));
         expectLastCall().andStubThrow(new DataAccessException("insert", null) {
         });
         replay(vocabularyDaoMock);
@@ -168,7 +168,7 @@ public class GetWordyServiceTest {
     public void testRenameVocabularyWhenNotFound() {
         replayTxShouldNotStart();
 
-        expect(vocabularyDaoMock.selectById(VOCAB_ID))
+        expect(vocabularyDaoMock.selectById(JOHN_DOE, VOCAB_ID))
                 .andReturn(Optional.empty());
         expectLastCall().once();
         replay(vocabularyDaoMock);
@@ -224,7 +224,7 @@ public class GetWordyServiceTest {
     public void testDeleteVocabularyWhenNotFound() {
         replayTxShouldNotStart();
 
-        expect(vocabularyDaoMock.selectById(VOCAB_ID))
+        expect(vocabularyDaoMock.selectById(JOHN_DOE, VOCAB_ID))
                 .andReturn(Optional.empty());
         expectLastCall().once();
         replay(vocabularyDaoMock);

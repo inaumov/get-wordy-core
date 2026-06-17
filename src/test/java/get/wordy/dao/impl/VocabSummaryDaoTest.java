@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringJUnitConfig(classes = {VocabularyDao.class, SpringJdbcConfig.class})
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Sql(scripts = "classpath:vocab-summary.sql") // load predefined inserts
+@Sql(scripts = "/vocab-summary.sql") // load predefined inserts
 class VocabSummaryDaoTest extends BaseDaoTest {
 
     @Autowired

@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringJUnitConfig(classes = {VocabularyDao.class, SpringJdbcConfig.class})
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Sql(scripts = "classpath:test-data.sql") // load predefined inserts
+@Sql(scripts = "/test-data.sql") // load predefined inserts
 @Rollback
 public class VocabularyDaoTest {
 
@@ -62,12 +62,12 @@ public class VocabularyDaoTest {
     }
 
     @Test
-    public void testInsert() {
+    public void testCreate() {
         OwnerId classOwner = new OwnerId("class003", "class");
         Vocabulary vocabulary = new Vocabulary("New Vocabulary", LOGO_PNG);
 
         // insert new vocabulary
-        Vocabulary inserted = vocabularyDao.insert(classOwner, vocabulary);
+        Vocabulary inserted = vocabularyDao.create(classOwner, vocabulary);
         assertNotNull(inserted);
         assertEquals("New Vocabulary", inserted.getName());
         assertEquals(LOGO_PNG, inserted.getPictureUrl());
@@ -83,12 +83,32 @@ public class VocabularyDaoTest {
     }
 
     @Test
-    public void testInsert_whenNameCollision() {
+    public void testCreate_whenNameCollision() {
         OwnerId classOwner = new OwnerId("class001", "class");
         Vocabulary vocabulary = new Vocabulary("Vocabulary Basics", LOGO_PNG);
 
         // insert new vocabulary and expect name collision
-        assertThrows(DuplicateVocabularyException.class, () -> vocabularyDao.insert(classOwner, vocabulary));
+        assertThrows(DuplicateVocabularyException.class, () -> vocabularyDao.create(classOwner, vocabulary));
+    }
+
+    @Test
+    public void testRenameUsersVocabulary() {
+        OwnerId userOwner = new OwnerId("john-123", "user");
+        // rename vocabulary and verify
+        Vocabulary renamed = vocabularyDao.rename(userOwner, 1, "VOCABULARY1");
+        assertNotNull(renamed);
+        assertEquals("VOCABULARY1", renamed.getName());
+
+        renamed = vocabularyDao.rename(userOwner, 1, "Vocabulary1");
+        assertNotNull(renamed);
+        assertEquals("Vocabulary1", renamed.getName());
+
+        Optional<Vocabulary> result = vocabularyDao.selectById(userOwner, 1);
+        assertEquals(
+                "Vocabulary1",
+                result.orElseThrow().getName()
+        );
+        assertTrue(Instant.now().minusSeconds(3).isBefore(result.get().getUpdateTime()));
     }
 
     @Test
@@ -110,12 +130,14 @@ public class VocabularyDaoTest {
 
     @Test
     public void testUpdatePictureUrl() throws DaoException {
+        OwnerId userOwner = new OwnerId("john-123", "user");
+
         // update an existed vocabulary
         int updated = vocabularyDao.updatePicture(1, LOGO_PNG);
         assertEquals(1, updated);
 
         // verify after
-        Vocabulary actual = vocabularyDao.selectById(1)
+        Vocabulary actual = vocabularyDao.selectById(userOwner, 1)
                 .orElseThrow();
         assertNotNull(actual);
         assertEquals(1, actual.getVocabId());
@@ -135,8 +157,9 @@ public class VocabularyDaoTest {
 
     @Test
     public void testSelectById() {
+        OwnerId classOwner = new OwnerId("class001", "class");
         // assume vocabulary id 101 exists in test-data.sql
-        Optional<Vocabulary> vocabulary = vocabularyDao.selectById(101);
+        Optional<Vocabulary> vocabulary = vocabularyDao.selectById(classOwner, 101);
 
         assertTrue(vocabulary.isPresent());
         Vocabulary entity = vocabulary.get();
@@ -148,7 +171,8 @@ public class VocabularyDaoTest {
 
     @Test
     public void testSelectByIdNotFound() {
-        Optional<Vocabulary> vocabulary = vocabularyDao.selectById(100500);
+        OwnerId userOwner = new OwnerId("john-123", "user");
+        Optional<Vocabulary> vocabulary = vocabularyDao.selectById(userOwner, 100500);
 
         assertTrue(vocabulary.isEmpty());
     }
@@ -162,11 +186,13 @@ public class VocabularyDaoTest {
 
     @Test
     public void testDeleteVocabularyById() {
+        OwnerId classOwner = new OwnerId("class001", "class");
+
         int deleted = vocabularyDao.deleteVocabularyById(101);
         assertEquals(1, deleted);
 
         // Verify vocabulary is deleted
-        Optional<Vocabulary> deletedVocabulary = vocabularyDao.selectById(101);
+        Optional<Vocabulary> deletedVocabulary = vocabularyDao.selectById(classOwner, 101);
         assertTrue(deletedVocabulary.isEmpty());
 
         // Verify associated word references are deleted
@@ -176,7 +202,7 @@ public class VocabularyDaoTest {
 
     @ParameterizedTest
     @MethodSource("provideIdsAdd")
-    public void testAddRefsToVocabulary(int vocabId, Integer[] toAdd, int expectedTotal) {
+    public void testAddRefsToVocabulary(int vocabId, OwnerId ownerId, Integer[] toAdd, int expectedTotal) {
         vocabularyDao.addWordsToVocabulary(vocabId, toAdd);
 
         Set<Integer> wordsRefs = vocabularyDao.getWordIds(vocabId);
@@ -184,7 +210,7 @@ public class VocabularyDaoTest {
         // verify added references
         assertTrue(wordsRefs.containsAll(Set.of(toAdd)));
         // verify updateTime
-        Vocabulary result = vocabularyDao.selectById(vocabId)
+        Vocabulary result = vocabularyDao.selectById(ownerId, vocabId)
                 .orElseThrow(() -> new AssertionError("Vocabulary not found"));
         assertTrue(
                 Instant.now().minusSeconds(3).isBefore(result.getUpdateTime()),
@@ -194,12 +220,14 @@ public class VocabularyDaoTest {
 
     @Test
     public void testRemoveRefsFromVocabulary() {
+        OwnerId classOwner = new OwnerId("class001", "class");
+
         vocabularyDao.removeWordsFromVocabulary(101, 10, 13);
 
         Set<Integer> wordsRefs = vocabularyDao.getWordIds(101);
         assertEquals(Set.of(11, 12), wordsRefs);
         // verify updateTime
-        Vocabulary result = vocabularyDao.selectById(101)
+        Vocabulary result = vocabularyDao.selectById(classOwner, 101)
                 .orElseThrow(() -> new AssertionError("Vocabulary not found"));
         assertTrue(
                 Instant.now().minusSeconds(3).isBefore(result.getUpdateTime()),
@@ -226,9 +254,9 @@ public class VocabularyDaoTest {
 
     private static Stream<Arguments> provideIdsAdd() {
         return Stream.of(
-                Arguments.of(101, new Integer[]{14, 15, 16, 17, 18, 19, 20}, 11),
-                Arguments.of(102, new Integer[]{10, 11, 12, 13}, 11),
-                Arguments.of(103, new Integer[]{10, 20}, 2)
+                Arguments.of(101, new OwnerId("class001", "class"), new Integer[]{14, 15, 16, 17, 18, 19, 20}, 11),
+                Arguments.of(102, new OwnerId("class001", "class"), new Integer[]{10, 11, 12, 13}, 11),
+                Arguments.of(103, new OwnerId("class002", "class"), new Integer[]{10, 20}, 2)
         );
     }
 

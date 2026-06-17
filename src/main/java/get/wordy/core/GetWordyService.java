@@ -84,7 +84,7 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
         Vocabulary vocabulary = new Vocabulary(name, pictureUrl);
         try {
             connection.open();
-            Vocabulary saved = vocabularyDao.insert(ownerId, vocabulary);
+            Vocabulary saved = vocabularyDao.create(ownerId, vocabulary);
             connection.commit();
             putToCache(ownerId, () -> saved);
             return saved;
@@ -476,7 +476,7 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
         } finally {
             connection.close();
         }
-        return null;
+        return loadWordFromDb(wordId);
     }
 
     @Override
@@ -520,7 +520,7 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
     private Vocabulary loadVocabFromDb(OwnerId ownerId, int vocabId) {
         Vocabulary vocabulary;
         try {
-            vocabulary = vocabularyDao.selectById(vocabId)
+            vocabulary = vocabularyDao.selectById(ownerId, vocabId)
                     .orElseThrow(() -> new VocabNotFoundException("Vocabulary with id = " + vocabId + " not found for owner id = " + ownerId));
         } catch (DataAccessException e) {
             throw new DictionaryServiceException();

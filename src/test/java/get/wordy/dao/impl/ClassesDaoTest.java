@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringJUnitConfig(classes = {ClassesDao.class, SpringJdbcConfig.class})
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Sql(scripts = "classpath:classes.sql") // load predefined inserts
+@Sql(scripts = "/classes.sql") // load predefined inserts
 @Rollback
 public class ClassesDaoTest {
 

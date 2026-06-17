@@ -1,8 +1,8 @@
-truncate table in_context;
-truncate table collocations;
-truncate table progress cascade;
-truncate table words cascade;
-truncate table vocabularies cascade;
+TRUNCATE TABLE in_context RESTART IDENTITY;
+TRUNCATE TABLE collocations RESTART IDENTITY;
+TRUNCATE TABLE progress RESTART IDENTITY CASCADE;
+TRUNCATE TABLE words RESTART IDENTITY CASCADE;
+TRUNCATE TABLE vocabularies RESTART IDENTITY CASCADE;
 
 insert into vocabularies (vocab_id, name) values (1, 'vocabulary1');
 insert into vocabularies (vocab_id, name) values (2, 'other vocabulary');

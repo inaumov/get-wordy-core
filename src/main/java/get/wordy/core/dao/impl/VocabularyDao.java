@@ -105,7 +105,7 @@ public class VocabularyDao {
         return jdbcTemplate.query(query, params, (rs, rowNum) -> processRecord(rs));
     }
 
-    public Optional<Vocabulary> selectById(int vocabId) {
+    public Optional<Vocabulary> selectById(OwnerId ownerId, int vocabId) {
         String query = """
                 SELECT
                     vocab_id,
@@ -121,8 +121,11 @@ public class VocabularyDao {
                     ) AS words_total
                 FROM vocabularies
                 WHERE vocab_id = :vocabId
+                AND owner_id = :ownerId
+                AND owner_type = :ownerType
                 """;
-        MapSqlParameterSource params = new MapSqlParameterSource("vocabId", vocabId);
+        MapSqlParameterSource params = ownerParams(ownerId)
+                .addValue("vocabId", vocabId);
 
         try {
             return Optional.ofNullable(jdbcTemplate.queryForObject(query, params, (rs, rowNum) -> processRecord(rs)));
@@ -146,7 +149,9 @@ public class VocabularyDao {
         return count != null && count > 0;
     }
 
-    public Vocabulary insert(OwnerId ownerId, Vocabulary vocabulary) {
+    public Vocabulary create(OwnerId ownerId, Vocabulary vocabulary) {
+        checkForNameCollision(ownerId, null, vocabulary.getName());
+
         String query = """
                 INSERT INTO vocabularies (owner_id, owner_type, name, picture_url)
                 VALUES (:ownerId, :ownerType, :name, :pictureUrl)
@@ -327,26 +332,36 @@ public class VocabularyDao {
         });
     }
 
-    private void checkForNameCollision(OwnerId ownerId, int vocabId, String name) {
-        String checkQuery = """
-                    SELECT name FROM vocabularies
-                    WHERE owner_id = :ownerId
-                      AND owner_type = :ownerType
-                      AND name = :name
-                      AND vocab_id != :vocabId
-                    LIMIT 1
+    private void checkForNameCollision(OwnerId ownerId, Integer vocabId, String name) {
+
+        String query = """
+                select exists(
+                select 1
+                    from vocabularies
+                    where owner_id = :ownerId
+                    and owner_type = :ownerType
+                    and lower(name) = lower(:name)
+                    and
+                    (
+                        cast(:vocabId as bigint) is null
+                        or vocab_id <> :vocabId
+                    )
+                )
                 """;
 
-        MapSqlParameterSource checkParams = new MapSqlParameterSource()
+        MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("ownerId", ownerId.ownerId())
                 .addValue("ownerType", ownerId.ownerType())
                 .addValue("name", name)
                 .addValue("vocabId", vocabId);
 
-        boolean exists = Boolean.TRUE.equals(jdbcTemplate.query(
-                checkQuery, checkParams, rs -> rs.next() ? Boolean.TRUE : Boolean.FALSE
-        ));
-        if (exists) {
+        Boolean exists = jdbcTemplate.queryForObject(
+                query,
+                params,
+                Boolean.class
+        );
+
+        if (Boolean.TRUE.equals(exists)) {
             throw new DuplicateVocabularyException(name);
         }
     }
@@ -355,6 +370,12 @@ public class VocabularyDao {
         Throwable cause = ex.getRootCause();
         return cause instanceof org.postgresql.util.PSQLException &&
                 cause.getMessage().contains("uniq_vocab_per_owner");
+    }
+
+    private MapSqlParameterSource ownerParams(OwnerId ownerId) {
+        return new MapSqlParameterSource()
+                .addValue("ownerId", ownerId.ownerId())
+                .addValue("ownerType", ownerId.ownerType());
     }
 
 }
