@@ -101,11 +101,13 @@ class ThemeDaoTest extends BaseDaoTest {
 
     @Test
     void testRename() {
-        Theme renamed = themeDao.rename(ownerId, 1, "Wild Animals");
-        assertEquals(
-                "Wild Animals",
-                renamed.name()
-        );
+        Theme renamed = themeDao.rename(ownerId, 1, "animals");
+        assertEquals("animals", renamed.name());
+
+        renamed = themeDao.rename(ownerId, 1, "ANIMALS");
+        assertEquals("ANIMALS", renamed.name());
+
+        themeDao.rename(ownerId, 1, "Wild Animals");
 
         assertEquals(
                 "Wild Animals",

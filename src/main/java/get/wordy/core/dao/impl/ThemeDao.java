@@ -123,7 +123,7 @@ public class ThemeDao {
 
     public Theme create(OwnerId ownerId, String name) {
 
-        checkForNameCollision(ownerId, name);
+        checkForNameCollision(ownerId, null, name);
 
         String query = """
                 insert into theme(
@@ -161,7 +161,7 @@ public class ThemeDao {
 
     public Theme rename(OwnerId ownerId, int themeId, String name) {
 
-        checkForNameCollision(ownerId, name);
+        checkForNameCollision(ownerId, themeId, name);
 
         String query = """
                 update theme th
@@ -220,7 +220,7 @@ public class ThemeDao {
         );
     }
 
-    private void checkForNameCollision(OwnerId ownerId, String name) {
+    private void checkForNameCollision(OwnerId ownerId, Integer themeId, String name) {
 
         String query = """
                 select exists(
@@ -229,10 +229,16 @@ public class ThemeDao {
                     where owner_id = :ownerId
                     and owner_type = :ownerType
                     and lower(name) = lower(:name)
+                    and
+                    (
+                        cast(:themeId as bigint) is null
+                        or theme_id <> :themeId
+                    )
                 )
                 """;
 
         MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("themeId", themeId)
                 .addValue("ownerId", ownerId.ownerId())
                 .addValue("ownerType", ownerId.ownerType())
                 .addValue("name", name);
