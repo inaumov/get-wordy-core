@@ -13,6 +13,8 @@ import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import java.time.Instant;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -109,10 +111,12 @@ class ThemeDaoTest extends BaseDaoTest {
 
         themeDao.rename(ownerId, 1, "Wild Animals");
 
+        Optional<Theme> result = themeDao.findById(ownerId, 1);
         assertEquals(
                 "Wild Animals",
-                themeDao.findById(ownerId, 1).orElseThrow().name()
+                result.orElseThrow().name()
         );
+        assertTrue(Instant.now().minusSeconds(3).isBefore(result.get().lastUpdatedAt()));
     }
 
     @Test

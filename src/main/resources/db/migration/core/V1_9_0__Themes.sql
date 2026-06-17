@@ -1,16 +1,28 @@
 CREATE TABLE theme
 (
-    theme_id    BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    owner_id    VARCHAR(64)               NOT NULL,
-    owner_type  VARCHAR(32)               NOT NULL,
-    name        VARCHAR(255)              NOT NULL,
-    notes       VARCHAR(4000),
-    status      VARCHAR(20) DEFAULT 'NEW' NOT NULL,
-    create_time TIMESTAMP   DEFAULT CURRENT_TIMESTAMP
+    theme_id         BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    owner_id         VARCHAR(64)               NOT NULL,
+    owner_type       VARCHAR(32)               NOT NULL,
+    name             VARCHAR(255)              NOT NULL,
+    notes            VARCHAR(4000),
+    status           VARCHAR(20) DEFAULT 'NEW' NOT NULL,
+    create_time      TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+    last_update_time TIMESTAMP
 );
 
 ALTER TABLE theme
-    ADD CONSTRAINT cards_status_check CHECK (status IN ('NEW', 'GENERATING', 'DRAFT', 'READY', 'FAILED'));
+    ADD CONSTRAINT cards_status_check
+        CHECK (
+            status IN (
+                       'NEW',
+                       'GENERATING',
+                       'DRAFT',
+                       'CONFIRMED',
+                       'PROCESSING',
+                       'READY',
+                       'FAILED'
+                )
+            );
 
 CREATE UNIQUE INDEX uq_theme_owner_name
     ON theme (
