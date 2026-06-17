@@ -476,7 +476,7 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
         } finally {
             connection.close();
         }
-        return loadWordFromDb(wordId);
+        return null;
     }
 
     @Override
