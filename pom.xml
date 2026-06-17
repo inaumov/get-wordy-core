@@ -24,7 +24,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring-boot.version>3.5.7</spring-boot.version>
+        <spring-boot.version>3.5.15</spring-boot.version>
         <easymock.version>5.6.0</easymock.version>
         <jdbc.test-url>jdbc:postgresql://localhost:5432/get_wordy_test?schema=public</jdbc.test-url>
         <jdbc.test-user>postgres</jdbc.test-user>
