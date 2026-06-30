@@ -6,7 +6,4 @@ public class VocabNotFoundException extends RuntimeException {
         super(message);
     }
 
-    public VocabNotFoundException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }

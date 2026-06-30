@@ -289,7 +289,7 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
         List<Progress> cards;
         try {
             connection.open();
-            Set<Integer> wordIds = vocabularyDao.getWordIds(findVocab(ownerId, vocabId).getVocabId());
+            Set<Integer> wordIds = vocabularyDao.getWordIds(vocabId);
             int[] array = wordIds.stream().mapToInt(Number::intValue).toArray();
             cards = progressDao.selectByWordIds(ownerId, vocabId, array);
             connection.commit();
@@ -521,7 +521,9 @@ public class GetWordyService implements IUserCardsService, IVocabularyService {
         Vocabulary vocabulary;
         try {
             vocabulary = vocabularyDao.selectById(ownerId, vocabId)
-                    .orElseThrow(() -> new VocabNotFoundException("Vocabulary with id = " + vocabId + " not found for owner id = " + ownerId));
+                    .orElseThrow(() -> new VocabNotFoundException(
+                            String.format("Vocabulary with id = %s not found for %s id = %s", vocabId, ownerId.ownerType(), ownerId.ownerId()))
+                    );
         } catch (DataAccessException e) {
             throw new DictionaryServiceException();
         }

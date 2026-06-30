@@ -6,7 +6,4 @@ public class ClassInfoNotFoundException extends RuntimeException {
         super(message);
     }
 
-    public ClassInfoNotFoundException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }

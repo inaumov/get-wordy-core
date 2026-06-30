@@ -6,7 +6,4 @@ public class ThemeNotFoundException extends RuntimeException {
         super(message);
     }
 
-    public ThemeNotFoundException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }

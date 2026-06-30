@@ -267,7 +267,9 @@ public class ThemeService {
 
     private Theme findTheme(OwnerId ownerId, int themeId) {
         return themeDao.findById(ownerId, themeId)
-                .orElseThrow(() -> new ThemeNotFoundException("Theme with id = " + themeId + " not found for owner id = " + ownerId));
+                .orElseThrow(() -> new ThemeNotFoundException(
+                        String.format("Theme with id = %s not found for %s id = %s", themeId, ownerId.ownerType(), ownerId.ownerId()))
+                );
     }
 
     private Word loadWordFromDb(int wordId) {

@@ -231,7 +231,7 @@ public class GetWordyServiceTest {
 
         Throwable exception = assertThrows(VocabNotFoundException.class,
                 () -> sut.deleteVocabulary(JOHN_DOE, VOCAB_ID));
-        assertTrue(exception.getMessage().startsWith("Vocabulary with id = 42 not found for owner id"));
+        assertEquals("Vocabulary with id = 42 not found for individual-user id = john-doe-xyz8w", exception.getMessage());
     }
 
     @Test

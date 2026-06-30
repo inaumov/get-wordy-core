@@ -158,10 +158,13 @@ public class ClassService implements IClassService {
         try {
             classInfo = classesDao.selectById(ownerId, classId);
         } catch (Exception e) {
-            throw new ClassServiceException("Could not get class info with id = " + classId + " for owner " + ownerId, e);
+            throw new ClassServiceException(
+                    String.format("Could not get class info with id = %s for %s id = %s", classId, ownerId.ownerType(), ownerId.ownerId()));
         }
         if (classInfo.isEmpty()) {
-            throw new ClassInfoNotFoundException("Class info with id = " + classId + " not found for owner " + ownerId);
+            throw new ClassInfoNotFoundException(
+                    String.format("Class info with id = %s not found for %s id = %s", classId, ownerId.ownerType(), ownerId.ownerId())
+            );
         }
         putClassInfoToCache(ownerId, classInfo::get);
         return classInfo.get();
