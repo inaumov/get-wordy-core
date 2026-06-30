@@ -31,7 +31,7 @@ public class WordDaoTest extends BaseDaoTest {
 
     @Test
     public void insert() throws DaoException {
-        Word word = new Word("apple", "noun", "transcription", "Some text");
+        Word word = new Word("apple", "noun", "transcription", "Some text", "A1");
         Sentence testSentence = Sentence.of("Test sentence")
                 .withMatchedWords("test");
         word.addSentence(testSentence);
@@ -67,7 +67,7 @@ public class WordDaoTest extends BaseDaoTest {
     @Test
     public void update() throws DaoException {
         for (int id = 1; id <= PREDEFINED_WORDS_CNT; id++) {
-            Word word = new Word(id, "to test " + id, "VERB", "transcription" + id, "test");
+            Word word = new Word(id, "to test " + id, "VERB", "transcription" + id, "test", "A1");
             Sentence testSentence = Sentence.of("Test sentence").withMatchedWords("test");
             word.addSentence(testSentence);
             word.addStrSentence("Test sentence 2");
@@ -184,7 +184,7 @@ public class WordDaoTest extends BaseDaoTest {
     @Test
     void findExistingWords() {
         Set<String> input = Set.of(
-                "Airport",
+                "airport",
                 "PASSPORT",
                 "unknownWord"
         );
@@ -192,9 +192,9 @@ public class WordDaoTest extends BaseDaoTest {
         List<Word> result = wordDao.findExistingWords(input);
         assertEquals(2, result.size());
 
-        assertEquals("airport", result.getFirst().getLemma());
+        assertEquals("Airport", result.getFirst().getLemma());
         assertEquals("noun", result.getFirst().getPartOfSpeech());
-        assertEquals("passport", result.get(1).getLemma());
+        assertEquals("Passport", result.get(1).getLemma());
         assertEquals("noun", result.get(1).getPartOfSpeech());
     }
 
@@ -220,7 +220,7 @@ public class WordDaoTest extends BaseDaoTest {
         // generating realistic test data for words
         return strings.stream()
                 .map(value -> {
-                    Word word = new Word(value, "noun", "some transcription", "a sample meaning");
+                    Word word = new Word(value, "noun", "some transcription", "a sample meaning", "A1");
                     word.setStrSentences(generateSentences(value));
                     word.setCollocations(generateCollocations(value));
                     return word;

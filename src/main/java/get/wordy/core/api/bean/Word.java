@@ -13,21 +13,23 @@ public class Word {
     private String meaning;
     private String register;
     private String domain;
+    private String level;
     private final List<Sentence> sentences = new ArrayList<>();
     private final List<String> collocations = new ArrayList<>();
 
     public Word() {
     }
 
-    public Word(String lemma, String partOfSpeech, String transcription, String meaning) {
+    public Word(String lemma, String partOfSpeech, String transcription, String meaning, String level) {
         this.lemma = lemma;
         this.partOfSpeech = partOfSpeech;
         this.transcription = transcription;
         this.meaning = meaning;
+        this.level = level;
     }
 
-    public Word(Integer id, String lemma, String partOfSpeech, String transcription, String meaning) {
-        this(lemma, partOfSpeech, transcription, meaning);
+    public Word(Integer id, String lemma, String partOfSpeech, String transcription, String meaning, String level) {
+        this(lemma, partOfSpeech, transcription, meaning, level);
         this.id = id;
     }
 
@@ -74,6 +76,14 @@ public class Word {
 
     public void setDomain(String domain) {
         this.domain = domain;
+    }
+
+    public String getLevel() {
+        return level;
+    }
+
+    public void setLevel(String level) {
+        this.level = level;
     }
 
     public List<Sentence> getSentences() {

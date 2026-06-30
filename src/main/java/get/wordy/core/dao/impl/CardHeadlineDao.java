@@ -81,7 +81,9 @@ public class CardHeadlineDao {
                     rs.getString("lemma"),
                     rs.getString("part_of_speech"),
                     rs.getString("transcription"),
-                    rs.getString("meaning"));
+                    rs.getString("meaning"),
+                    rs.getString("level")
+            );
 
             String[] cardSentences = (String[]) rs.getArray("card_sentences").getArray();
             String[] cardCollocations = (String[]) rs.getArray("card_collocations").getArray();

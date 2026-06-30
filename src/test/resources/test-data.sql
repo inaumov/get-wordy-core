@@ -7,9 +7,9 @@ TRUNCATE TABLE vocabularies RESTART IDENTITY CASCADE;
 insert into vocabularies (vocab_id, name) values (1, 'vocabulary1');
 insert into vocabularies (vocab_id, name) values (2, 'other vocabulary');
 
-insert into words (id, lemma, part_of_speech, transcription, meaning, created_at) values (1, 'example1', 'noun', 'ɪgˈzɑːmpl', 'a word in vocab 1', now());
-insert into words (id, lemma, part_of_speech, transcription, meaning, created_at) values (2, 'example2', 'noun', 'ɪgˈzɑːmpl', 'other word in vocab 2', now());
-insert into words (id, lemma, part_of_speech, transcription, meaning, created_at) values (3, 'example3', 'noun', 'ɪgˈzɑːmpl', 'not assigned word', now());
+insert into words (id, lemma, part_of_speech, transcription, meaning, level, created_at) values (1, 'example1', 'noun', 'ɪgˈzɑːmpl', 'a word in vocab 1', 'A1', now());
+insert into words (id, lemma, part_of_speech, transcription, meaning, level, created_at) values (2, 'example2', 'noun', 'ɪgˈzɑːmpl', 'other word in vocab 2', 'A1', now());
+insert into words (id, lemma, part_of_speech, transcription, meaning, level, created_at) values (3, 'example3', 'noun', 'ɪgˈzɑːmpl', 'not assigned word', 'A1', now());
 
 INSERT INTO vocab_has_words (vocab_id, word_id)
 VALUES (1, 1),

@@ -27,8 +27,8 @@ public class WordDao {
     }
 
     private static final String INSERT_QUERY = """
-            INSERT INTO words (lemma, part_of_speech, transcription, meaning, register, domain)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO words (lemma, part_of_speech, transcription, meaning, register, domain, level)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             RETURNING id
             """;
     private static final String DELETE_QUERY = "DELETE FROM words WHERE id = ?";
@@ -38,7 +38,7 @@ public class WordDao {
 
     private static final String UPDATE_QUERY = """
             UPDATE words
-            SET lemma = ?, part_of_speech = ?, transcription = ?, meaning = ?, register = ?, domain = ?
+            SET lemma = ?, part_of_speech = ?, transcription = ?, meaning = ?, register = ?, domain = ?, level = ?
             WHERE id = ?
             """;
 
@@ -63,7 +63,9 @@ public class WordDao {
                 word.getTranscription(),
                 word.getMeaning(),
                 word.getRegister(),
-                word.getDomain());
+                word.getDomain(),
+                word.getLevel()
+        );
 
         insertSentences(id, word.getSentences());
         insertCollocations(id, word.getCollocations());
@@ -77,13 +79,13 @@ public class WordDao {
 
         // Build bulk INSERT with RETURNING
         String sql = """
-                INSERT INTO words (lemma, part_of_speech, transcription, meaning, register, domain)
+                INSERT INTO words (lemma, part_of_speech, transcription, meaning, register, domain, level)
                 VALUES %s
                 RETURNING id
                 """;
 
         String placeholders = words.stream()
-                .map(l -> "(?, ?, ?, ?, ?, ?)")
+                .map(l -> "(?, ?, ?, ?, ?, ?, ?)")
                 .collect(Collectors.joining(", "));
         sql = sql.formatted(placeholders);
 
@@ -94,7 +96,8 @@ public class WordDao {
                         word.getTranscription(),
                         word.getMeaning(),
                         word.getRegister(),
-                        word.getDomain()
+                        word.getDomain(),
+                        word.getLevel()
                 ))
                 .toArray();
 
@@ -136,7 +139,9 @@ public class WordDao {
                 word.getMeaning(),
                 word.getRegister(),
                 word.getDomain(),
-                word.getId());
+                word.getLemma(),
+                word.getId()
+        );
 
         deleteFromContext(word.getId());
         deleteFromCollocations(word.getId());
@@ -173,8 +178,9 @@ public class WordDao {
         }
 
         String sql = """
-                SELECT lower(lemma) AS lemma,
+                SELECT lemma,
                        lower(part_of_speech) AS part_of_speech,
+                       level,
                        id
                 FROM words
                 WHERE lower(lemma) = ANY(CAST(? AS text[]))
@@ -196,7 +202,8 @@ public class WordDao {
                         rs.getString("lemma"),
                         rs.getString("part_of_speech"),
                         null,
-                        null
+                        null,
+                        rs.getString("level")
                 )
         );
         return new ArrayList<>(result);
@@ -208,7 +215,8 @@ public class WordDao {
                 rs.getString("lemma"),
                 rs.getString("part_of_speech"),
                 rs.getString("transcription"),
-                rs.getString("meaning")
+                rs.getString("meaning"),
+                rs.getString("level")
         );
         word.setRegister(rs.getString("register"));
         word.setDomain(rs.getString("domain"));
