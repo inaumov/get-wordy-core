@@ -7,7 +7,7 @@ public record Theme(
         String name,
         String notes, // optional richer context
         ThemeStatus status,
-        Instant generatedAt,
+        Instant createdAt,
         Instant lastUpdatedAt,
         int wordsTotal
 ) {

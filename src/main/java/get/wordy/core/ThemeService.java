@@ -1,7 +1,7 @@
 package get.wordy.core;
 
 import get.wordy.core.api.bean.*;
-import get.wordy.core.api.exception.DictionaryServiceException;
+import get.wordy.core.api.exception.ThemeServiceException;
 import get.wordy.core.api.exception.InvalidOperationException;
 import get.wordy.core.api.exception.ThemeNotFoundException;
 import get.wordy.core.api.exception.WordNotFoundException;
@@ -199,7 +199,7 @@ public class ThemeService {
             return wordDao.findExistingWords(lemmas);
         } catch (DaoException e) {
             LOG.error("Error while finding words = {}", words, e);
-            throw new DictionaryServiceException();
+            throw new ThemeServiceException("Error while finding words");
         }
     }
 
@@ -229,7 +229,7 @@ public class ThemeService {
         try {
             connection.open();
             if (!themeDao.hasAccess(ownerId, themeId)) {
-                throw new DictionaryServiceException("Cannot modify theme");
+                throw new ThemeServiceException("Cannot modify theme");
             }
             Integer[] boxed = wordIds
                     .toArray(Integer[]::new);
@@ -239,7 +239,7 @@ public class ThemeService {
         } catch (DaoException e) {
             LOG.error("Error adding word ids={} to theme={}", wordIds, themeId, e);
             connection.rollback();
-            throw new DictionaryServiceException();
+            throw new ThemeServiceException(String.format("Could not add words to theme id %s", themeId));
         } finally {
             connection.close();
         }
@@ -278,7 +278,7 @@ public class ThemeService {
             word = wordDao.findById(wordId);
         } catch (DaoException e) {
             LOG.error("Error while loading a word by id = {}", wordId, e);
-            throw new DictionaryServiceException();
+            throw new ThemeServiceException(String.format("Error while loading a word id = %s", wordId));
         }
         if (word == null) {
             throw new WordNotFoundException();
