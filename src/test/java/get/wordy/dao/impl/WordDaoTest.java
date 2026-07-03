@@ -1,7 +1,6 @@
 package get.wordy.dao.impl;
 
 import get.wordy.core.api.bean.Sentence;
-import get.wordy.core.api.bean.WordKey;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.api.bean.Word;
 import get.wordy.core.dao.impl.WordDao;

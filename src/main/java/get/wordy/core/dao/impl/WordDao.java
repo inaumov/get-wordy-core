@@ -2,7 +2,6 @@ package get.wordy.core.dao.impl;
 
 import get.wordy.core.api.bean.Sentence;
 import get.wordy.core.api.bean.Word;
-import get.wordy.core.api.bean.WordKey;
 import get.wordy.core.dao.exception.DaoException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -294,7 +293,7 @@ public class WordDao {
 
             jdbcTemplate.batchUpdate(INSERT_SENTENCE_QUERY, params);
         } catch (DataAccessException ex) {
-            throw new DaoException("Error while inserting sentence examples", ex);
+            throw new DaoException("Error while inserting sentences", ex);
         }
     }
 
@@ -311,7 +310,7 @@ public class WordDao {
 
             jdbcTemplate.batchUpdate(INSERT_COLLOCATIONS_QUERY, params);
         } catch (DataAccessException ex) {
-            throw new DaoException("Error while inserting collocation phrases", ex);
+            throw new DaoException("Error while inserting collocations", ex);
         }
     }
 
