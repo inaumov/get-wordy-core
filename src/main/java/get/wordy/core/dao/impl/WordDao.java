@@ -41,14 +41,10 @@ public class WordDao {
      * If still equal → lower ID first
      */
     private static final String FUZZY_SEARCH_QUERY = """
-            SELECT *,
-                   similarity(lemma, ?) AS score
+            SELECT *, similarity(lemma, ?) AS score
             FROM words
             WHERE similarity(lemma, ?) >= ?
-            ORDER BY
-                score DESC,
-                length(lemma) ,
-                id
+            ORDER BY score DESC, length(lemma), id
             LIMIT 5;
             """;
     private static final String UPDATE_QUERY = """
