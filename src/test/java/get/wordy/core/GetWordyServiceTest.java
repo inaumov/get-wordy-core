@@ -34,11 +34,11 @@ public class GetWordyServiceTest {
     private static final String PICTURE_JPG = "http://picture.jpg";
     private static final OwnerId JOHN_DOE = new OwnerId("john-doe-xyz8w", "individual-user");
 
-    @Mock(name = "vocabularyDao")
+    @Mock
     private VocabularyDao vocabularyDaoMock;
-    @Mock(name = "cardDao")
+    @Mock
     private ProgressDao progressDaoMock;
-    @Mock(name = "wordDao")
+    @Mock
     private WordDao wordDaoMock;
     @Mock
     private CardHeadlineDao headlineDaoMock;
