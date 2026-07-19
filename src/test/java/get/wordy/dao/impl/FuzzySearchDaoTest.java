@@ -48,6 +48,7 @@ class FuzzySearchDaoTest extends BaseDaoTest {
     @ParameterizedTest(name = "{0} should find {1} as the closest match")
     @CsvSource({
             "exampl,       example",
+            "examples,     example",
             "accomodation, accommodation",
             "restarant,    restaurant",
             "enviroment,   environment",
