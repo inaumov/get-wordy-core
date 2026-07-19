@@ -26,7 +26,6 @@ public abstract class BaseDaoTest {
     @BeforeEach
     void setup() {
         testJdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm");
-        testJdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS fuzzystrmatch");
     }
 
 }

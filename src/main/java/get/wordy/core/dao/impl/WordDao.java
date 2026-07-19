@@ -33,12 +33,23 @@ public class WordDao {
     private static final String DELETE_QUERY = "DELETE FROM words WHERE id = ?";
     private static final String FIND_BY_ID_QUERY = "SELECT * FROM words WHERE id = ?";
     private static final String FIND_ALL_QUERY = "SELECT * FROM words WHERE id IN (%s)";
+
+    /**
+     * This gives you a precise ordering contract:
+     * Highest similarity first
+     * If similarity is equal → shorter lemma first
+     * If still equal → lower ID first
+     */
     private static final String FUZZY_SEARCH_QUERY = """
-            SELECT *
+            SELECT *,
+                   similarity(lemma, ?) AS score
             FROM words
-            WHERE similarity(lemma, ?) > ? OR levenshtein(lemma, ?) <= 1
-            ORDER BY similarity(lemma, ?) DESC
-            LIMIT 4
+            WHERE similarity(lemma, ?) >= ?
+            ORDER BY
+                score DESC,
+                length(lemma) ,
+                id
+            LIMIT 5;
             """;
     private static final String UPDATE_QUERY = """
             UPDATE words
@@ -175,17 +186,28 @@ public class WordDao {
         return jdbcTemplate.query(sql, this::mapRowToObject, ids.toArray());
     }
 
+    /*
+    Returns matching words ordered by descending fuzzy similarity.
+    The first word is the closest match.
+    Returns an empty list if no word exceeds the similarity threshold.
+     */
     public List<Word> findByLemma(String lemma) {
         double threshold = autoThreshold(lemma);
-        return jdbcTemplate.query(FUZZY_SEARCH_QUERY, this::mapRowToObject, lemma, threshold, lemma, lemma);
+        return jdbcTemplate.query(FUZZY_SEARCH_QUERY, this::mapRowToObject, lemma, lemma, threshold);
     }
 
     private double autoThreshold(String lemma) {
-        int len = lemma.length();
-
-        if (len <= 4) return 0.75;
-        if (len <= 8) return 0.60;
-        return 0.50;
+        if (lemma == null || lemma.isBlank() || lemma.trim().length() < 2) {
+            throw new IllegalArgumentException("lemma should contain at least 2 characters");
+        }
+        int length = lemma.length();
+        return switch (length) {
+            case 2, 3 -> 0.70;          // 2–3 characters   → very strict
+            case 4, 5 -> 0.50;          // 4–5 characters   → strict
+            case 6, 7, 8 -> 0.45;       // 6–8 characters   → moderate
+            case 9, 10 -> 0.40;         // 9–10 characters  → permissive
+            default -> 0.35;            // 11+ characters   → most permissive
+        };
     }
 
     public List<Word> findExistingWords(Set<String> lemmas) {
