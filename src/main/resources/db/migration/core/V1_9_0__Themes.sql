@@ -1,6 +1,6 @@
 CREATE TABLE theme
 (
-    theme_id         BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    theme_id         INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     owner_id         VARCHAR(64)               NOT NULL,
     owner_type       VARCHAR(32)               NOT NULL,
     name             VARCHAR(255)              NOT NULL,

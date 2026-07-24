@@ -51,10 +51,10 @@ public class CardHeadlineDaoTest {
         assertAll(
                 "Grouped assertions of Word sub-entity",
                 () -> assertEquals(1, word.getId()),
-                () -> assertEquals("example1", word.getLemma()),
-                () -> assertEquals("ɪgˈzɑːmpl", word.getTranscription()),
+                () -> assertEquals("example", word.getLemma()),
+                () -> assertEquals("ɪɡˈzɑːmpl", word.getTranscription()),
                 () -> assertEquals("noun", word.getPartOfSpeech()),
-                () -> assertEquals("a word in vocab 1", word.getMeaning())
+                () -> assertEquals("a thing characteristic of its kind", word.getMeaning())
         );
     }
 
@@ -84,10 +84,10 @@ public class CardHeadlineDaoTest {
         assertAll(
                 "Grouped assertions of Word sub-entity",
                 () -> assertEquals(1, word.getId()),
-                () -> assertEquals("example1", word.getLemma()),
-                () -> assertEquals("ɪgˈzɑːmpl", word.getTranscription()),
+                () -> assertEquals("example", word.getLemma()),
+                () -> assertEquals("ɪɡˈzɑːmpl", word.getTranscription()),
                 () -> assertEquals("noun", word.getPartOfSpeech()),
-                () -> assertEquals("a word in vocab 1", word.getMeaning())
+                () -> assertEquals("a thing characteristic of its kind", word.getMeaning())
         );
     }
 
@@ -114,10 +114,10 @@ public class CardHeadlineDaoTest {
         assertAll(
                 "Grouped assertions of Word sub-entity",
                 () -> assertEquals(1, card.wordId()),
-                () -> assertEquals("example1", card.lemma()),
-                () -> assertEquals("ɪgˈzɑːmpl", card.transcription()),
+                () -> assertEquals("example", card.lemma()),
+                () -> assertEquals("ɪɡˈzɑːmpl", card.transcription()),
                 () -> assertEquals("noun", card.partOfSpeech()),
-                () -> assertEquals("a word in vocab 1", card.meaning())
+                () -> assertEquals("a thing characteristic of its kind", card.meaning())
         );
     }
 

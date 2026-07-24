@@ -4,12 +4,38 @@ TRUNCATE TABLE progress RESTART IDENTITY CASCADE;
 TRUNCATE TABLE words RESTART IDENTITY CASCADE;
 TRUNCATE TABLE vocabularies RESTART IDENTITY CASCADE;
 
-insert into vocabularies (vocab_id, name) values (1, 'vocabulary1');
-insert into vocabularies (vocab_id, name) values (2, 'other vocabulary');
+insert into vocabularies (name)
+values ('vocabulary1'),
+       ('other vocabulary');
 
-insert into words (id, lemma, part_of_speech, transcription, meaning, level, created_at) values (1, 'example1', 'noun', 'ɪgˈzɑːmpl', 'a word in vocab 1', 'A1', now());
-insert into words (id, lemma, part_of_speech, transcription, meaning, level, created_at) values (2, 'example2', 'noun', 'ɪgˈzɑːmpl', 'other word in vocab 2', 'A1', now());
-insert into words (id, lemma, part_of_speech, transcription, meaning, level, created_at) values (3, 'example3', 'noun', 'ɪgˈzɑːmpl', 'not assigned word', 'A1', now());
+INSERT INTO words (lemma,
+                   part_of_speech,
+                   transcription,
+                   meaning,
+                   register,
+                   domain,
+                   level)
+VALUES ('example',
+        'noun',
+        'ɪɡˈzɑːmpl',
+        'a thing characteristic of its kind',
+        null,
+        null,
+        'A1'),
+       ('battery',
+        'noun',
+        '/ˈbætəri/',
+        'A device that stores and supplies electrical energy.',
+        'neutral',
+        'technology',
+        'A2'),
+       ('tomato',
+        'noun',
+        '/təˈmeɪtəʊ/',
+        'A round, usually red fruit that is commonly used as a vegetable in cooking.',
+        'neutral',
+        'food',
+        'A1');
 
 INSERT INTO vocab_has_words (vocab_id, word_id)
 VALUES (1, 1),
@@ -35,24 +61,28 @@ update progress set user_id = 'john-123' where vocab_id = 1;
 update progress set user_id = 'john-123' where vocab_id = 2;
 
 -- updates on vocab API
-INSERT INTO vocabularies (vocab_id, owner_id, owner_type, name, is_shared)
-VALUES (101, 'class001', 'class', 'Vocabulary Basics', false),
-       (102, 'class001', 'class', 'Grammar 101', true),
-       (103, 'class002', 'class', 'Advanced Vocabulary', false);
+SELECT setval('vocabularies_vocab_id_seq', 100);
+
+INSERT INTO vocabularies (owner_id, owner_type, name, is_shared)
+VALUES ('class001', 'class', 'Vocabulary Basics', false),
+       ('class001', 'class', 'Grammar 101', true),
+       ('class002', 'class', 'Advanced Vocabulary', false);
 
 -- words table
-INSERT INTO words (id, lemma, part_of_speech)
-VALUES (10, 'run', 'verb'),
-       (11, 'jump', 'verb'),
-       (12, 'blue', 'adjective'),
-       (13, 'quickly', 'adverb'),
-       (14, 'cat', 'noun'),
-       (15, 'dog', 'noun'),
-       (16, 'swim', 'verb'),
-       (17, 'red', 'adjective'),
-       (18, 'walk', 'verb'),
-       (19, 'slowly', 'adverb'),
-       (20, 'happy', 'adjective');
+SELECT setval('words_id_seq', 9);
+
+INSERT INTO words (lemma, part_of_speech)
+VALUES ('run', 'verb'),
+       ('jump', 'verb'),
+       ('blue', 'adjective'),
+       ('quickly', 'adverb'),
+       ('cat', 'noun'),
+       ('dog', 'noun'),
+       ('swim', 'verb'),
+       ('red', 'adjective'),
+       ('walk', 'verb'),
+       ('slowly', 'adverb'),
+       ('happy', 'adjective');
 
 -- vocab-has-words relation
 INSERT INTO vocab_has_words (vocab_id, word_id)
@@ -67,6 +97,3 @@ VALUES (101, 10),
        (102, 18),
        (102, 19),
        (102, 20);
-
-SELECT setval('words_id_seq', (SELECT MAX(id) FROM words));
-SELECT setval('dictionaries_id_seq', (SELECT MAX(vocab_id) FROM vocabularies));

@@ -22,8 +22,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class WordDaoTest extends BaseDaoTest {
 
-    private static final int PREDEFINED_WORDS_CNT = 3;
+    private static final int SEEDED_WORD_COUNT = 3;
     private static final int EXPECTED_NEW_ID = 4;
+
+    private static final Map<Integer, String> TEST_WORDS = Map.of(
+            1, "example",
+            2, "battery",
+            3, "tomato"
+    );
 
     @Autowired
     private WordDao wordDao;
@@ -43,7 +49,7 @@ public class WordDaoTest extends BaseDaoTest {
         List<Word> words = wordDao.findAllByIds(ids);
 
         assertNotNull(words);
-        assertEquals(PREDEFINED_WORDS_CNT + 1, words.size());
+        assertEquals(SEEDED_WORD_COUNT + 1, words.size());
 
         int id = 1;
         for (Word actual : words) {
@@ -56,8 +62,10 @@ public class WordDaoTest extends BaseDaoTest {
                 assertCollocations(word.getCollocations(), actual.getCollocations());
             } else {
                 assertEquals(id, actual.getId());
-                assertEquals("example" + id, actual.getLemma());
+                assertEquals(TEST_WORDS.get(id), actual.getLemma());
+                assertEquals("noun", actual.getPartOfSpeech().toLowerCase());
                 assertNotNull(actual.getTranscription());
+                assertNotNull(actual.getMeaning());
             }
             id++;
         }
@@ -65,7 +73,7 @@ public class WordDaoTest extends BaseDaoTest {
 
     @Test
     public void update() throws DaoException {
-        for (int id = 1; id <= PREDEFINED_WORDS_CNT; id++) {
+        for (int id = 1; id <= SEEDED_WORD_COUNT; id++) {
             Word word = new Word(id, "to test " + id, "VERB", "transcription" + id, "test", "A1");
             Sentence testSentence = Sentence.of("Test sentence").withMatchedWords("test");
             word.addSentence(testSentence);
@@ -89,11 +97,13 @@ public class WordDaoTest extends BaseDaoTest {
     @Test
     public void delete_whenAbandonedWord() throws DaoException {
         int abandonedWordId = 3;
+
         wordDao.delete(abandonedWordId);
 
         List<Word> wordsAfter = wordDao.findAllByIds(Set.of(1, 2, 3));
+
         assertNotNull(wordsAfter);
-        assertEquals(PREDEFINED_WORDS_CNT - 1, wordsAfter.size());
+        assertEquals(SEEDED_WORD_COUNT - 1, wordsAfter.size());
         assertTestData(wordsAfter);
     }
 
@@ -109,8 +119,9 @@ public class WordDaoTest extends BaseDaoTest {
     @Test
     public void findAllByIds() throws DaoException {
         List<Word> words = wordDao.findAllByIds(Set.of(1, 2, 3, 4));
+
         assertNotNull(words);
-        assertEquals(PREDEFINED_WORDS_CNT, words.size());
+        assertEquals(SEEDED_WORD_COUNT, words.size());
         assertTestData(words);
     }
 
@@ -124,14 +135,16 @@ public class WordDaoTest extends BaseDaoTest {
         allIds.addAll(generatedIds);
 
         List<Word> allWordsAfter = wordDao.findAllByIds(allIds);
+
         assertNotNull(allWordsAfter);
-        assertEquals(PREDEFINED_WORDS_CNT + words.size(), allWordsAfter.size());
+        assertEquals(SEEDED_WORD_COUNT + words.size(), allWordsAfter.size());
 
         Map<String, Word> returnedByValue = inserted.stream()
                 .collect(Collectors.toMap(Word::getLemma, w -> w));
 
         for (Word expected : words) {
             Word actual = returnedByValue.get(expected.getLemma());
+
             assertNotNull(actual, "Missing word: " + expected.getLemma());
             assertTrue(actual.getId() >= EXPECTED_NEW_ID);
             assertEquals(expected.getLemma(), actual.getLemma());
@@ -143,22 +156,24 @@ public class WordDaoTest extends BaseDaoTest {
     private static void assertTestData(List<Word> words) {
         for (int i = 0, id = 1; i < words.size(); i++, id++) {
             Word next = words.get(i);
+
             assertEquals(id, next.getId());
-            assertEquals("example" + id, next.getLemma());
-            assertNotNull(next.getTranscription());
+            assertEquals(TEST_WORDS.get(id), next.getLemma());
             assertEquals("noun", next.getPartOfSpeech().toLowerCase());
             assertNotNull(next.getMeaning());
+            assertNotNull(next.getTranscription());
         }
     }
 
     @Test
     void findById() throws DaoException {
-        var word = wordDao.findById(1);
+        Word word = wordDao.findById(1);
+
         assertNotNull(word);
         assertEquals(1, word.getId());
-        assertEquals("example1", word.getLemma());
-        assertTrue(word.getMeaning().contains("a word"));
+        assertEquals("example", word.getLemma());
         assertEquals("noun", word.getPartOfSpeech());
+        assertNotNull(word.getMeaning());
         assertNotNull(word.getTranscription());
     }
 
@@ -170,14 +185,16 @@ public class WordDaoTest extends BaseDaoTest {
 
     @Test
     void findByLemma_withTypo() throws DaoException {
-        List<Word> words = wordDao.findByLemma("exampl1");
+        List<Word> words = wordDao.findByLemma("batery");
+
         assertFalse(words.isEmpty());
-        var word = words.getFirst();
+
+        Word word = words.getFirst();
+
         assertNotNull(word);
-        assertEquals(1, word.getId());
-        assertEquals("example1", word.getLemma());
-        assertTrue(word.getMeaning().contains("a word"));
+        assertEquals("battery", word.getLemma());
         assertEquals("noun", word.getPartOfSpeech());
+        assertNotNull(word.getMeaning());
         assertNotNull(word.getTranscription());
     }
 
