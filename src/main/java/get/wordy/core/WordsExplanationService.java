@@ -1,8 +1,11 @@
 package get.wordy.core;
 
 import get.wordy.core.api.IWordExplanationService;
+import get.wordy.core.api.bean.ExistingWordLookup;
 import get.wordy.core.api.bean.Word;
+import get.wordy.core.api.bean.WordKey;
 import get.wordy.core.api.exception.DictionaryServiceException;
+import get.wordy.core.api.exception.ThemeServiceException;
 import get.wordy.core.api.exception.WordNotFoundException;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.dao.impl.WordDao;
@@ -10,10 +13,7 @@ import get.wordy.core.db.LocalTxManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class WordsExplanationService implements IWordExplanationService {
 
@@ -119,6 +119,26 @@ public class WordsExplanationService implements IWordExplanationService {
             wordsCache.put(word.getId(), word);
         }
         return words;
+    }
+
+    @Override
+    public List<ExistingWordLookup> lookupWords(List<WordKey> words) {
+        try {
+            return wordDao.lookupWords(words);
+        } catch (DaoException e) {
+            LOG.error("Error while lookup words = {}", words, e);
+            throw new ThemeServiceException("Error while lookup words");
+        }
+    }
+
+    @Override
+    public List<ExistingWordLookup> findExistingWords(List<WordKey> words) {
+        try {
+            return wordDao.findExistingWords(words);
+        } catch (DaoException e) {
+            LOG.error("Error while finding words = {}", words, e);
+            throw new ThemeServiceException("Error while finding words");
+        }
     }
 
 }

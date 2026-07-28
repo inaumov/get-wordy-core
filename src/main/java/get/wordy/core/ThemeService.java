@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ThemeService {
     private static final Logger LOG = LoggerFactory.getLogger(ThemeService.class);
@@ -188,18 +187,6 @@ public class ThemeService {
             return false;
         } finally {
             connection.close();
-        }
-    }
-
-    public List<Word> findExistingWords(Collection<WordKey> words) {
-        try {
-            Set<String> lemmas = words.stream()
-                    .map(WordKey::lemma)
-                    .collect(Collectors.toSet());
-            return wordDao.findExistingWords(lemmas);
-        } catch (DaoException e) {
-            LOG.error("Error while finding words = {}", words, e);
-            throw new ThemeServiceException("Error while finding words");
         }
     }
 

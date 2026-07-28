@@ -1,7 +1,9 @@
 package get.wordy.core.dao.impl;
 
+import get.wordy.core.api.bean.ExistingWordLookup;
 import get.wordy.core.api.bean.Sentence;
 import get.wordy.core.api.bean.Word;
+import get.wordy.core.api.bean.WordKey;
 import get.wordy.core.dao.exception.DaoException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -206,42 +208,84 @@ public class WordDao {
         };
     }
 
-    public List<Word> findExistingWords(Set<String> lemmas) {
+    public List<ExistingWordLookup> findExistingWords(List<WordKey> keys) {
 
-        if (lemmas.isEmpty()) {
+        if (keys.isEmpty()) {
             return List.of();
         }
 
         String sql = """
-                SELECT lemma,
-                       lower(part_of_speech) AS part_of_speech,
-                       level,
-                       id
-                FROM words
-                WHERE lower(lemma) = ANY(CAST(? AS text[]))
+                SELECT
+                    w.lemma,
+                    lower(w.part_of_speech) AS part_of_speech,
+                    w.id,
+                    w.level
+                FROM unnest(
+                        CAST(? AS text[]),
+                        CAST(? AS text[])
+                     ) AS input(
+                        lemma,
+                        part_of_speech
+                     )
+                JOIN words w
+                  ON lower(w.lemma) = lower(input.lemma)
+                 AND lower(w.part_of_speech) = lower(input.part_of_speech);
                 """;
 
-        List<Word> result = jdbcTemplate.query(
+        return lookup(keys, sql);
+    }
+
+    public List<ExistingWordLookup> lookupWords(List<WordKey> keys) {
+
+        if (keys.isEmpty()) {
+            return List.of();
+        }
+
+        String sql = """
+                SELECT
+                    input.lemma,
+                    lower(input.part_of_speech) AS part_of_speech,
+                    w.id,
+                    w.level
+                FROM unnest(
+                        CAST(? AS text[]),
+                        CAST(? AS text[])
+                     ) AS input(
+                        lemma,
+                        part_of_speech
+                     )
+                LEFT JOIN words w
+                       ON lower(w.lemma) = lower(input.lemma)
+                      AND lower(w.part_of_speech) = lower(input.part_of_speech);
+                """;
+
+        return lookup(keys, sql);
+    }
+
+    private List<ExistingWordLookup> lookup(List<WordKey> keys, String sql) {
+        String[] lemmas = keys.stream()
+                .map(WordKey::lemma)
+                .toArray(String[]::new);
+
+        String[] partsOfSpeech = keys.stream()
+                .map(WordKey::partOfSpeech)
+                .toArray(String[]::new);
+
+        return jdbcTemplate.query(
                 sql,
-                ps -> ps.setArray(
-                        1,
-                        ps.getConnection().createArrayOf(
-                                "text",
-                                lemmas.stream()
-                                        .map(String::toLowerCase)
-                                        .toArray()
-                        )
-                ),
-                (rs, rowNum) -> new Word(
-                        rs.getInt("id"),
-                        rs.getString("lemma"),
-                        rs.getString("part_of_speech"),
-                        null,
-                        null,
+                ps -> {
+                    ps.setArray(1, ps.getConnection().createArrayOf("text", lemmas));
+                    ps.setArray(2, ps.getConnection().createArrayOf("text", partsOfSpeech));
+                },
+                (rs, rowNum) -> new ExistingWordLookup(
+                        new WordKey(
+                                rs.getString("lemma"),
+                                rs.getString("part_of_speech")
+                        ),
+                        rs.getObject("id", Integer.class),
                         rs.getString("level")
                 )
         );
-        return new ArrayList<>(result);
     }
 
     private Word mapRowToObject(ResultSet rs, int rowNum) throws SQLException {

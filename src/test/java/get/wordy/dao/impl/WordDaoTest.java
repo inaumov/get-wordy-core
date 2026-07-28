@@ -1,6 +1,8 @@
 package get.wordy.dao.impl;
 
+import get.wordy.core.api.bean.ExistingWordLookup;
 import get.wordy.core.api.bean.Sentence;
+import get.wordy.core.api.bean.WordKey;
 import get.wordy.core.dao.exception.DaoException;
 import get.wordy.core.api.bean.Word;
 import get.wordy.core.dao.impl.WordDao;
@@ -201,19 +203,21 @@ public class WordDaoTest extends BaseDaoTest {
     @Sql(value = "/themes.sql", config = @SqlConfig(encoding = "utf-8"))
     @Test
     void findExistingWords() {
-        Set<String> input = Set.of(
-                "airport",
-                "PASSPORT",
-                "unknownWord"
+        List<WordKey> input = List.of(
+                new WordKey("airport", "noun"),
+                new WordKey("PASSPORT", "noun"),
+                new WordKey("unknownWord", "phrase")
         );
 
-        List<Word> result = wordDao.findExistingWords(input);
-        assertEquals(2, result.size());
+        List<ExistingWordLookup> result = wordDao.findExistingWords(input);
 
-        assertEquals("Airport", result.getFirst().getLemma());
-        assertEquals("noun", result.getFirst().getPartOfSpeech());
-        assertEquals("Passport", result.get(1).getLemma());
-        assertEquals("noun", result.get(1).getPartOfSpeech());
+        assertTrue(result.getFirst().exists());
+        assertEquals("Airport", result.getFirst().key().lemma());
+        assertEquals("noun", result.getFirst().key().partOfSpeech());
+
+        assertTrue(result.get(1).exists());
+        assertEquals("Passport", result.get(1).key().lemma());
+        assertEquals("noun", result.get(1).key().partOfSpeech());
     }
 
     private static void assertSentences(List<Sentence> expected, List<Sentence> actual) {
